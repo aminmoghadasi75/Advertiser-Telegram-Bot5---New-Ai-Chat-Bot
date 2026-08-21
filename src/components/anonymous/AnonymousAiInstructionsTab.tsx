@@ -1025,22 +1025,22 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
                 <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
                   <span>تاخیر ارسال سلام بعد از اتصال:</span>
                   <span className="text-emerald-400 font-bold font-mono">
-                    {(localInstructions.greetingDelaySeconds ?? 0.8).toFixed(1)} ثانیه
+                    {(localInstructions.greetingDelaySeconds ?? 2.8).toFixed(1)} ثانیه
                   </span>
                 </label>
                 <div className="flex items-center gap-2 pt-1">
                   <input
                     type="range"
-                    min="0.2"
-                    max="4.0"
+                    min="1.0"
+                    max="6.0"
                     step="0.2"
-                    value={localInstructions.greetingDelaySeconds ?? 0.8}
+                    value={localInstructions.greetingDelaySeconds ?? 2.8}
                     onChange={(e) => updateField('greetingDelaySeconds', parseFloat(e.target.value))}
                     className="flex-1 accent-emerald-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
                   />
                 </div>
                 <p className="text-[10px] text-slate-500">
-                  شبیه‌سازی اکشن Typing قبل از ارسال سلام تا کاملاً طبیعی به نظر برسد.
+                  شبیه‌سازی مکث طبیعی و اکشن Typing قبل از ارسال سلام تا مخاطب حس نکند با یک ربات پرسرعت مواجه است.
                 </p>
               </div>
 
@@ -1613,20 +1613,20 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
               <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
                 <span>مکث بین حباب‌های پیام متوالی:</span>
                 <span className="text-violet-400 font-bold font-mono text-xs">
-                  {(localInstructions.multiBubbleDelaySeconds ?? 1.2).toFixed(1)} ثانیه
+                  {(localInstructions.multiBubbleDelaySeconds ?? 1.8).toFixed(1)} ثانیه
                 </span>
               </label>
               <input
                 type="range"
-                min="0.5"
-                max="3.0"
+                min="0.8"
+                max="4.0"
                 step="0.1"
-                value={localInstructions.multiBubbleDelaySeconds ?? 1.2}
-                onChange={(e) => updateField('multiBubbleDelaySeconds', parseFloat(e.target.value) || 1.2)}
+                value={localInstructions.multiBubbleDelaySeconds ?? 1.8}
+                onChange={(e) => updateField('multiBubbleDelaySeconds', parseFloat(e.target.value) || 1.8)}
                 className="w-full accent-violet-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
               />
               <p className="text-[10px] text-slate-500">
-                فاصله زمانی کوتاه همراه با انیمیشن تایپ بین ارسال هر حباب تا حباب بعدی.
+                فاصله زمانی واقع‌گرایانه همراه با انیمیشن تایپ بین ارسال هر حباب تا حباب بعدی.
               </p>
             </div>
           </div>
@@ -1644,13 +1644,13 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h4 className="font-bold text-sm text-white">سرعت تایپ پویا متناسب با طول پیام (Dynamic Typing Speed)</h4>
+                <h4 className="font-bold text-sm text-white">سرعت تایپ پویا و مکث طبیعی انسانی (Dynamic Typing & Pacing)</h4>
                 <span className="px-2 py-0.5 rounded-full text-[10px] bg-sky-500/20 text-sky-300 border border-sky-500/30 font-medium">
-                  شبیه‌سازی تایپ دست
+                  احساس ۱۰۰٪ انسان پای گوشی
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                محاسبه زمان مکث تایپ بر اساس تعداد حروف متن به علاوه خطای انسانی و لرزش تصادفی (Jitter)
+                شبیه‌سازی مکث زمان مطالعه پیام مخاطب، تایپ با سرعت انسانی روی کیبورد گوشی و لرزش تصادفی (Jitter)
               </p>
             </div>
           </div>
@@ -1669,26 +1669,110 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
           </label>
         </div>
 
+        {/* Pacing Speed Presets */}
+        <div className="bg-sky-950/20 p-3 rounded-xl border border-sky-800/40 space-y-2">
+          <span className="text-[11px] font-bold text-sky-300 flex items-center gap-1.5">
+            <Sliders className="w-3.5 h-3.5" />
+            <span>پریست‌های آماده ریتم و سرعت مکالمه (انتخاب سریع با ۱ کلیک):</span>
+          </span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                updateField('greetingDelaySeconds', 2.8);
+                updateField('dynamicTypingSpeed', true);
+                updateField('typingSpeedMsPerChar', 65);
+                updateField('minTypingDelaySeconds', 2.5);
+                updateField('maxTypingDelaySeconds', 7.5);
+                updateField('replyDelaySeconds', 3.0);
+                updateField('messageAggregationDelaySeconds', 3.2);
+                updateField('enableMultiBubble', true);
+                updateField('multiBubbleMaxChunks', 3);
+                updateField('multiBubbleDelaySeconds', 1.8);
+              }}
+              className="p-2.5 rounded-lg bg-slate-900 hover:bg-sky-900/40 border border-sky-500/50 text-right text-xs transition-all flex flex-col gap-1 shadow-sm"
+            >
+              <div className="flex items-center justify-between text-sky-200 font-bold">
+                <span>☕ طبیعی و انسانی</span>
+                <span className="text-[9px] bg-sky-500/20 px-1.5 py-0.5 rounded text-sky-300">پیشنهادی</span>
+              </div>
+              <p className="text-[10px] text-slate-400 leading-tight">
+                مکث ۳-۴ ثانیه‌ای، تایپ ۶۵ms، ارسال آرام حباب‌ها
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                updateField('greetingDelaySeconds', 4.0);
+                updateField('dynamicTypingSpeed', true);
+                updateField('typingSpeedMsPerChar', 80);
+                updateField('minTypingDelaySeconds', 3.5);
+                updateField('maxTypingDelaySeconds', 9.5);
+                updateField('replyDelaySeconds', 4.2);
+                updateField('messageAggregationDelaySeconds', 4.0);
+                updateField('enableMultiBubble', true);
+                updateField('multiBubbleMaxChunks', 2);
+                updateField('multiBubbleDelaySeconds', 2.4);
+              }}
+              className="p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800/80 border border-slate-700 text-right text-xs transition-all flex flex-col gap-1"
+            >
+              <div className="flex items-center justify-between text-slate-200 font-bold">
+                <span>🧘 آرام و باحوصله</span>
+                <span className="text-[9px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-300">طبیعی‌ترین</span>
+              </div>
+              <p className="text-[10px] text-slate-400 leading-tight">
+                مکث بیشتر، مناسب رفع هرگونه شک به ربات بودن
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                updateField('greetingDelaySeconds', 1.6);
+                updateField('dynamicTypingSpeed', true);
+                updateField('typingSpeedMsPerChar', 45);
+                updateField('minTypingDelaySeconds', 1.5);
+                updateField('maxTypingDelaySeconds', 5.0);
+                updateField('replyDelaySeconds', 2.0);
+                updateField('messageAggregationDelaySeconds', 2.0);
+                updateField('enableMultiBubble', true);
+                updateField('multiBubbleMaxChunks', 2);
+                updateField('multiBubbleDelaySeconds', 1.2);
+              }}
+              className="p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800/80 border border-slate-700 text-right text-xs transition-all flex flex-col gap-1"
+            >
+              <div className="flex items-center justify-between text-slate-200 font-bold">
+                <span>🏃‍♂️ سریع و فرز</span>
+                <span className="text-[9px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-300">سرعت بالا</span>
+              </div>
+              <p className="text-[10px] text-slate-400 leading-tight">
+                پاسخ‌دهی سریع‌تر برای مکالمات کوتاه و سریع
+              </p>
+            </button>
+          </div>
+        </div>
+
         {(localInstructions.dynamicTypingSpeed ?? true) && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-800/80">
             <div className="bg-slate-900/70 p-3 rounded-xl border border-slate-800 space-y-1.5">
               <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
                 <span>سرعت تایپ هر حرف:</span>
                 <span className="text-sky-400 font-bold font-mono text-xs">
-                  {localInstructions.typingSpeedMsPerChar ?? 35} ms/حرف
+                  {localInstructions.typingSpeedMsPerChar ?? 65} ms/حرف
                 </span>
               </label>
               <input
                 type="range"
-                min="15"
-                max="80"
+                min="25"
+                max="120"
                 step="5"
-                value={localInstructions.typingSpeedMsPerChar ?? 35}
-                onChange={(e) => updateField('typingSpeedMsPerChar', parseInt(e.target.value) || 35)}
+                value={localInstructions.typingSpeedMsPerChar ?? 65}
+                onChange={(e) => updateField('typingSpeedMsPerChar', parseInt(e.target.value) || 65)}
                 className="w-full accent-sky-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
               />
               <p className="text-[10px] text-slate-500">
-                سرعت شبیه‌سازی تایپ یک کاربر سریع در کیبورد گوشی (۳۵ میلی‌ثانیه میانگین استاندارد است).
+                سرعت تایپ طبیعی انسان روی کیبورد گوشی (۶۰ تا ۸۰ میلی‌ثانیه در ثانیه کاملاً طبیعی است).
               </p>
             </div>
 
@@ -1696,16 +1780,16 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
               <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
                 <span>حداقل تاخیر تایپ:</span>
                 <span className="text-sky-400 font-bold font-mono text-xs">
-                  {(localInstructions.minTypingDelaySeconds ?? 0.8).toFixed(1)} ثانیه
+                  {(localInstructions.minTypingDelaySeconds ?? 2.5).toFixed(1)} ثانیه
                 </span>
               </label>
               <input
                 type="range"
-                min="0.4"
-                max="3.0"
+                min="1.0"
+                max="5.0"
                 step="0.2"
-                value={localInstructions.minTypingDelaySeconds ?? 0.8}
-                onChange={(e) => updateField('minTypingDelaySeconds', parseFloat(e.target.value) || 0.8)}
+                value={localInstructions.minTypingDelaySeconds ?? 2.5}
+                onChange={(e) => updateField('minTypingDelaySeconds', parseFloat(e.target.value) || 2.5)}
                 className="w-full accent-sky-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
               />
               <p className="text-[10px] text-slate-500">حتی برای پاسخ‌های تک کلمه‌ای، این مقدار حداقل مکث اعمال می‌شود.</p>
@@ -1715,16 +1799,16 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
               <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
                 <span>سقف حداکثر تاخیر:</span>
                 <span className="text-sky-400 font-bold font-mono text-xs">
-                  {(localInstructions.maxTypingDelaySeconds ?? 4.5).toFixed(1)} ثانیه
+                  {(localInstructions.maxTypingDelaySeconds ?? 7.5).toFixed(1)} ثانیه
                 </span>
               </label>
               <input
                 type="range"
-                min="2.0"
-                max="8.0"
+                min="4.0"
+                max="15.0"
                 step="0.5"
-                value={localInstructions.maxTypingDelaySeconds ?? 4.5}
-                onChange={(e) => updateField('maxTypingDelaySeconds', parseFloat(e.target.value) || 4.5)}
+                value={localInstructions.maxTypingDelaySeconds ?? 7.5}
+                onChange={(e) => updateField('maxTypingDelaySeconds', parseFloat(e.target.value) || 7.5)}
                 className="w-full accent-sky-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
               />
               <p className="text-[10px] text-slate-500">جلوگیری از معطلی بیش از حد برای پیام‌های طولانی.</p>
@@ -1855,12 +1939,12 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
             <div className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
               <input
                 type="number"
-                value={localInstructions.replyDelaySeconds ?? 1.5}
+                value={localInstructions.replyDelaySeconds ?? 3.0}
                 onChange={(e) =>
                   updateField('replyDelaySeconds', Math.max(0.5, Number(e.target.value) || 0.5))
                 }
                 min={0.5}
-                max={10}
+                max={15}
                 step={0.5}
                 className="w-12 bg-transparent text-white font-bold text-center text-sm focus:outline-none"
               />
@@ -1885,7 +1969,7 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
             <span className="text-xs text-slate-300">حداکثر زمان انتظار:</span>
             <input
               type="number"
-              value={localInstructions.silenceTimeoutSeconds ?? 30}
+              value={localInstructions.silenceTimeoutSeconds ?? 35}
               onChange={(e) =>
                 updateField('silenceTimeoutSeconds', Math.max(10, Number(e.target.value) || 10))
               }
@@ -1944,7 +2028,7 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
           <div className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
             <input
               type="number"
-              value={localInstructions.messageAggregationDelaySeconds ?? 2.5}
+              value={localInstructions.messageAggregationDelaySeconds ?? 3.2}
               onChange={(e) =>
                 updateField('messageAggregationDelaySeconds', Math.max(0.5, Number(e.target.value) || 0.5))
               }

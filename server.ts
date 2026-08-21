@@ -386,9 +386,9 @@ const defaultAnonymousAutomatorConfig: AnonymousChatAutomatorConfig = {
     dynamicSessionStatePrompt: true,
     initiateGreetingOnConnect: true,
     initialGreetingText: 'سلام خوبی؟ 🌸',
-    initialGreetings: ['سلام خوبی؟ 🌸', 'سلام چطوری؟', 'سلام روزت بخیر 🌸', 'سلام، خوبی؟ چه خبر؟'],
+    initialGreetings: ['سلام خوبی؟ 🌸', 'سلام چطوری؟', 'سلام روزت بخیر 🌸', 'سلام، خوبی؟ چه خبر؟', 'سلام عزیزم چطوری؟'],
     greetingMode: 'single',
-    greetingDelaySeconds: 0.8,
+    greetingDelaySeconds: 2.8,
     enablePreExitFarewell: true,
     preExitFarewellText: 'خب عزیزم من کار برام پیش اومد باید برم، مراقب خودت باش 🌸',
     preExitFarewells: [
@@ -398,24 +398,24 @@ const defaultAnonymousAutomatorConfig: AnonymousChatAutomatorConfig = {
       'من کار فوری برام پیش اومد باید برم، روزت بخیر ✨',
     ],
     farewellMode: 'single',
-    farewellDelaySeconds: 1.5,
+    farewellDelaySeconds: 1.8,
     sendPromoBeforeExitAlways: true,
-    replyDelaySeconds: 1.2,
-    messageAggregationDelaySeconds: 1.5,
-    silenceTimeoutSeconds: 30,
+    replyDelaySeconds: 3.0,
+    messageAggregationDelaySeconds: 3.2,
+    silenceTimeoutSeconds: 35,
     enableSilenceNudge: true,
     silenceNudgeText: 'هستی؟ 🌸',
     
     // ۱. ارسال پیام‌های چندتکه‌ای (Multi-bubble Messaging)
     enableMultiBubble: true,
-    multiBubbleMaxChunks: 2,
-    multiBubbleDelaySeconds: 1.5,
+    multiBubbleMaxChunks: 3,
+    multiBubbleDelaySeconds: 1.8,
 
     // ۲. سرعت تایپ پویا و هوشمند (Dynamic Typing Speed)
     dynamicTypingSpeed: true,
-    typingSpeedMsPerChar: 35,
-    minTypingDelaySeconds: 1.0,
-    maxTypingDelaySeconds: 6.0,
+    typingSpeedMsPerChar: 65,
+    minTypingDelaySeconds: 2.5,
+    maxTypingDelaySeconds: 7.5,
 
     // ۳. فیلتر سریع ربات‌های تبلیغاتی و اسپمرها (Spam / Bot Skip)
     autoSkipSpamBots: true,
@@ -4554,18 +4554,65 @@ function splitIntoNaturalBubbles(text: string, maxChunks: number = 3): string[] 
   return result.slice(0, maxChunks);
 }
 
-// Helper: Calculate Dynamic Typing Speed based on message length and human variance
-function calculateTypingDelay(text: string, instructions: AnonymousChatInstructions): number {
+// Helper: Calculate Dynamic Typing Speed based on human reading latency, message length, and typing variance
+function calculateTypingDelay(
+  text: string,
+  instructions: AnonymousChatInstructions,
+  incomingStrangerText?: string
+): number {
   if (instructions.dynamicTypingSpeed === false) {
-    return Math.max(300, (instructions.replyDelaySeconds || 1.2) * 1000);
+    return Math.max(1000, (instructions.replyDelaySeconds || 3.0) * 1000);
   }
-  const speedPerChar = instructions.typingSpeedMsPerChar || 35;
+  const speedPerChar = instructions.typingSpeedMsPerChar || 65;
   const charCount = (text || '').trim().length;
-  // Dynamic formula: char count * speed + natural thinking variance (200 - 600ms)
-  const rawDuration = charCount * speedPerChar + (Math.random() * 400 + 200);
-  const minMs = Math.max(400, (instructions.minTypingDelaySeconds !== undefined ? instructions.minTypingDelaySeconds : 1.0) * 1000);
-  const maxMs = Math.min(10000, (instructions.maxTypingDelaySeconds !== undefined ? instructions.maxTypingDelaySeconds : 6.0) * 1000);
+
+  // 1. Reading & Cognitive thinking latency based on stranger message length (انسان ابتدا پیام را می‌خواند و فکر می‌کند)
+  const strangerLen = (incomingStrangerText || '').trim().length;
+  const readingDuration = Math.min(3200, Math.max(900, strangerLen * 25 + (Math.random() * 800 - 400)));
+
+  // 2. Dynamic formula: char count * typing speed + human jitter
+  const typingDuration = charCount * speedPerChar + (Math.random() * 800 + 400);
+
+  const rawDuration = readingDuration + typingDuration;
+  const minMs = Math.max(1500, (instructions.minTypingDelaySeconds !== undefined ? instructions.minTypingDelaySeconds : 2.5) * 1000);
+  const maxMs = Math.min(18000, (instructions.maxTypingDelaySeconds !== undefined ? instructions.maxTypingDelaySeconds : 7.5) * 1000);
   return Math.min(maxMs, Math.max(minMs, Math.round(rawDuration)));
+}
+
+// Helper: Simulate 100% human-like typing wait with reading delay and active Telegram typing pulse
+async function simulateRealisticTypingWait(
+  client: any,
+  botEntity: any,
+  totalDelayMs: number,
+  session?: AnonymousChatSession,
+  statusLabel?: string
+): Promise<void> {
+  const readingPartMs = Math.min(1600, Math.max(600, Math.round(totalDelayMs * 0.28)));
+  const typingPartMs = Math.max(600, totalDelayMs - readingPartMs);
+
+  if (session) {
+    session.statusMessage = `${statusLabel || 'در حال شبیه‌سازی تایپ انسانی'} (${(totalDelayMs / 1000).toFixed(1)} ثانیه)...`;
+    saveData();
+  }
+
+  // 1. Reading / thinking phase (قبل از شروع تایپ روی گوشی)
+  await new Promise((r) => setTimeout(r, readingPartMs));
+
+  // 2. Active typing simulation with continuous keep-alive pulse (وضعیت Typing در تلگرام)
+  let remainingMs = typingPartMs;
+  while (remainingMs > 0) {
+    try {
+      if (Api && Api.messages && Api.messages.SetTyping) {
+        client.invoke(
+          new Api.messages.SetTyping({ peer: botEntity, action: new Api.SendMessageTypingAction() })
+        ).catch(() => {});
+      }
+    } catch {}
+
+    const stepWait = Math.min(3200, remainingMs);
+    await new Promise((r) => setTimeout(r, stepWait));
+    remainingMs -= stepWait;
+  }
 }
 
 // Helper: Detect Spam / Bot Links and Unwanted Promotional Inbounds from Strangers
@@ -6046,7 +6093,7 @@ async function ensureChatDisconnected(
   addLog('info', `[چت ناشناس] ✅ فرآیند خروج از چت با موفقیت کامل شد. آماده چرخه بعدی.`);
 }
 
-// Helper: Send Instant Ice-breaker Greeting to Partner
+// Helper: Send Instant Ice-breaker Greeting to Partner with Human Pacing
 async function sendIceBreakerGreeting(
   client: any,
   botEntity: any,
@@ -6060,14 +6107,6 @@ async function sendIceBreakerGreeting(
     return;
   }
 
-  try {
-    if (Api && Api.messages && Api.messages.SetTyping) {
-      client.invoke(
-        new Api.messages.SetTyping({ peer: botEntity, action: new Api.SendMessageTypingAction() })
-      ).catch(() => {});
-    }
-  } catch {}
-
   let greetText = (instructions.initialGreetingText || 'سلام خوبی؟ 🌸').trim();
   if (instructions.greetingMode === 'random_list' && instructions.initialGreetings && instructions.initialGreetings.length > 0) {
     const list = instructions.initialGreetings.map((s) => s.trim()).filter(Boolean);
@@ -6079,12 +6118,18 @@ async function sendIceBreakerGreeting(
   // Enforce under-2-minute rule (no digits, no English letters) on icebreaker greeting
   greetText = sanitizeMessageForUnderTwoMinutes(greetText);
 
-  const delayMs = Math.max(200, (instructions.greetingDelaySeconds !== undefined ? instructions.greetingDelaySeconds : 0.8) * 1000);
-  addLog('info', `[چت ناشناس] اتصال برقرار شد. ارسال خودکار پیام سلام/شروع به مخاطب («${greetText}») با تاخیر ${(delayMs / 1000).toFixed(1)} ثانیه...`);
-  session.statusMessage = 'اتصال برقرار شد. در حال ارسال پیام شروع به مخاطب...';
-  saveData();
-
-  await new Promise((r) => setTimeout(r, delayMs));
+  // Human greeting delay calculation (2.2s - 4.5s with human jitter)
+  const baseDelaySec = typeof instructions.greetingDelaySeconds === 'number' ? instructions.greetingDelaySeconds : 2.8;
+  const delayMs = Math.max(1600, Math.round(baseDelaySec * 1000 + (Math.random() * 800 - 400)));
+  addLog('info', `[چت ناشناس] اتصال برقرار شد. شبیه‌سازی شروع و تایپ سلام («${greetText}») با تاخیر انسانی ${(delayMs / 1000).toFixed(1)} ثانیه...`);
+  
+  await simulateRealisticTypingWait(
+    client,
+    botEntity,
+    delayMs,
+    session,
+    'اتصال برقرار شد. در حال ارسال پیام شروع'
+  );
 
   try {
     await client.sendMessage(botEntity, { message: greetText });
@@ -6479,10 +6524,21 @@ async function runAnonymousChatWorker() {
         enforceSessionIsolation: true,
         extractPartnerProfileInfo: true,
         dynamicSessionStatePrompt: true,
-        replyDelaySeconds: 1,
-        silenceTimeoutSeconds: 30,
+        initiateGreetingOnConnect: true,
+        initialGreetingText: 'سلام خوبی؟ 🌸',
+        greetingDelaySeconds: 2.8,
+        replyDelaySeconds: 3.0,
+        messageAggregationDelaySeconds: 3.2,
+        silenceTimeoutSeconds: 35,
         enableSilenceNudge: true,
         silenceNudgeText: 'هستی؟ 🌸',
+        dynamicTypingSpeed: true,
+        typingSpeedMsPerChar: 65,
+        minTypingDelaySeconds: 2.5,
+        maxTypingDelaySeconds: 7.5,
+        enableMultiBubble: true,
+        multiBubbleMaxChunks: 3,
+        multiBubbleDelaySeconds: 1.8,
         inappropriateKeywords: ['بلاک', 'اسپم', 'فحش'],
       };
 
@@ -6758,9 +6814,9 @@ async function runAnonymousChatWorker() {
 
         // Consecutive Message Aggregator: If stranger sent message(s), wait for additional consecutive lines before generating reply
         if (pendingStrangerBatch.length > 0) {
-          const aggregationSec = Math.max(0.5, instructions.messageAggregationDelaySeconds !== undefined ? instructions.messageAggregationDelaySeconds : 1.5);
+          const aggregationSec = Math.max(0.5, instructions.messageAggregationDelaySeconds !== undefined ? instructions.messageAggregationDelaySeconds : 3.2);
           const aggregationWindowMs = aggregationSec * 1000;
-          const maxWaitMs = 5000; // Fast safety ceiling
+          const maxWaitMs = 8000; // Natural human safety ceiling
           const aggregationStartTime = Date.now();
           let lastMsgArrival = Date.now();
 
@@ -6947,19 +7003,17 @@ async function runAnonymousChatWorker() {
             );
           }
 
-          // Feature 3: Dynamic Typing Speed Simulation (شبیه‌سازی پویا و واقع‌گرایانه زمان تایپ متناسب با طول پاسخ)
-          try {
-            if (Api && Api.messages && Api.messages.SetTyping) {
-              client.invoke(
-                new Api.messages.SetTyping({ peer: botEntity, action: new Api.SendMessageTypingAction() })
-              ).catch(() => {});
-            }
-          } catch {}
-
-          const dynamicDelay = calculateTypingDelay(replyResult.text, instructions);
-          activeAnonChatSession.statusMessage = `در حال شبیه‌سازی تایپ هوش مصنوعی (${(dynamicDelay / 1000).toFixed(1)} ثانیه)...`;
-          saveData();
-          await new Promise((r) => setTimeout(r, dynamicDelay));
+          // Feature 3: Dynamic Typing Speed Simulation (شبیه‌سازی پویا، زمان مطالعه و مکث تایپ کاملاً انسانی)
+          const lastStrangerMsgText = activeAnonChatSession.transcript.filter(t => t.sender === 'stranger').pop()?.text || '';
+          const dynamicDelay = calculateTypingDelay(replyResult.text, instructions, lastStrangerMsgText);
+          
+          await simulateRealisticTypingWait(
+            client,
+            botEntity,
+            dynamicDelay,
+            activeAnonChatSession,
+            'در حال شبیه‌سازی تایپ هوش مصنوعی'
+          );
 
           const maxMsgs = instructions.maxMessagesPerChat || 3;
           const promo = instructions.productPromotion;
@@ -6969,7 +7023,7 @@ async function runAnonymousChatWorker() {
           const sessionDurationMs = sessionDurationSec * 1000;
           const isPhotoAllowedByTime = sessionDurationMs >= 120000;
 
-          const lastStrangerText = activeAnonChatSession.transcript.filter(t => t.sender === 'stranger').pop()?.text || '';
+          const lastStrangerText = lastStrangerMsgText;
           const strangerInquiredPromo = /(قیمت|چنده|چند|تست|خرید|اکانت|سرویس|اشتراک|تعرفه|لینک|آیدی|عکس|وی\s*پی\s*ان|فیلترشکن|vpn)/i.test(lastStrangerText);
           const aiReferencedPhoto = /(داخل عکس|تو عکس|عکسم|عکسی که|آیدی داخل عکس|نوا وی\s*پی\s*ان|تست رایگان)/i.test(replyResult.text);
 
@@ -7124,19 +7178,15 @@ async function runAnonymousChatWorker() {
               for (let bIdx = 0; bIdx < bubbles.length; bIdx++) {
                 const bubbleText = bubbles[bIdx];
                 if (bIdx > 0) {
-                  // Small natural typing delay before sending subsequent bubble
-                  try {
-                    if (Api && Api.messages && Api.messages.SetTyping) {
-                      client.invoke(
-                        new Api.messages.SetTyping({ peer: botEntity, action: new Api.SendMessageTypingAction() })
-                      ).catch(() => {});
-                    }
-                  } catch {}
-
-                  const subBubbleDelay = calculateTypingDelay(bubbleText, instructions);
-                  activeAnonChatSession.statusMessage = `در حال ارسال پیام ${bIdx + 1} از ${bubbles.length}...`;
-                  saveData();
-                  await new Promise((r) => setTimeout(r, Math.min(2200, Math.max(600, subBubbleDelay * 0.5))));
+                  // Natural typing delay before sending subsequent bubble
+                  const waitBetween = Math.max(1200, ((instructions.multiBubbleDelaySeconds || 1.8) * 1000) + (Math.random() * 600 - 300));
+                  await simulateRealisticTypingWait(
+                    client,
+                    botEntity,
+                    waitBetween,
+                    activeAnonChatSession,
+                    `در حال تایپ تکه ${bIdx + 1} از ${bubbles.length}`
+                  );
                 }
 
                 await client.sendMessage(botEntity, { message: bubbleText });
@@ -7151,11 +7201,6 @@ async function runAnonymousChatWorker() {
                   timestamp: new Date().toISOString(),
                 });
                 saveData();
-
-                if (bIdx < bubbles.length - 1) {
-                  const waitBetween = (instructions.multiBubbleDelaySeconds || 1.5) * 1000;
-                  await new Promise((r) => setTimeout(r, waitBetween));
-                }
               }
             } else {
               await client.sendMessage(botEntity, { message: replyResult.text });
