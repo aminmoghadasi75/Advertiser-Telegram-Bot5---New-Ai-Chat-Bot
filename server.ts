@@ -42,6 +42,10 @@ import { runFullEvaluation, replaySingleConversation } from './src/evaluation/re
 import { runAllEvaluationTests } from './src/evaluation/evaluationTests.js';
 import { exportTracesToCSV, exportReportToJSON } from './src/evaluation/exportUtils.js';
 import { ReplayMode } from './src/evaluation/evaluationTypes.js';
+import { HealthService } from './src/reliability/healthService.js';
+import { telemetry } from './src/observability/telemetry.js';
+import { logger, sanitizePii } from './src/observability/logger.js';
+import { validateRuntimeConfig, getRuntimeConfig } from './src/config/runtimeConfig.js';
 
 // Telegram Phone Number Cleaner & Normalizer
 function cleanPhoneNumber(phone: string): string {
@@ -119,6 +123,51 @@ const PORT = 3000;
 // Body parser
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
+// PRODUCTION HEALTH & OBSERVABILITY PROBES
+app.get('/api/health', (req, res) => {
+  const health = HealthService.getDetailedHealth(
+    appState?.credentials?.isConnected || false,
+    appState?.credentials?.phoneNumber
+  );
+  res.status(health.status === 'DOWN' ? 503 : 200).json(health);
+});
+
+app.get('/api/ready', (req, res) => {
+  const readiness = HealthService.getReadiness();
+  res.status(readiness.code).json(readiness);
+});
+
+app.get('/api/live', (req, res) => {
+  const liveness = HealthService.getLiveness();
+  res.status(liveness.code).json(liveness);
+});
+
+app.get('/api/metrics', (req, res) => {
+  res.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+  res.send(telemetry.formatPrometheusMetrics());
+});
+
+app.get('/api/observability/stats', (req, res) => {
+  res.json({
+    success: true,
+    snapshot: telemetry.getSnapshot(),
+    logs: logger.getRecentLogs().slice(-50),
+  });
+});
+
+app.get('/api/config/validate', (req, res) => {
+  const validation = validateRuntimeConfig();
+  res.json({
+    success: true,
+    validation: {
+      valid: validation.valid,
+      warnings: validation.warnings,
+      errors: validation.errors,
+      config: sanitizePii(validation.config),
+    },
+  });
+});
 
 // Memory / File Persistence
 const DATA_FILE = path.join(process.cwd(), 'telegram_promoter_data.json');
@@ -8128,7 +8177,10 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', async () => {
+  const server = app.listen(PORT, '0.0.0.0', async () => {
+    logger.info('SERVER_STARTUP_SUCCESS', {
+      data: { port: PORT, nodeEnv: process.env.NODE_ENV || 'development' },
+    });
     console.log(`Telegram UserBot Promoter running at http://0.0.0.0:${PORT}`);
     if (appState.credentials.sessionString && appState.credentials.isConnected) {
       console.log('🔄 Restoring saved Telegram session...');
@@ -8142,6 +8194,39 @@ async function startServer() {
         console.warn('Telegram auto-reconnect error:', err?.message || err);
       });
     }
+  });
+
+  // Graceful shutdown handling
+  const shutdown = async (signal: string) => {
+    console.log(`[SHUTDOWN] Received ${signal}. Starting graceful shutdown...`);
+    logger.info('SERVER_SHUTDOWN_SIGNAL', { data: { signal } });
+    HealthService.markShuttingDown();
+
+    server.close(() => {
+      console.log('[SHUTDOWN] HTTP server closed gracefully.');
+      saveData();
+      process.exit(0);
+    });
+
+    // Force exit if hanging after 5s
+    setTimeout(() => {
+      console.error('[SHUTDOWN] Forceful shutdown triggered after timeout.');
+      process.exit(1);
+    }, 5000).unref();
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+
+  // Global uncaught exception and unhandled rejection safety
+  process.on('uncaughtException', (err) => {
+    logger.error('UNCAUGHT_EXCEPTION', err);
+    console.error('[CRITICAL] Uncaught Exception:', err);
+  });
+
+  process.on('unhandledRejection', (reason) => {
+    logger.error('UNHANDLED_REJECTION', reason);
+    console.error('[CRITICAL] Unhandled Rejection:', reason);
   });
 }
 

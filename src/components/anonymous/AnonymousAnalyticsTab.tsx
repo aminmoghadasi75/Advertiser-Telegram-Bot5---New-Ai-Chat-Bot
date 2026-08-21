@@ -42,16 +42,15 @@ export const AnonymousAnalyticsTab: React.FC<AnonymousAnalyticsTabProps> = ({
   const stats = config?.stats || {
     totalChatsInitiated: 0,
     totalRepliesFromStrangers: 0,
-    totalPitchSent: 0,
-    totalInquiries: 0,
+    totalPromoSent: 0,
+    totalInquiriesAfterPromo: 0,
     totalSpamBotsSkipped: 0,
-    recentInquiries: [],
   };
 
   const totalChats = Math.max(stats.totalChatsInitiated || 0, history.length);
   const totalReplies = stats.totalRepliesFromStrangers || 0;
-  const totalPitches = stats.totalPitchSent || 0;
-  const totalInquiries = stats.totalInquiries || 0;
+  const totalPitches = stats.totalPromoSent ?? (stats as any).totalPitchSent ?? 0;
+  const totalInquiries = stats.totalInquiriesAfterPromo ?? (stats as any).totalInquiries ?? 0;
   const totalSpamSkipped = stats.totalSpamBotsSkipped || 0;
 
   // Conversion rate = Inquiries / Pitches
@@ -184,7 +183,7 @@ export const AnonymousAnalyticsTab: React.FC<AnonymousAnalyticsTabProps> = ({
     return tracker.generateReport();
   }, [history]);
 
-  const recentInquiries = stats.recentInquiries || [];
+  const recentInquiries = (stats as any).recentInquiries || [];
   const funnel = analyticsReport.funnelMetrics.funnelReport;
   const leadInsights = analyticsReport.leadMetrics.insights;
   const objectionReport = analyticsReport.objectionMetrics.objectionReport;

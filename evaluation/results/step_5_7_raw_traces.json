@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-21T21:46:09.183Z",
+  "timestamp": "2026-08-21T22:11:44.891Z",
   "holdoutPredictions": [
     {
       "id": "holdout_001",
@@ -1206,7 +1206,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 1,
-      "timestamp": "2026-08-21T21:46:09.321Z",
+      "timestamp": "2026-08-21T22:11:45.109Z",
       "userMessage": "سلام وقت بخیر",
       "normalizedMessage": "سلام وقت بخیر",
       "previousState": "INITIAL_GREETING",
@@ -1260,7 +1260,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 2,
-      "timestamp": "2026-08-21T21:46:09.321Z",
+      "timestamp": "2026-08-21T22:11:45.110Z",
       "userMessage": "اینترنتم خیلی کنده هیچ سایتی باز نمیشه",
       "normalizedMessage": "اینترنتم خیلی کنده هیچ سایتی باز نمیشه",
       "previousState": "EARLY_CONVERSATION",
@@ -1314,7 +1314,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 3,
-      "timestamp": "2026-08-21T21:46:09.322Z",
+      "timestamp": "2026-08-21T22:11:45.111Z",
       "userMessage": "سرورهای شما قطعی نداره روی همراه اول؟",
       "normalizedMessage": "سرورهای شما قطعی نداره روی همراه اول؟",
       "previousState": "NEED_DETECTED",
@@ -1368,7 +1368,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 4,
-      "timestamp": "2026-08-21T21:46:09.322Z",
+      "timestamp": "2026-08-21T22:11:45.111Z",
       "userMessage": "قیمت پلن ها چقدره؟",
       "normalizedMessage": "قیمت پلن ها چقدره؟",
       "previousState": "PRODUCT_INTRODUCTION",
@@ -1426,7 +1426,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 5,
-      "timestamp": "2026-08-21T21:46:09.323Z",
+      "timestamp": "2026-08-21T22:11:45.112Z",
       "userMessage": "یکمی گرونه، تخفیف ندارین؟",
       "normalizedMessage": "یکمی گرونه، تخفیف ندارین؟",
       "previousState": "PRICE_DISCUSSION",
@@ -1480,7 +1480,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 6,
-      "timestamp": "2026-08-21T21:46:09.323Z",
+      "timestamp": "2026-08-21T22:11:45.112Z",
       "userMessage": "اصلا نمیخوام مرسی منصرف شدم",
       "normalizedMessage": "اصلا نمیخوام مرسی منصرف شدم",
       "previousState": "OBJECTION_HANDLING",
@@ -1534,7 +1534,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 7,
-      "timestamp": "2026-08-21T21:46:09.323Z",
+      "timestamp": "2026-08-21T22:11:45.112Z",
       "userMessage": "پشتیبانی تا ساعت چند هست؟",
       "normalizedMessage": "پشتیبانی تا ساعت چند هست؟",
       "previousState": "REJECTED",
@@ -1588,7 +1588,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 8,
-      "timestamp": "2026-08-21T21:46:09.323Z",
+      "timestamp": "2026-08-21T22:11:45.113Z",
       "userMessage": "چخبر دیگه؟",
       "normalizedMessage": "چخبر دیگه؟",
       "previousState": "REJECTED",
@@ -1642,7 +1642,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 9,
-      "timestamp": "2026-08-21T21:46:09.324Z",
+      "timestamp": "2026-08-21T22:11:45.113Z",
       "userMessage": "پشتیبانی تا ساعت چند هست؟",
       "normalizedMessage": "پشتیبانی تا ساعت چند هست؟",
       "previousState": "REJECTED",
@@ -1696,7 +1696,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 10,
-      "timestamp": "2026-08-21T21:46:09.324Z",
+      "timestamp": "2026-08-21T22:11:45.114Z",
       "userMessage": "چخبر دیگه؟",
       "normalizedMessage": "چخبر دیگه؟",
       "previousState": "REJECTED",
@@ -1750,7 +1750,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 11,
-      "timestamp": "2026-08-21T21:46:09.324Z",
+      "timestamp": "2026-08-21T22:11:45.114Z",
       "userMessage": "پشتیبانی تا ساعت چند هست؟",
       "normalizedMessage": "پشتیبانی تا ساعت چند هست؟",
       "previousState": "REJECTED",
@@ -1804,7 +1804,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 12,
-      "timestamp": "2026-08-21T21:46:09.325Z",
+      "timestamp": "2026-08-21T22:11:45.114Z",
       "userMessage": "چخبر دیگه؟",
       "normalizedMessage": "چخبر دیگه؟",
       "previousState": "REJECTED",
@@ -1858,7 +1858,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 13,
-      "timestamp": "2026-08-21T21:46:09.325Z",
+      "timestamp": "2026-08-21T22:11:45.115Z",
       "userMessage": "باشه فکرهامو کردم، لطفا شرایط پلن ها و قیمت رو دوباره بگو",
       "normalizedMessage": "باشه فکرهامو کردم، لطفا شرایط پلن ها و قیمت رو دوباره بگو",
       "previousState": "REJECTED",
@@ -1912,7 +1912,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 14,
-      "timestamp": "2026-08-21T21:46:09.325Z",
+      "timestamp": "2026-08-21T22:11:45.115Z",
       "userMessage": "شماره کارت بده ۵۰۰ تومن واریز کنم",
       "normalizedMessage": "شماره کارت بده ۵۰۰ تومن واریز کنم",
       "previousState": "PRODUCT_INTEREST",
@@ -1966,7 +1966,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 15,
-      "timestamp": "2026-08-21T21:46:09.325Z",
+      "timestamp": "2026-08-21T22:11:45.115Z",
       "userMessage": "سرور هلند خلوت تر نیست؟",
       "normalizedMessage": "سرور هلند خلوت تر نیست؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -2020,7 +2020,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 16,
-      "timestamp": "2026-08-21T21:46:09.325Z",
+      "timestamp": "2026-08-21T22:11:45.116Z",
       "userMessage": "چجوری وارد v2rayNG کنم؟",
       "normalizedMessage": "چجوری وارد v2rayNG کنم؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -2074,7 +2074,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 17,
-      "timestamp": "2026-08-21T21:46:09.325Z",
+      "timestamp": "2026-08-21T22:11:45.116Z",
       "userMessage": "سرور هلند خلوت تر نیست؟",
       "normalizedMessage": "سرور هلند خلوت تر نیست؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -2128,7 +2128,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 18,
-      "timestamp": "2026-08-21T21:46:09.326Z",
+      "timestamp": "2026-08-21T22:11:45.116Z",
       "userMessage": "چجوری وارد v2rayNG کنم؟",
       "normalizedMessage": "چجوری وارد v2rayNG کنم؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -2182,7 +2182,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 19,
-      "timestamp": "2026-08-21T21:46:09.326Z",
+      "timestamp": "2026-08-21T22:11:45.116Z",
       "userMessage": "سرور هلند خلوت تر نیست؟",
       "normalizedMessage": "سرور هلند خلوت تر نیست؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -2236,7 +2236,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 20,
-      "timestamp": "2026-08-21T21:46:09.326Z",
+      "timestamp": "2026-08-21T22:11:45.117Z",
       "userMessage": "چجوری وارد v2rayNG کنم؟",
       "normalizedMessage": "چجوری وارد v2rayNG کنم؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -2290,7 +2290,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 21,
-      "timestamp": "2026-08-21T21:46:09.326Z",
+      "timestamp": "2026-08-21T22:11:45.117Z",
       "userMessage": "دستت درد نکنه خیلی کمکم کردی",
       "normalizedMessage": "دستت درد نکنه خیلی کمکم کردی",
       "previousState": "SUPPORT_HANDOFF",
@@ -2344,7 +2344,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 22,
-      "timestamp": "2026-08-21T21:46:09.326Z",
+      "timestamp": "2026-08-21T22:11:45.117Z",
       "userMessage": "خداحافظ شما",
       "normalizedMessage": "خداحافظ شما",
       "previousState": "SUPPORT_HANDOFF",
@@ -2398,7 +2398,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 23,
-      "timestamp": "2026-08-21T21:46:09.326Z",
+      "timestamp": "2026-08-21T22:11:45.117Z",
       "userMessage": "مرسی بای",
       "normalizedMessage": "مرسی بای",
       "previousState": "GOODBYE",
@@ -2452,7 +2452,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 24,
-      "timestamp": "2026-08-21T21:46:09.326Z",
+      "timestamp": "2026-08-21T22:11:45.118Z",
       "userMessage": "خداحافظ",
       "normalizedMessage": "خداحافظ",
       "previousState": "EXITING",
@@ -2506,7 +2506,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 25,
-      "timestamp": "2026-08-21T21:46:09.326Z",
+      "timestamp": "2026-08-21T22:11:45.118Z",
       "userMessage": "مرسی بای",
       "normalizedMessage": "مرسی بای",
       "previousState": "EXITING",
@@ -2560,7 +2560,7 @@
     {
       "conversationId": "step56-long-conv-0",
       "turnId": 26,
-      "timestamp": "2026-08-21T21:46:09.326Z",
+      "timestamp": "2026-08-21T22:11:45.118Z",
       "userMessage": "خداحافظ",
       "normalizedMessage": "خداحافظ",
       "previousState": "EXITING",
@@ -2614,7 +2614,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 1,
-      "timestamp": "2026-08-21T21:46:09.327Z",
+      "timestamp": "2026-08-21T22:11:45.118Z",
       "userMessage": "سلام وقت بخیر",
       "normalizedMessage": "سلام وقت بخیر",
       "previousState": "INITIAL_GREETING",
@@ -2668,7 +2668,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 2,
-      "timestamp": "2026-08-21T21:46:09.327Z",
+      "timestamp": "2026-08-21T22:11:45.118Z",
       "userMessage": "اینترنتم خیلی کنده هیچ سایتی باز نمیشه",
       "normalizedMessage": "اینترنتم خیلی کنده هیچ سایتی باز نمیشه",
       "previousState": "EARLY_CONVERSATION",
@@ -2722,7 +2722,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 3,
-      "timestamp": "2026-08-21T21:46:09.327Z",
+      "timestamp": "2026-08-21T22:11:45.119Z",
       "userMessage": "سرورهای شما قطعی نداره روی همراه اول؟",
       "normalizedMessage": "سرورهای شما قطعی نداره روی همراه اول؟",
       "previousState": "NEED_DETECTED",
@@ -2776,7 +2776,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 4,
-      "timestamp": "2026-08-21T21:46:09.327Z",
+      "timestamp": "2026-08-21T22:11:45.119Z",
       "userMessage": "قیمت پلن ها چقدره؟",
       "normalizedMessage": "قیمت پلن ها چقدره؟",
       "previousState": "PRODUCT_INTRODUCTION",
@@ -2834,7 +2834,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 5,
-      "timestamp": "2026-08-21T21:46:09.328Z",
+      "timestamp": "2026-08-21T22:11:45.119Z",
       "userMessage": "یکمی گرونه، تخفیف ندارین؟",
       "normalizedMessage": "یکمی گرونه، تخفیف ندارین؟",
       "previousState": "PRICE_DISCUSSION",
@@ -2888,7 +2888,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 6,
-      "timestamp": "2026-08-21T21:46:09.328Z",
+      "timestamp": "2026-08-21T22:11:45.120Z",
       "userMessage": "اصلا نمیخوام مرسی منصرف شدم",
       "normalizedMessage": "اصلا نمیخوام مرسی منصرف شدم",
       "previousState": "OBJECTION_HANDLING",
@@ -2942,7 +2942,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 7,
-      "timestamp": "2026-08-21T21:46:09.328Z",
+      "timestamp": "2026-08-21T22:11:45.120Z",
       "userMessage": "پشتیبانی تا ساعت چند هست؟",
       "normalizedMessage": "پشتیبانی تا ساعت چند هست؟",
       "previousState": "REJECTED",
@@ -2996,7 +2996,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 8,
-      "timestamp": "2026-08-21T21:46:09.328Z",
+      "timestamp": "2026-08-21T22:11:45.120Z",
       "userMessage": "چخبر دیگه؟",
       "normalizedMessage": "چخبر دیگه؟",
       "previousState": "REJECTED",
@@ -3050,7 +3050,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 9,
-      "timestamp": "2026-08-21T21:46:09.328Z",
+      "timestamp": "2026-08-21T22:11:45.120Z",
       "userMessage": "پشتیبانی تا ساعت چند هست؟",
       "normalizedMessage": "پشتیبانی تا ساعت چند هست؟",
       "previousState": "REJECTED",
@@ -3104,7 +3104,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 10,
-      "timestamp": "2026-08-21T21:46:09.328Z",
+      "timestamp": "2026-08-21T22:11:45.120Z",
       "userMessage": "چخبر دیگه؟",
       "normalizedMessage": "چخبر دیگه؟",
       "previousState": "REJECTED",
@@ -3158,7 +3158,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 11,
-      "timestamp": "2026-08-21T21:46:09.328Z",
+      "timestamp": "2026-08-21T22:11:45.121Z",
       "userMessage": "پشتیبانی تا ساعت چند هست؟",
       "normalizedMessage": "پشتیبانی تا ساعت چند هست؟",
       "previousState": "REJECTED",
@@ -3212,7 +3212,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 12,
-      "timestamp": "2026-08-21T21:46:09.328Z",
+      "timestamp": "2026-08-21T22:11:45.121Z",
       "userMessage": "چخبر دیگه؟",
       "normalizedMessage": "چخبر دیگه؟",
       "previousState": "REJECTED",
@@ -3266,7 +3266,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 13,
-      "timestamp": "2026-08-21T21:46:09.328Z",
+      "timestamp": "2026-08-21T22:11:45.121Z",
       "userMessage": "باشه فکرهامو کردم، لطفا شرایط پلن ها و قیمت رو دوباره بگو",
       "normalizedMessage": "باشه فکرهامو کردم، لطفا شرایط پلن ها و قیمت رو دوباره بگو",
       "previousState": "REJECTED",
@@ -3320,7 +3320,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 14,
-      "timestamp": "2026-08-21T21:46:09.329Z",
+      "timestamp": "2026-08-21T22:11:45.122Z",
       "userMessage": "شماره کارت بده ۵۰۰ تومن واریز کنم",
       "normalizedMessage": "شماره کارت بده ۵۰۰ تومن واریز کنم",
       "previousState": "PRODUCT_INTEREST",
@@ -3374,7 +3374,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 15,
-      "timestamp": "2026-08-21T21:46:09.329Z",
+      "timestamp": "2026-08-21T22:11:45.122Z",
       "userMessage": "سرور هلند خلوت تر نیست؟",
       "normalizedMessage": "سرور هلند خلوت تر نیست؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -3428,7 +3428,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 16,
-      "timestamp": "2026-08-21T21:46:09.329Z",
+      "timestamp": "2026-08-21T22:11:45.122Z",
       "userMessage": "چجوری وارد v2rayNG کنم؟",
       "normalizedMessage": "چجوری وارد v2rayNG کنم؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -3482,7 +3482,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 17,
-      "timestamp": "2026-08-21T21:46:09.329Z",
+      "timestamp": "2026-08-21T22:11:45.122Z",
       "userMessage": "سرور هلند خلوت تر نیست؟",
       "normalizedMessage": "سرور هلند خلوت تر نیست؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -3536,7 +3536,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 18,
-      "timestamp": "2026-08-21T21:46:09.329Z",
+      "timestamp": "2026-08-21T22:11:45.123Z",
       "userMessage": "چجوری وارد v2rayNG کنم؟",
       "normalizedMessage": "چجوری وارد v2rayNG کنم؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -3590,7 +3590,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 19,
-      "timestamp": "2026-08-21T21:46:09.329Z",
+      "timestamp": "2026-08-21T22:11:45.123Z",
       "userMessage": "سرور هلند خلوت تر نیست؟",
       "normalizedMessage": "سرور هلند خلوت تر نیست؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -3644,7 +3644,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 20,
-      "timestamp": "2026-08-21T21:46:09.329Z",
+      "timestamp": "2026-08-21T22:11:45.123Z",
       "userMessage": "چجوری وارد v2rayNG کنم؟",
       "normalizedMessage": "چجوری وارد v2rayNG کنم؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -3698,7 +3698,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 21,
-      "timestamp": "2026-08-21T21:46:09.329Z",
+      "timestamp": "2026-08-21T22:11:45.123Z",
       "userMessage": "دستت درد نکنه خیلی کمکم کردی",
       "normalizedMessage": "دستت درد نکنه خیلی کمکم کردی",
       "previousState": "SUPPORT_HANDOFF",
@@ -3752,7 +3752,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 22,
-      "timestamp": "2026-08-21T21:46:09.329Z",
+      "timestamp": "2026-08-21T22:11:45.123Z",
       "userMessage": "خداحافظ شما",
       "normalizedMessage": "خداحافظ شما",
       "previousState": "SUPPORT_HANDOFF",
@@ -3806,7 +3806,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 23,
-      "timestamp": "2026-08-21T21:46:09.329Z",
+      "timestamp": "2026-08-21T22:11:45.124Z",
       "userMessage": "مرسی بای",
       "normalizedMessage": "مرسی بای",
       "previousState": "GOODBYE",
@@ -3860,7 +3860,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 24,
-      "timestamp": "2026-08-21T21:46:09.330Z",
+      "timestamp": "2026-08-21T22:11:45.124Z",
       "userMessage": "خداحافظ",
       "normalizedMessage": "خداحافظ",
       "previousState": "EXITING",
@@ -3914,7 +3914,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 25,
-      "timestamp": "2026-08-21T21:46:09.330Z",
+      "timestamp": "2026-08-21T22:11:45.124Z",
       "userMessage": "مرسی بای",
       "normalizedMessage": "مرسی بای",
       "previousState": "EXITING",
@@ -3968,7 +3968,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 26,
-      "timestamp": "2026-08-21T21:46:09.330Z",
+      "timestamp": "2026-08-21T22:11:45.125Z",
       "userMessage": "خداحافظ",
       "normalizedMessage": "خداحافظ",
       "previousState": "EXITING",
@@ -4022,7 +4022,7 @@
     {
       "conversationId": "step56-long-conv-1",
       "turnId": 27,
-      "timestamp": "2026-08-21T21:46:09.330Z",
+      "timestamp": "2026-08-21T22:11:45.125Z",
       "userMessage": "مرسی بای",
       "normalizedMessage": "مرسی بای",
       "previousState": "EXITING",
@@ -4076,7 +4076,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 1,
-      "timestamp": "2026-08-21T21:46:09.330Z",
+      "timestamp": "2026-08-21T22:11:45.125Z",
       "userMessage": "سلام وقت بخیر",
       "normalizedMessage": "سلام وقت بخیر",
       "previousState": "INITIAL_GREETING",
@@ -4130,7 +4130,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 2,
-      "timestamp": "2026-08-21T21:46:09.330Z",
+      "timestamp": "2026-08-21T22:11:45.125Z",
       "userMessage": "اینترنتم خیلی کنده هیچ سایتی باز نمیشه",
       "normalizedMessage": "اینترنتم خیلی کنده هیچ سایتی باز نمیشه",
       "previousState": "EARLY_CONVERSATION",
@@ -4184,7 +4184,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 3,
-      "timestamp": "2026-08-21T21:46:09.330Z",
+      "timestamp": "2026-08-21T22:11:45.125Z",
       "userMessage": "سرورهای شما قطعی نداره روی همراه اول؟",
       "normalizedMessage": "سرورهای شما قطعی نداره روی همراه اول؟",
       "previousState": "NEED_DETECTED",
@@ -4238,7 +4238,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 4,
-      "timestamp": "2026-08-21T21:46:09.330Z",
+      "timestamp": "2026-08-21T22:11:45.126Z",
       "userMessage": "قیمت پلن ها چقدره؟",
       "normalizedMessage": "قیمت پلن ها چقدره؟",
       "previousState": "PRODUCT_INTRODUCTION",
@@ -4296,7 +4296,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 5,
-      "timestamp": "2026-08-21T21:46:09.330Z",
+      "timestamp": "2026-08-21T22:11:45.126Z",
       "userMessage": "یکمی گرونه، تخفیف ندارین؟",
       "normalizedMessage": "یکمی گرونه، تخفیف ندارین؟",
       "previousState": "PRICE_DISCUSSION",
@@ -4350,7 +4350,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 6,
-      "timestamp": "2026-08-21T21:46:09.330Z",
+      "timestamp": "2026-08-21T22:11:45.126Z",
       "userMessage": "اصلا نمیخوام مرسی منصرف شدم",
       "normalizedMessage": "اصلا نمیخوام مرسی منصرف شدم",
       "previousState": "OBJECTION_HANDLING",
@@ -4404,7 +4404,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 7,
-      "timestamp": "2026-08-21T21:46:09.331Z",
+      "timestamp": "2026-08-21T22:11:45.126Z",
       "userMessage": "پشتیبانی تا ساعت چند هست؟",
       "normalizedMessage": "پشتیبانی تا ساعت چند هست؟",
       "previousState": "REJECTED",
@@ -4458,7 +4458,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 8,
-      "timestamp": "2026-08-21T21:46:09.331Z",
+      "timestamp": "2026-08-21T22:11:45.126Z",
       "userMessage": "چخبر دیگه؟",
       "normalizedMessage": "چخبر دیگه؟",
       "previousState": "REJECTED",
@@ -4512,7 +4512,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 9,
-      "timestamp": "2026-08-21T21:46:09.331Z",
+      "timestamp": "2026-08-21T22:11:45.126Z",
       "userMessage": "پشتیبانی تا ساعت چند هست؟",
       "normalizedMessage": "پشتیبانی تا ساعت چند هست؟",
       "previousState": "REJECTED",
@@ -4566,7 +4566,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 10,
-      "timestamp": "2026-08-21T21:46:09.331Z",
+      "timestamp": "2026-08-21T22:11:45.126Z",
       "userMessage": "چخبر دیگه؟",
       "normalizedMessage": "چخبر دیگه؟",
       "previousState": "REJECTED",
@@ -4620,7 +4620,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 11,
-      "timestamp": "2026-08-21T21:46:09.331Z",
+      "timestamp": "2026-08-21T22:11:45.127Z",
       "userMessage": "پشتیبانی تا ساعت چند هست؟",
       "normalizedMessage": "پشتیبانی تا ساعت چند هست؟",
       "previousState": "REJECTED",
@@ -4674,7 +4674,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 12,
-      "timestamp": "2026-08-21T21:46:09.331Z",
+      "timestamp": "2026-08-21T22:11:45.127Z",
       "userMessage": "چخبر دیگه؟",
       "normalizedMessage": "چخبر دیگه؟",
       "previousState": "REJECTED",
@@ -4728,7 +4728,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 13,
-      "timestamp": "2026-08-21T21:46:09.331Z",
+      "timestamp": "2026-08-21T22:11:45.127Z",
       "userMessage": "باشه فکرهامو کردم، لطفا شرایط پلن ها و قیمت رو دوباره بگو",
       "normalizedMessage": "باشه فکرهامو کردم، لطفا شرایط پلن ها و قیمت رو دوباره بگو",
       "previousState": "REJECTED",
@@ -4782,7 +4782,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 14,
-      "timestamp": "2026-08-21T21:46:09.331Z",
+      "timestamp": "2026-08-21T22:11:45.127Z",
       "userMessage": "شماره کارت بده ۵۰۰ تومن واریز کنم",
       "normalizedMessage": "شماره کارت بده ۵۰۰ تومن واریز کنم",
       "previousState": "PRODUCT_INTEREST",
@@ -4836,7 +4836,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 15,
-      "timestamp": "2026-08-21T21:46:09.331Z",
+      "timestamp": "2026-08-21T22:11:45.127Z",
       "userMessage": "سرور هلند خلوت تر نیست؟",
       "normalizedMessage": "سرور هلند خلوت تر نیست؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -4890,7 +4890,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 16,
-      "timestamp": "2026-08-21T21:46:09.332Z",
+      "timestamp": "2026-08-21T22:11:45.127Z",
       "userMessage": "چجوری وارد v2rayNG کنم؟",
       "normalizedMessage": "چجوری وارد v2rayNG کنم؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -4944,7 +4944,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 17,
-      "timestamp": "2026-08-21T21:46:09.332Z",
+      "timestamp": "2026-08-21T22:11:45.128Z",
       "userMessage": "سرور هلند خلوت تر نیست؟",
       "normalizedMessage": "سرور هلند خلوت تر نیست؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -4998,7 +4998,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 18,
-      "timestamp": "2026-08-21T21:46:09.332Z",
+      "timestamp": "2026-08-21T22:11:45.128Z",
       "userMessage": "چجوری وارد v2rayNG کنم؟",
       "normalizedMessage": "چجوری وارد v2rayNG کنم؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -5052,7 +5052,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 19,
-      "timestamp": "2026-08-21T21:46:09.332Z",
+      "timestamp": "2026-08-21T22:11:45.128Z",
       "userMessage": "سرور هلند خلوت تر نیست؟",
       "normalizedMessage": "سرور هلند خلوت تر نیست؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -5106,7 +5106,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 20,
-      "timestamp": "2026-08-21T21:46:09.332Z",
+      "timestamp": "2026-08-21T22:11:45.128Z",
       "userMessage": "چجوری وارد v2rayNG کنم؟",
       "normalizedMessage": "چجوری وارد v2rayNG کنم؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -5160,7 +5160,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 21,
-      "timestamp": "2026-08-21T21:46:09.332Z",
+      "timestamp": "2026-08-21T22:11:45.128Z",
       "userMessage": "دستت درد نکنه خیلی کمکم کردی",
       "normalizedMessage": "دستت درد نکنه خیلی کمکم کردی",
       "previousState": "SUPPORT_HANDOFF",
@@ -5214,7 +5214,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 22,
-      "timestamp": "2026-08-21T21:46:09.332Z",
+      "timestamp": "2026-08-21T22:11:45.128Z",
       "userMessage": "خداحافظ شما",
       "normalizedMessage": "خداحافظ شما",
       "previousState": "SUPPORT_HANDOFF",
@@ -5268,7 +5268,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 23,
-      "timestamp": "2026-08-21T21:46:09.332Z",
+      "timestamp": "2026-08-21T22:11:45.128Z",
       "userMessage": "مرسی بای",
       "normalizedMessage": "مرسی بای",
       "previousState": "GOODBYE",
@@ -5322,7 +5322,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 24,
-      "timestamp": "2026-08-21T21:46:09.332Z",
+      "timestamp": "2026-08-21T22:11:45.129Z",
       "userMessage": "خداحافظ",
       "normalizedMessage": "خداحافظ",
       "previousState": "EXITING",
@@ -5376,7 +5376,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 25,
-      "timestamp": "2026-08-21T21:46:09.332Z",
+      "timestamp": "2026-08-21T22:11:45.129Z",
       "userMessage": "مرسی بای",
       "normalizedMessage": "مرسی بای",
       "previousState": "EXITING",
@@ -5430,7 +5430,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 26,
-      "timestamp": "2026-08-21T21:46:09.332Z",
+      "timestamp": "2026-08-21T22:11:45.129Z",
       "userMessage": "خداحافظ",
       "normalizedMessage": "خداحافظ",
       "previousState": "EXITING",
@@ -5484,7 +5484,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 27,
-      "timestamp": "2026-08-21T21:46:09.332Z",
+      "timestamp": "2026-08-21T22:11:45.129Z",
       "userMessage": "مرسی بای",
       "normalizedMessage": "مرسی بای",
       "previousState": "EXITING",
@@ -5538,7 +5538,7 @@
     {
       "conversationId": "step56-long-conv-2",
       "turnId": 28,
-      "timestamp": "2026-08-21T21:46:09.332Z",
+      "timestamp": "2026-08-21T22:11:45.129Z",
       "userMessage": "خداحافظ",
       "normalizedMessage": "خداحافظ",
       "previousState": "EXITING",
@@ -5592,7 +5592,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 1,
-      "timestamp": "2026-08-21T21:46:09.333Z",
+      "timestamp": "2026-08-21T22:11:45.129Z",
       "userMessage": "سلام وقت بخیر",
       "normalizedMessage": "سلام وقت بخیر",
       "previousState": "INITIAL_GREETING",
@@ -5646,7 +5646,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 2,
-      "timestamp": "2026-08-21T21:46:09.333Z",
+      "timestamp": "2026-08-21T22:11:45.129Z",
       "userMessage": "اینترنتم خیلی کنده هیچ سایتی باز نمیشه",
       "normalizedMessage": "اینترنتم خیلی کنده هیچ سایتی باز نمیشه",
       "previousState": "EARLY_CONVERSATION",
@@ -5700,7 +5700,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 3,
-      "timestamp": "2026-08-21T21:46:09.333Z",
+      "timestamp": "2026-08-21T22:11:45.130Z",
       "userMessage": "سرورهای شما قطعی نداره روی همراه اول؟",
       "normalizedMessage": "سرورهای شما قطعی نداره روی همراه اول؟",
       "previousState": "NEED_DETECTED",
@@ -5754,7 +5754,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 4,
-      "timestamp": "2026-08-21T21:46:09.333Z",
+      "timestamp": "2026-08-21T22:11:45.130Z",
       "userMessage": "قیمت پلن ها چقدره؟",
       "normalizedMessage": "قیمت پلن ها چقدره؟",
       "previousState": "PRODUCT_INTRODUCTION",
@@ -5812,7 +5812,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 5,
-      "timestamp": "2026-08-21T21:46:09.333Z",
+      "timestamp": "2026-08-21T22:11:45.130Z",
       "userMessage": "یکمی گرونه، تخفیف ندارین؟",
       "normalizedMessage": "یکمی گرونه، تخفیف ندارین؟",
       "previousState": "PRICE_DISCUSSION",
@@ -5866,7 +5866,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 6,
-      "timestamp": "2026-08-21T21:46:09.333Z",
+      "timestamp": "2026-08-21T22:11:45.130Z",
       "userMessage": "اصلا نمیخوام مرسی منصرف شدم",
       "normalizedMessage": "اصلا نمیخوام مرسی منصرف شدم",
       "previousState": "OBJECTION_HANDLING",
@@ -5920,7 +5920,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 7,
-      "timestamp": "2026-08-21T21:46:09.333Z",
+      "timestamp": "2026-08-21T22:11:45.130Z",
       "userMessage": "پشتیبانی تا ساعت چند هست؟",
       "normalizedMessage": "پشتیبانی تا ساعت چند هست؟",
       "previousState": "REJECTED",
@@ -5974,7 +5974,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 8,
-      "timestamp": "2026-08-21T21:46:09.333Z",
+      "timestamp": "2026-08-21T22:11:45.133Z",
       "userMessage": "چخبر دیگه؟",
       "normalizedMessage": "چخبر دیگه؟",
       "previousState": "REJECTED",
@@ -6028,7 +6028,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 9,
-      "timestamp": "2026-08-21T21:46:09.333Z",
+      "timestamp": "2026-08-21T22:11:45.133Z",
       "userMessage": "پشتیبانی تا ساعت چند هست؟",
       "normalizedMessage": "پشتیبانی تا ساعت چند هست؟",
       "previousState": "REJECTED",
@@ -6082,7 +6082,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 10,
-      "timestamp": "2026-08-21T21:46:09.333Z",
+      "timestamp": "2026-08-21T22:11:45.134Z",
       "userMessage": "چخبر دیگه؟",
       "normalizedMessage": "چخبر دیگه؟",
       "previousState": "REJECTED",
@@ -6136,7 +6136,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 11,
-      "timestamp": "2026-08-21T21:46:09.333Z",
+      "timestamp": "2026-08-21T22:11:45.134Z",
       "userMessage": "پشتیبانی تا ساعت چند هست؟",
       "normalizedMessage": "پشتیبانی تا ساعت چند هست؟",
       "previousState": "REJECTED",
@@ -6190,7 +6190,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 12,
-      "timestamp": "2026-08-21T21:46:09.333Z",
+      "timestamp": "2026-08-21T22:11:45.134Z",
       "userMessage": "چخبر دیگه؟",
       "normalizedMessage": "چخبر دیگه؟",
       "previousState": "REJECTED",
@@ -6244,7 +6244,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 13,
-      "timestamp": "2026-08-21T21:46:09.333Z",
+      "timestamp": "2026-08-21T22:11:45.134Z",
       "userMessage": "باشه فکرهامو کردم، لطفا شرایط پلن ها و قیمت رو دوباره بگو",
       "normalizedMessage": "باشه فکرهامو کردم، لطفا شرایط پلن ها و قیمت رو دوباره بگو",
       "previousState": "REJECTED",
@@ -6298,7 +6298,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 14,
-      "timestamp": "2026-08-21T21:46:09.334Z",
+      "timestamp": "2026-08-21T22:11:45.134Z",
       "userMessage": "شماره کارت بده ۵۰۰ تومن واریز کنم",
       "normalizedMessage": "شماره کارت بده ۵۰۰ تومن واریز کنم",
       "previousState": "PRODUCT_INTEREST",
@@ -6352,7 +6352,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 15,
-      "timestamp": "2026-08-21T21:46:09.334Z",
+      "timestamp": "2026-08-21T22:11:45.134Z",
       "userMessage": "سرور هلند خلوت تر نیست؟",
       "normalizedMessage": "سرور هلند خلوت تر نیست؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -6406,7 +6406,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 16,
-      "timestamp": "2026-08-21T21:46:09.334Z",
+      "timestamp": "2026-08-21T22:11:45.135Z",
       "userMessage": "چجوری وارد v2rayNG کنم؟",
       "normalizedMessage": "چجوری وارد v2rayNG کنم؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -6460,7 +6460,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 17,
-      "timestamp": "2026-08-21T21:46:09.334Z",
+      "timestamp": "2026-08-21T22:11:45.135Z",
       "userMessage": "سرور هلند خلوت تر نیست؟",
       "normalizedMessage": "سرور هلند خلوت تر نیست؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -6514,7 +6514,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 18,
-      "timestamp": "2026-08-21T21:46:09.334Z",
+      "timestamp": "2026-08-21T22:11:45.135Z",
       "userMessage": "چجوری وارد v2rayNG کنم؟",
       "normalizedMessage": "چجوری وارد v2rayNG کنم؟",
       "previousState": "SUPPORT_HANDOFF",
@@ -6568,7 +6568,7 @@
     {
       "conversationId": "step56-long-conv-3",
       "turnId": 19,
-      "timestamp": "2026-08-21T21:46:09.334Z",
+      "timestamp": "2026-08-21T22:11:45.135Z",
       "userMessage": "سرور هلند خلوت تر نیست؟",
       "normalizedMessage": "سرور هلند خلوت تر نیست؟",
       "previousState": "SUPPORT_HANDOFF",

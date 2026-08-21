@@ -68,6 +68,15 @@ export class AnalyticsTracker {
     this.storage = storage || new InMemoryStorageAdapter();
   }
 
+  public getStorage(): AnalyticsStorageAdapter {
+    return this.storage;
+  }
+
+  public getAllEvents(): AnalyticsEvent[] {
+    const res = this.storage.getAllEvents();
+    return Array.isArray(res) ? res : [];
+  }
+
   /**
    * Tracks an arbitrary structured analytics event
    */
