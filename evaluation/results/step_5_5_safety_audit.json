@@ -1,6 +1,6 @@
 {
   "totalCases": 100,
-  "accuracy": 1,
+  "accuracy": 0.99,
   "inappropriateFN": 0,
   "spamFN": 0,
   "rejectionFN": 0,

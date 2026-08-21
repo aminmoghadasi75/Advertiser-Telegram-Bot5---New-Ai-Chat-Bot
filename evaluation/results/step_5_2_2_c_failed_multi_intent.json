@@ -1,20 +1,36 @@
 [
   {
+    "caseId": "holdout_012",
+    "inputText": "من ۲۸ سالمه ساکن کرجم، تو چند سالته؟",
+    "expectedPrimary": "SMALL_TALK",
+    "expectedSecondary": [
+      "QUESTION"
+    ],
+    "predictedPrimary": "QUESTION",
+    "predictedSecondary": [],
+    "mismatchType": "BOTH_PRIMARY_AND_SECONDARY_MISMATCH",
+    "confidence": 0.95,
+    "reasonCodes": [
+      "GENERAL_QUESTION_PRIMARY",
+      "GENERAL_CONVERSATION_QUESTION"
+    ]
+  },
+  {
     "caseId": "holdout_043",
     "inputText": "برای ترید و صرافی بایننس به یه آیپی بدون قطعی نیاز دارم وگرنه حسابم بسته میشه",
     "expectedPrimary": "RELEVANT_NEED",
     "expectedSecondary": [
       "PRODUCT_CURIOUS"
     ],
-    "predictedPrimary": "RELEVANT_NEED",
+    "predictedPrimary": "PRODUCT_CURIOUS",
     "predictedSecondary": [
       "GOODBYE"
     ],
-    "mismatchType": "SECONDARY_MISMATCH",
-    "confidence": 0.88,
+    "mismatchType": "BOTH_PRIMARY_AND_SECONDARY_MISMATCH",
+    "confidence": 0.9,
     "reasonCodes": [
       "ACTIONABLE_COMMERCIAL_OVERRIDE",
-      "PAIN_POINT_NEED_DETECTED"
+      "PRODUCT_FEATURE_AND_COMPATIBILITY_INQUIRY"
     ]
   },
   {
@@ -31,6 +47,22 @@
     "reasonCodes": [
       "SMALL_TALK_PRIMARY",
       "SMALL_TALK_PERSONAL_SHARING"
+    ]
+  },
+  {
+    "caseId": "holdout_055",
+    "inputText": "یه vpn میخوام که راحت روی ویندوز لپ‌تاپم ست بشه",
+    "expectedPrimary": "VPN_REQUEST",
+    "expectedSecondary": [
+      "PRODUCT_CURIOUS"
+    ],
+    "predictedPrimary": "OFF_TOPIC",
+    "predictedSecondary": [],
+    "mismatchType": "BOTH_PRIMARY_AND_SECONDARY_MISMATCH",
+    "confidence": 0.92,
+    "reasonCodes": [
+      "OFF_TOPIC_POSITIVE_OVERRIDE",
+      "OFF_TOPIC_BY_POSITIVE_EVIDENCE"
     ]
   },
   {
@@ -110,16 +142,15 @@
     "expectedSecondary": [
       "OBJECTION"
     ],
-    "predictedPrimary": "OBJECTION",
+    "predictedPrimary": "PRICE_REQUEST",
     "predictedSecondary": [
-      "PRICE_REQUEST"
+      "PLAN_REQUEST"
     ],
-    "mismatchType": "BOTH_PRIMARY_AND_SECONDARY_MISMATCH",
-    "confidence": 0.92,
+    "mismatchType": "SECONDARY_MISMATCH",
+    "confidence": 0.94,
     "reasonCodes": [
-      "STRONG_OBJECTION_OVERRIDE",
-      "OBJECTION_DETECTED",
-      "OBJECTION_PRICE_RESISTANCE"
+      "ACTIONABLE_COMMERCIAL_OVERRIDE",
+      "DIRECT_PRICE_QUERY"
     ]
   },
   {

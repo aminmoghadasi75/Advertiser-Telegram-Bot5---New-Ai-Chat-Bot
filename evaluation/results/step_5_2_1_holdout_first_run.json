@@ -81,16 +81,16 @@
     "confidence": 0.9,
     "rawCandidates": [
       {
+        "intent": "SMALL_TALK",
+        "score": 0.95
+      },
+      {
         "intent": "GREETING",
         "score": 0.9
       },
       {
-        "intent": "SMALL_TALK",
-        "score": 0.9
-      },
-      {
         "intent": "QUESTION",
-        "score": 0.85
+        "score": 0.5
       }
     ],
     "match": true,
@@ -153,16 +153,16 @@
     "confidence": 0.9,
     "rawCandidates": [
       {
+        "intent": "SMALL_TALK",
+        "score": 0.95
+      },
+      {
         "intent": "GREETING",
         "score": 0.9
       },
       {
-        "intent": "SMALL_TALK",
-        "score": 0.9
-      },
-      {
         "intent": "QUESTION",
-        "score": 0.85
+        "score": 0.5
       }
     ],
     "match": true,
@@ -186,25 +186,24 @@
     },
     "groundTruthPrimary": "GREETING",
     "groundTruthSecondary": [],
-    "predictedPrimary": "GOODBYE",
+    "predictedPrimary": "GREETING",
     "predictedSecondary": [],
-    "confidence": 0.94,
+    "confidence": 0.98,
     "rawCandidates": [
       {
-        "intent": "GOODBYE",
-        "score": 0.94
+        "intent": "GREETING",
+        "score": 0.98
       },
       {
-        "intent": "GREETING",
-        "score": 0.9
+        "intent": "GOODBYE",
+        "score": 0.1
       }
     ],
-    "match": false,
+    "match": true,
     "secondaryExactMatch": true,
     "secondaryPrecision": 1,
     "secondaryRecall": 1,
     "criticalError": false,
-    "errorType": "INTENT_MISCLASSIFICATION",
     "category": "GREETING",
     "difficulty": "easy"
   },
@@ -385,26 +384,25 @@
     "groundTruthSecondary": [
       "QUESTION"
     ],
-    "predictedPrimary": "SMALL_TALK",
-    "predictedSecondary": [
-      "QUESTION"
-    ],
-    "confidence": 0.9,
+    "predictedPrimary": "QUESTION",
+    "predictedSecondary": [],
+    "confidence": 0.95,
     "rawCandidates": [
       {
-        "intent": "SMALL_TALK",
-        "score": 0.9
+        "intent": "QUESTION",
+        "score": 0.95
       },
       {
-        "intent": "QUESTION",
-        "score": 0.85
+        "intent": "SMALL_TALK",
+        "score": 0.5
       }
     ],
-    "match": true,
-    "secondaryExactMatch": true,
-    "secondaryPrecision": 1,
-    "secondaryRecall": 1,
+    "match": false,
+    "secondaryExactMatch": false,
+    "secondaryPrecision": 0,
+    "secondaryRecall": 0,
     "criticalError": false,
+    "errorType": "INTENT_MISCLASSIFICATION",
     "category": "SMALL_TALK",
     "difficulty": "medium"
   },
@@ -897,20 +895,27 @@
     },
     "groundTruthPrimary": "QUESTION",
     "groundTruthSecondary": [],
-    "predictedPrimary": "QUESTION",
-    "predictedSecondary": [],
-    "confidence": 0.85,
+    "predictedPrimary": "SUSPICION_BOT",
+    "predictedSecondary": [
+      "QUESTION"
+    ],
+    "confidence": 0.92,
     "rawCandidates": [
+      {
+        "intent": "SUSPICION_BOT",
+        "score": 0.92
+      },
       {
         "intent": "QUESTION",
         "score": 0.85
       }
     ],
-    "match": true,
-    "secondaryExactMatch": true,
-    "secondaryPrecision": 1,
+    "match": false,
+    "secondaryExactMatch": false,
+    "secondaryPrecision": 0,
     "secondaryRecall": 1,
     "criticalError": false,
+    "errorType": "INTENT_MISCLASSIFICATION",
     "category": "QUESTION",
     "difficulty": "medium"
   },
@@ -1152,11 +1157,15 @@
     "groundTruthSecondary": [],
     "predictedPrimary": "RELEVANT_NEED",
     "predictedSecondary": [],
-    "confidence": 0.88,
+    "confidence": 0.95,
     "rawCandidates": [
       {
         "intent": "RELEVANT_NEED",
-        "score": 0.88
+        "score": 0.95
+      },
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.5
       }
     ],
     "match": true,
@@ -1184,16 +1193,21 @@
     },
     "groundTruthPrimary": "RELEVANT_NEED",
     "groundTruthSecondary": [],
-    "predictedPrimary": "UNKNOWN",
+    "predictedPrimary": "PRODUCT_CURIOUS",
     "predictedSecondary": [],
-    "confidence": 0.6,
-    "rawCandidates": [],
+    "confidence": 0.9,
+    "rawCandidates": [
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      }
+    ],
     "match": false,
     "secondaryExactMatch": true,
     "secondaryPrecision": 1,
     "secondaryRecall": 1,
     "criticalError": false,
-    "errorType": "INTENT_MISCLASSIFICATION",
+    "errorType": "COMMERCIAL_FALSE_POSITIVE",
     "category": "RELEVANT_NEED",
     "difficulty": "medium"
   },
@@ -1210,20 +1224,27 @@
     },
     "groundTruthPrimary": "RELEVANT_NEED",
     "groundTruthSecondary": [],
-    "predictedPrimary": "RELEVANT_NEED",
-    "predictedSecondary": [],
-    "confidence": 0.88,
+    "predictedPrimary": "PRODUCT_CURIOUS",
+    "predictedSecondary": [
+      "RELEVANT_NEED"
+    ],
+    "confidence": 0.9,
     "rawCandidates": [
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      },
       {
         "intent": "RELEVANT_NEED",
         "score": 0.88
       }
     ],
-    "match": true,
-    "secondaryExactMatch": true,
-    "secondaryPrecision": 1,
+    "match": false,
+    "secondaryExactMatch": false,
+    "secondaryPrecision": 0,
     "secondaryRecall": 1,
     "criticalError": false,
+    "errorType": "COMMERCIAL_FALSE_POSITIVE",
     "category": "RELEVANT_NEED",
     "difficulty": "easy"
   },
@@ -1240,16 +1261,21 @@
     },
     "groundTruthPrimary": "RELEVANT_NEED",
     "groundTruthSecondary": [],
-    "predictedPrimary": "UNKNOWN",
+    "predictedPrimary": "PRODUCT_CURIOUS",
     "predictedSecondary": [],
-    "confidence": 0.6,
-    "rawCandidates": [],
+    "confidence": 0.9,
+    "rawCandidates": [
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      }
+    ],
     "match": false,
     "secondaryExactMatch": true,
     "secondaryPrecision": 1,
     "secondaryRecall": 1,
     "criticalError": false,
-    "errorType": "INTENT_MISCLASSIFICATION",
+    "errorType": "COMMERCIAL_FALSE_POSITIVE",
     "category": "RELEVANT_NEED",
     "difficulty": "easy"
   },
@@ -1300,20 +1326,27 @@
     },
     "groundTruthPrimary": "RELEVANT_NEED",
     "groundTruthSecondary": [],
-    "predictedPrimary": "RELEVANT_NEED",
-    "predictedSecondary": [],
-    "confidence": 0.88,
+    "predictedPrimary": "PRODUCT_CURIOUS",
+    "predictedSecondary": [
+      "RELEVANT_NEED"
+    ],
+    "confidence": 0.9,
     "rawCandidates": [
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      },
       {
         "intent": "RELEVANT_NEED",
         "score": 0.88
       }
     ],
-    "match": true,
-    "secondaryExactMatch": true,
-    "secondaryPrecision": 1,
+    "match": false,
+    "secondaryExactMatch": false,
+    "secondaryPrecision": 0,
     "secondaryRecall": 1,
     "criticalError": false,
+    "errorType": "COMMERCIAL_FALSE_POSITIVE",
     "category": "RELEVANT_NEED",
     "difficulty": "medium"
   },
@@ -1332,26 +1365,31 @@
     "groundTruthSecondary": [
       "PRODUCT_CURIOUS"
     ],
-    "predictedPrimary": "RELEVANT_NEED",
+    "predictedPrimary": "PRODUCT_CURIOUS",
     "predictedSecondary": [
       "GOODBYE"
     ],
-    "confidence": 0.88,
+    "confidence": 0.9,
     "rawCandidates": [
       {
         "intent": "GOODBYE",
         "score": 0.94
       },
       {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      },
+      {
         "intent": "RELEVANT_NEED",
         "score": 0.88
       }
     ],
-    "match": true,
+    "match": false,
     "secondaryExactMatch": false,
     "secondaryPrecision": 0,
     "secondaryRecall": 0,
     "criticalError": false,
+    "errorType": "COMMERCIAL_FALSE_POSITIVE",
     "category": "RELEVANT_NEED",
     "difficulty": "medium"
   },
@@ -1525,20 +1563,27 @@
     },
     "groundTruthPrimary": "RELEVANT_NEED",
     "groundTruthSecondary": [],
-    "predictedPrimary": "RELEVANT_NEED",
-    "predictedSecondary": [],
-    "confidence": 0.88,
+    "predictedPrimary": "PRODUCT_CURIOUS",
+    "predictedSecondary": [
+      "RELEVANT_NEED"
+    ],
+    "confidence": 0.9,
     "rawCandidates": [
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      },
       {
         "intent": "RELEVANT_NEED",
         "score": 0.88
       }
     ],
-    "match": true,
-    "secondaryExactMatch": true,
-    "secondaryPrecision": 1,
+    "match": false,
+    "secondaryExactMatch": false,
+    "secondaryPrecision": 0,
     "secondaryRecall": 1,
     "criticalError": false,
+    "errorType": "COMMERCIAL_FALSE_POSITIVE",
     "category": "RELEVANT_NEED",
     "difficulty": "easy"
   },
@@ -1555,16 +1600,21 @@
     },
     "groundTruthPrimary": "RELEVANT_NEED",
     "groundTruthSecondary": [],
-    "predictedPrimary": "UNKNOWN",
+    "predictedPrimary": "PRODUCT_CURIOUS",
     "predictedSecondary": [],
-    "confidence": 0.6,
-    "rawCandidates": [],
+    "confidence": 0.9,
+    "rawCandidates": [
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      }
+    ],
     "match": false,
     "secondaryExactMatch": true,
     "secondaryPrecision": 1,
     "secondaryRecall": 1,
     "criticalError": false,
-    "errorType": "INTENT_MISCLASSIFICATION",
+    "errorType": "COMMERCIAL_FALSE_POSITIVE",
     "category": "RELEVANT_NEED",
     "difficulty": "easy"
   },
@@ -1739,26 +1789,29 @@
     "groundTruthSecondary": [
       "PRODUCT_CURIOUS"
     ],
-    "predictedPrimary": "VPN_REQUEST",
-    "predictedSecondary": [
-      "PRODUCT_CURIOUS"
-    ],
-    "confidence": 0.94,
+    "predictedPrimary": "OFF_TOPIC",
+    "predictedSecondary": [],
+    "confidence": 0.92,
     "rawCandidates": [
       {
         "intent": "VPN_REQUEST",
         "score": 0.94
       },
       {
+        "intent": "OFF_TOPIC",
+        "score": 0.92
+      },
+      {
         "intent": "PRODUCT_CURIOUS",
         "score": 0.9
       }
     ],
-    "match": true,
-    "secondaryExactMatch": true,
-    "secondaryPrecision": 1,
-    "secondaryRecall": 1,
+    "match": false,
+    "secondaryExactMatch": false,
+    "secondaryPrecision": 0,
+    "secondaryRecall": 0,
     "criticalError": false,
+    "errorType": "INTENT_MISCLASSIFICATION",
     "category": "VPN_REQUEST",
     "difficulty": "medium"
   },
@@ -2313,10 +2366,14 @@
     },
     "groundTruthPrimary": "PRODUCT_CURIOUS",
     "groundTruthSecondary": [],
-    "predictedPrimary": "QUESTION",
+    "predictedPrimary": "VPN_REQUEST",
     "predictedSecondary": [],
-    "confidence": 0.85,
+    "confidence": 0.94,
     "rawCandidates": [
+      {
+        "intent": "VPN_REQUEST",
+        "score": 0.94
+      },
       {
         "intent": "QUESTION",
         "score": 0.85
@@ -2526,21 +2583,26 @@
     },
     "groundTruthPrimary": "PRODUCT_CURIOUS",
     "groundTruthSecondary": [],
-    "predictedPrimary": "QUESTION",
-    "predictedSecondary": [],
-    "confidence": 0.85,
+    "predictedPrimary": "PRODUCT_CURIOUS",
+    "predictedSecondary": [
+      "QUESTION"
+    ],
+    "confidence": 0.9,
     "rawCandidates": [
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      },
       {
         "intent": "QUESTION",
         "score": 0.85
       }
     ],
-    "match": false,
-    "secondaryExactMatch": true,
-    "secondaryPrecision": 1,
+    "match": true,
+    "secondaryExactMatch": false,
+    "secondaryPrecision": 0,
     "secondaryRecall": 1,
     "criticalError": false,
-    "errorType": "INTENT_MISCLASSIFICATION",
     "category": "PRODUCT_CURIOUS",
     "difficulty": "medium"
   },
@@ -2598,11 +2660,17 @@
     "groundTruthPrimary": "TRIAL_REQUEST",
     "groundTruthSecondary": [],
     "predictedPrimary": "TRIAL_REQUEST",
-    "predictedSecondary": [],
+    "predictedSecondary": [
+      "VPN_REQUEST"
+    ],
     "confidence": 0.94,
     "rawCandidates": [
       {
         "intent": "TRIAL_REQUEST",
+        "score": 0.94
+      },
+      {
+        "intent": "VPN_REQUEST",
         "score": 0.94
       },
       {
@@ -2611,8 +2679,8 @@
       }
     ],
     "match": true,
-    "secondaryExactMatch": true,
-    "secondaryPrecision": 1,
+    "secondaryExactMatch": false,
+    "secondaryPrecision": 0,
     "secondaryRecall": 1,
     "criticalError": false,
     "category": "TRIAL_REQUEST",
@@ -2665,7 +2733,9 @@
     "groundTruthPrimary": "TRIAL_REQUEST",
     "groundTruthSecondary": [],
     "predictedPrimary": "TRIAL_REQUEST",
-    "predictedSecondary": [],
+    "predictedSecondary": [
+      "PRODUCT_CURIOUS"
+    ],
     "confidence": 0.94,
     "rawCandidates": [
       {
@@ -2673,13 +2743,17 @@
         "score": 0.94
       },
       {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      },
+      {
         "intent": "QUESTION",
         "score": 0.85
       }
     ],
     "match": true,
-    "secondaryExactMatch": true,
-    "secondaryPrecision": 1,
+    "secondaryExactMatch": false,
+    "secondaryPrecision": 0,
     "secondaryRecall": 1,
     "criticalError": false,
     "category": "TRIAL_REQUEST",
@@ -3233,7 +3307,7 @@
     "groundTruthSecondary": [],
     "predictedPrimary": "PRICE_REQUEST",
     "predictedSecondary": [
-      "GOODBYE"
+      "PLAN_REQUEST"
     ],
     "confidence": 0.94,
     "rawCandidates": [
@@ -3403,11 +3477,11 @@
     "groundTruthSecondary": [
       "OBJECTION"
     ],
-    "predictedPrimary": "OBJECTION",
+    "predictedPrimary": "PRICE_REQUEST",
     "predictedSecondary": [
-      "PRICE_REQUEST"
+      "PLAN_REQUEST"
     ],
-    "confidence": 0.92,
+    "confidence": 0.94,
     "rawCandidates": [
       {
         "intent": "PRICE_REQUEST",
@@ -3426,12 +3500,11 @@
         "score": 0.85
       }
     ],
-    "match": false,
+    "match": true,
     "secondaryExactMatch": false,
     "secondaryPrecision": 0,
     "secondaryRecall": 0,
     "criticalError": false,
-    "errorType": "INTENT_MISCLASSIFICATION",
     "category": "PRICE_REQUEST",
     "difficulty": "medium"
   },
@@ -3572,11 +3645,15 @@
     "predictedSecondary": [
       "PRODUCT_CURIOUS"
     ],
-    "confidence": 0.93,
+    "confidence": 0.96,
     "rawCandidates": [
       {
         "intent": "PLAN_REQUEST",
-        "score": 0.93
+        "score": 0.96
+      },
+      {
+        "intent": "VPN_REQUEST",
+        "score": 0.94
       },
       {
         "intent": "PRODUCT_CURIOUS",
@@ -4374,12 +4451,16 @@
     "groundTruthSecondary": [],
     "predictedPrimary": "PURCHASE_INTENT",
     "predictedSecondary": [
-      "QUESTION"
+      "VPN_REQUEST"
     ],
     "confidence": 0.94,
     "rawCandidates": [
       {
         "intent": "PURCHASE_INTENT",
+        "score": 0.94
+      },
+      {
+        "intent": "VPN_REQUEST",
         "score": 0.94
       },
       {
@@ -4626,6 +4707,10 @@
     "rawCandidates": [
       {
         "intent": "PURCHASE_INTENT",
+        "score": 0.94
+      },
+      {
+        "intent": "VPN_REQUEST",
         "score": 0.94
       },
       {
@@ -4945,6 +5030,10 @@
         "score": 0.94
       },
       {
+        "intent": "VPN_REQUEST",
+        "score": 0.94
+      },
+      {
         "intent": "OBJECTION",
         "score": 0.92
       },
@@ -5015,6 +5104,10 @@
       {
         "intent": "PRODUCT_CURIOUS",
         "score": 0.9
+      },
+      {
+        "intent": "RELEVANT_NEED",
+        "score": 0.88
       },
       {
         "intent": "QUESTION",
@@ -5125,6 +5218,10 @@
     ],
     "confidence": 0.92,
     "rawCandidates": [
+      {
+        "intent": "VPN_REQUEST",
+        "score": 0.94
+      },
       {
         "intent": "OBJECTION",
         "score": 0.92
@@ -5364,17 +5461,23 @@
     "groundTruthPrimary": "REJECTION",
     "groundTruthSecondary": [],
     "predictedPrimary": "REJECTION",
-    "predictedSecondary": [],
+    "predictedSecondary": [
+      "SMALL_TALK"
+    ],
     "confidence": 0.96,
     "rawCandidates": [
       {
         "intent": "REJECTION",
         "score": 0.96
+      },
+      {
+        "intent": "SMALL_TALK",
+        "score": 0.9
       }
     ],
     "match": true,
-    "secondaryExactMatch": true,
-    "secondaryPrecision": 1,
+    "secondaryExactMatch": false,
+    "secondaryPrecision": 0,
     "secondaryRecall": 1,
     "criticalError": false,
     "category": "REJECTION",
@@ -5646,17 +5749,23 @@
     "groundTruthPrimary": "REJECTION",
     "groundTruthSecondary": [],
     "predictedPrimary": "REJECTION",
-    "predictedSecondary": [],
+    "predictedSecondary": [
+      "SMALL_TALK"
+    ],
     "confidence": 0.96,
     "rawCandidates": [
       {
         "intent": "REJECTION",
         "score": 0.96
+      },
+      {
+        "intent": "SMALL_TALK",
+        "score": 0.9
       }
     ],
     "match": true,
-    "secondaryExactMatch": true,
-    "secondaryPrecision": 1,
+    "secondaryExactMatch": false,
+    "secondaryPrecision": 0,
     "secondaryRecall": 1,
     "criticalError": false,
     "category": "REJECTION",
@@ -5720,6 +5829,10 @@
       {
         "intent": "GOODBYE",
         "score": 0.94
+      },
+      {
+        "intent": "SMALL_TALK",
+        "score": 0.9
       }
     ],
     "match": true,
@@ -6730,6 +6843,10 @@
         "score": 0.93
       },
       {
+        "intent": "OFF_TOPIC",
+        "score": 0.92
+      },
+      {
         "intent": "QUESTION",
         "score": 0.85
       }
@@ -6887,16 +7004,20 @@
     },
     "groundTruthPrimary": "OFF_TOPIC",
     "groundTruthSecondary": [],
-    "predictedPrimary": "UNKNOWN",
+    "predictedPrimary": "OFF_TOPIC",
     "predictedSecondary": [],
-    "confidence": 0.6,
-    "rawCandidates": [],
-    "match": false,
+    "confidence": 0.92,
+    "rawCandidates": [
+      {
+        "intent": "OFF_TOPIC",
+        "score": 0.92
+      }
+    ],
+    "match": true,
     "secondaryExactMatch": true,
     "secondaryPrecision": 1,
     "secondaryRecall": 1,
     "criticalError": false,
-    "errorType": "INTENT_MISCLASSIFICATION",
     "category": "COMMERCIAL_TRAP",
     "difficulty": "hard"
   },
@@ -6925,6 +7046,10 @@
     ],
     "confidence": 0.92,
     "rawCandidates": [
+      {
+        "intent": "PRICE_REQUEST",
+        "score": 0.94
+      },
       {
         "intent": "OFF_TOPIC",
         "score": 0.92

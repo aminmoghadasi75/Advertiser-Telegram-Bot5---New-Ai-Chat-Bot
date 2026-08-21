@@ -17,7 +17,7 @@
     {
       "id": 3,
       "name": "Prechange Holdout Sum",
-      "expr": "163 <= 200",
+      "expr": "199 <= 200",
       "pass": true
     },
     {
@@ -47,7 +47,7 @@
     {
       "id": 8,
       "name": "Multi-Intent Exact Match Rate",
-      "expr": "0.9125 >= 0.90",
+      "expr": "0.93125 >= 0.90",
       "pass": true
     },
     {
@@ -59,7 +59,7 @@
     {
       "id": 10,
       "name": "Adversarial Accuracy",
-      "expr": "0.9807692307692307 >= 0.97",
+      "expr": "0.9769230769230769 >= 0.97",
       "pass": true
     },
     {

@@ -3,31 +3,31 @@
     "evaluationStep": "5.2.1",
     "dataset": "holdout_intent_v1.json",
     "executionRun": "first_run_blind",
-    "timestamp": "2026-08-21T14:30:14.675Z",
+    "timestamp": "2026-08-21T16:00:41.555Z",
     "totalCases": 200
   },
   "primaryMetrics": {
-    "holdoutIntentAccuracy": 83,
-    "macroPrecision": 0.8492,
-    "macroRecall": 0.8474,
-    "macroF1": 0.8217,
-    "weightedPrecision": 0.8825,
-    "weightedRecall": 0.83,
-    "weightedF1": 0.8406,
+    "holdoutIntentAccuracy": 81.5,
+    "macroPrecision": 0.8278,
+    "macroRecall": 0.8463,
+    "macroF1": 0.8054,
+    "weightedPrecision": 0.857,
+    "weightedRecall": 0.815,
+    "weightedF1": 0.8113,
     "goldBaselineAccuracy": 100,
     "goldBaselineMacroF1": 1,
-    "accuracyDelta": -17,
-    "macroF1Delta": -0.1783
+    "accuracyDelta": -18.5,
+    "macroF1Delta": -0.1946
   },
   "multiIntentMetrics": {
     "multiIntentCasesCount": 66,
-    "multiIntentExactMatchRate": 83.33,
-    "secondaryIntentPrecision": 0.8333,
-    "secondaryIntentRecall": 0.8333,
-    "secondaryIntentF1": 0.8333
+    "multiIntentExactMatchRate": 80.3,
+    "secondaryIntentPrecision": 0.803,
+    "secondaryIntentRecall": 0.803,
+    "secondaryIntentF1": 0.803
   },
   "commercialSafetyMetrics": {
-    "commercialFalsePositiveRate": 0,
+    "commercialFalsePositiveRate": 5.98,
     "rejectionFalseNegativeRate": 0,
     "safetyPrecision": 1,
     "botDetectionRecall": 100,
@@ -36,90 +36,90 @@
   "sliceMetrics": {
     "easy": {
       "total": 118,
-      "correct": 103,
-      "accuracy": 87.29
+      "correct": 102,
+      "accuracy": 86.44
     },
     "medium": {
       "total": 72,
-      "correct": 56,
-      "accuracy": 77.78
+      "correct": 53,
+      "accuracy": 73.61
     },
     "hard": {
       "total": 10,
-      "correct": 7,
-      "accuracy": 70
+      "correct": 8,
+      "accuracy": 80
     },
     "contextual": {
       "total": 168,
-      "correct": 136,
-      "accuracy": 80.95
+      "correct": 132,
+      "accuracy": 78.57
     },
     "standalone": {
       "total": 32,
-      "correct": 30,
-      "accuracy": 93.75
+      "correct": 31,
+      "accuracy": 96.88
     }
   },
   "perClassMetrics": {
     "GREETING": {
       "intent": "GREETING",
-      "tp": 10,
+      "tp": 11,
       "fp": 0,
-      "fn": 1,
+      "fn": 0,
       "support": 11,
       "precision": 1,
-      "recall": 0.9091,
-      "f1": 0.9524
+      "recall": 1,
+      "f1": 1
     },
     "SMALL_TALK": {
       "intent": "SMALL_TALK",
-      "tp": 9,
+      "tp": 8,
       "fp": 3,
-      "fn": 4,
+      "fn": 5,
       "support": 13,
-      "precision": 0.75,
-      "recall": 0.6923,
-      "f1": 0.72
+      "precision": 0.7273,
+      "recall": 0.6154,
+      "f1": 0.6667
     },
     "QUESTION": {
       "intent": "QUESTION",
-      "tp": 11,
-      "fp": 5,
-      "fn": 1,
+      "tp": 10,
+      "fp": 4,
+      "fn": 2,
       "support": 12,
-      "precision": 0.6875,
-      "recall": 0.9167,
-      "f1": 0.7857
+      "precision": 0.7143,
+      "recall": 0.8333,
+      "f1": 0.7692
     },
     "RELEVANT_NEED": {
       "intent": "RELEVANT_NEED",
-      "tp": 7,
+      "tp": 3,
       "fp": 0,
-      "fn": 7,
+      "fn": 11,
       "support": 14,
       "precision": 1,
-      "recall": 0.5,
-      "f1": 0.6667
+      "recall": 0.2143,
+      "f1": 0.3529
     },
     "VPN_REQUEST": {
       "intent": "VPN_REQUEST",
-      "tp": 11,
-      "fp": 1,
-      "fn": 2,
+      "tp": 10,
+      "fp": 2,
+      "fn": 3,
       "support": 13,
-      "precision": 0.9167,
-      "recall": 0.8462,
-      "f1": 0.88
+      "precision": 0.8333,
+      "recall": 0.7692,
+      "f1": 0.8
     },
     "PRODUCT_CURIOUS": {
       "intent": "PRODUCT_CURIOUS",
-      "tp": 7,
-      "fp": 1,
-      "fn": 6,
+      "tp": 8,
+      "fp": 8,
+      "fn": 5,
       "support": 13,
-      "precision": 0.875,
-      "recall": 0.5385,
-      "f1": 0.6667
+      "precision": 0.5,
+      "recall": 0.6154,
+      "f1": 0.5517
     },
     "TRIAL_REQUEST": {
       "intent": "TRIAL_REQUEST",
@@ -133,13 +133,13 @@
     },
     "PRICE_REQUEST": {
       "intent": "PRICE_REQUEST",
-      "tp": 9,
+      "tp": 10,
       "fp": 1,
-      "fn": 3,
+      "fn": 2,
       "support": 12,
-      "precision": 0.9,
-      "recall": 0.75,
-      "f1": 0.8182
+      "precision": 0.9091,
+      "recall": 0.8333,
+      "f1": 0.8696
     },
     "PLAN_REQUEST": {
       "intent": "PLAN_REQUEST",
@@ -174,12 +174,12 @@
     "OBJECTION": {
       "intent": "OBJECTION",
       "tp": 10,
-      "fp": 3,
+      "fp": 2,
       "fn": 3,
       "support": 13,
-      "precision": 0.7692,
+      "precision": 0.8333,
       "recall": 0.7692,
-      "f1": 0.7692
+      "f1": 0.8
     },
     "REJECTION": {
       "intent": "REJECTION",
@@ -194,22 +194,22 @@
     "GOODBYE": {
       "intent": "GOODBYE",
       "tp": 12,
-      "fp": 3,
+      "fp": 2,
       "fn": 0,
       "support": 12,
-      "precision": 0.8,
+      "precision": 0.8571,
       "recall": 1,
-      "f1": 0.8889
+      "f1": 0.9231
     },
     "SUSPICION_BOT": {
       "intent": "SUSPICION_BOT",
       "tp": 9,
-      "fp": 2,
+      "fp": 3,
       "fn": 0,
       "support": 9,
-      "precision": 0.8182,
+      "precision": 0.75,
       "recall": 1,
-      "f1": 0.9
+      "f1": 0.8571
     },
     "INAPPROPRIATE": {
       "intent": "INAPPROPRIATE",
@@ -233,23 +233,23 @@
     },
     "OFF_TOPIC": {
       "intent": "OFF_TOPIC",
-      "tp": 3,
-      "fp": 1,
-      "fn": 1,
+      "tp": 4,
+      "fp": 2,
+      "fn": 0,
       "support": 4,
-      "precision": 0.75,
-      "recall": 0.75,
-      "f1": 0.75
+      "precision": 0.6667,
+      "recall": 1,
+      "f1": 0.8
     },
     "UNKNOWN": {
       "intent": "UNKNOWN",
       "tp": 2,
-      "fp": 11,
+      "fp": 7,
       "fn": 0,
       "support": 2,
-      "precision": 0.1538,
+      "precision": 0.2222,
       "recall": 1,
-      "f1": 0.2667
+      "f1": 0.3636
     }
   },
   "confusionMatrix": {
@@ -276,7 +276,7 @@
     ],
     "matrix": [
       [
-        10,
+        11,
         0,
         0,
         0,
@@ -289,7 +289,7 @@
         0,
         0,
         0,
-        1,
+        0,
         0,
         0,
         0,
@@ -298,8 +298,8 @@
       ],
       [
         0,
-        9,
-        0,
+        8,
+        1,
         0,
         0,
         0,
@@ -320,7 +320,7 @@
       [
         0,
         1,
-        11,
+        10,
         0,
         0,
         0,
@@ -332,7 +332,7 @@
         0,
         0,
         0,
-        0,
+        1,
         0,
         0,
         0,
@@ -342,6 +342,8 @@
         0,
         2,
         0,
+        3,
+        0,
         7,
         0,
         0,
@@ -350,21 +352,19 @@
         0,
         0,
         0,
-        0,
-        0,
         1,
         0,
         0,
         0,
         0,
-        4
+        1
       ],
       [
         0,
         0,
         0,
         0,
-        11,
+        10,
         1,
         0,
         0,
@@ -377,16 +377,16 @@
         0,
         0,
         0,
-        0,
+        1,
         0
       ],
       [
         0,
         0,
-        4,
+        2,
         0,
-        1,
-        7,
+        2,
+        8,
         0,
         0,
         0,
@@ -430,11 +430,11 @@
         0,
         0,
         0,
-        9,
+        10,
         1,
         0,
         0,
-        1,
+        0,
         0,
         0,
         0,
@@ -650,8 +650,8 @@
         0,
         0,
         0,
-        3,
-        1
+        4,
+        0
       ],
       [
         0,
@@ -678,39 +678,45 @@
   },
   "failures": [
     {
-      "id": "holdout_006",
-      "message": "سلامممم، شبت خوش داداش",
+      "id": "holdout_012",
+      "message": "من ۲۸ سالمه ساکن کرجم، تو چند سالته؟",
       "context": {
-        "previousUserMessages": [],
-        "previousIntents": [],
-        "conversationState": null,
-        "lastAssistantMessage": null,
+        "previousUserMessages": [
+          "سلام"
+        ],
+        "previousIntents": [
+          "GREETING"
+        ],
+        "conversationState": "EARLY_CONVERSATION",
+        "lastAssistantMessage": "سلام خوبی؟ اصل میدی؟",
         "productMentioned": false,
         "promotionState": null
       },
-      "groundTruthPrimary": "GREETING",
-      "groundTruthSecondary": [],
-      "predictedPrimary": "GOODBYE",
+      "groundTruthPrimary": "SMALL_TALK",
+      "groundTruthSecondary": [
+        "QUESTION"
+      ],
+      "predictedPrimary": "QUESTION",
       "predictedSecondary": [],
-      "confidence": 0.94,
+      "confidence": 0.95,
       "rawCandidates": [
         {
-          "intent": "GOODBYE",
-          "score": 0.94
+          "intent": "QUESTION",
+          "score": 0.95
         },
         {
-          "intent": "GREETING",
-          "score": 0.9
+          "intent": "SMALL_TALK",
+          "score": 0.5
         }
       ],
       "match": false,
-      "secondaryExactMatch": true,
-      "secondaryPrecision": 1,
-      "secondaryRecall": 1,
+      "secondaryExactMatch": false,
+      "secondaryPrecision": 0,
+      "secondaryRecall": 0,
       "criticalError": false,
       "errorType": "INTENT_MISCLASSIFICATION",
-      "category": "GREETING",
-      "difficulty": "easy"
+      "category": "SMALL_TALK",
+      "difficulty": "medium"
     },
     {
       "id": "holdout_016",
@@ -817,6 +823,43 @@
       "difficulty": "medium"
     },
     {
+      "id": "holdout_029",
+      "message": "چند وقته توی این ربات چت میکنی؟",
+      "context": {
+        "previousUserMessages": [],
+        "previousIntents": [],
+        "conversationState": "ENGAGED",
+        "lastAssistantMessage": null,
+        "productMentioned": false,
+        "promotionState": null
+      },
+      "groundTruthPrimary": "QUESTION",
+      "groundTruthSecondary": [],
+      "predictedPrimary": "SUSPICION_BOT",
+      "predictedSecondary": [
+        "QUESTION"
+      ],
+      "confidence": 0.92,
+      "rawCandidates": [
+        {
+          "intent": "SUSPICION_BOT",
+          "score": 0.92
+        },
+        {
+          "intent": "QUESTION",
+          "score": 0.85
+        }
+      ],
+      "match": false,
+      "secondaryExactMatch": false,
+      "secondaryPrecision": 0,
+      "secondaryRecall": 1,
+      "criticalError": false,
+      "errorType": "INTENT_MISCLASSIFICATION",
+      "category": "QUESTION",
+      "difficulty": "medium"
+    },
+    {
       "id": "holdout_031",
       "message": "شغل رویاییت چیه اگه محدودیت مالی نداشتی؟",
       "context": {
@@ -870,18 +913,60 @@
       },
       "groundTruthPrimary": "RELEVANT_NEED",
       "groundTruthSecondary": [],
-      "predictedPrimary": "UNKNOWN",
+      "predictedPrimary": "PRODUCT_CURIOUS",
       "predictedSecondary": [],
-      "confidence": 0.6,
-      "rawCandidates": [],
+      "confidence": 0.9,
+      "rawCandidates": [
+        {
+          "intent": "PRODUCT_CURIOUS",
+          "score": 0.9
+        }
+      ],
       "match": false,
       "secondaryExactMatch": true,
       "secondaryPrecision": 1,
       "secondaryRecall": 1,
       "criticalError": false,
-      "errorType": "INTENT_MISCLASSIFICATION",
+      "errorType": "COMMERCIAL_FALSE_POSITIVE",
       "category": "RELEVANT_NEED",
       "difficulty": "medium"
+    },
+    {
+      "id": "holdout_039",
+      "message": "کل فیلترشکنام روی ایرانسل از کار افتاده واقعاً درمونده شدم",
+      "context": {
+        "previousUserMessages": [],
+        "previousIntents": [],
+        "conversationState": "ENGAGED",
+        "lastAssistantMessage": null,
+        "productMentioned": false,
+        "promotionState": null
+      },
+      "groundTruthPrimary": "RELEVANT_NEED",
+      "groundTruthSecondary": [],
+      "predictedPrimary": "PRODUCT_CURIOUS",
+      "predictedSecondary": [
+        "RELEVANT_NEED"
+      ],
+      "confidence": 0.9,
+      "rawCandidates": [
+        {
+          "intent": "PRODUCT_CURIOUS",
+          "score": 0.9
+        },
+        {
+          "intent": "RELEVANT_NEED",
+          "score": 0.88
+        }
+      ],
+      "match": false,
+      "secondaryExactMatch": false,
+      "secondaryPrecision": 0,
+      "secondaryRecall": 1,
+      "criticalError": false,
+      "errorType": "COMMERCIAL_FALSE_POSITIVE",
+      "category": "RELEVANT_NEED",
+      "difficulty": "easy"
     },
     {
       "id": "holdout_040",
@@ -896,18 +981,103 @@
       },
       "groundTruthPrimary": "RELEVANT_NEED",
       "groundTruthSecondary": [],
-      "predictedPrimary": "UNKNOWN",
+      "predictedPrimary": "PRODUCT_CURIOUS",
       "predictedSecondary": [],
-      "confidence": 0.6,
-      "rawCandidates": [],
+      "confidence": 0.9,
+      "rawCandidates": [
+        {
+          "intent": "PRODUCT_CURIOUS",
+          "score": 0.9
+        }
+      ],
       "match": false,
       "secondaryExactMatch": true,
       "secondaryPrecision": 1,
       "secondaryRecall": 1,
       "criticalError": false,
-      "errorType": "INTENT_MISCLASSIFICATION",
+      "errorType": "COMMERCIAL_FALSE_POSITIVE",
       "category": "RELEVANT_NEED",
       "difficulty": "easy"
+    },
+    {
+      "id": "holdout_042",
+      "message": "توی شرکت اینترنت وای‌فای بشدت کنده و گیت‌هاب باز نمیشه",
+      "context": {
+        "previousUserMessages": [],
+        "previousIntents": [],
+        "conversationState": "ENGAGED",
+        "lastAssistantMessage": null,
+        "productMentioned": false,
+        "promotionState": null
+      },
+      "groundTruthPrimary": "RELEVANT_NEED",
+      "groundTruthSecondary": [],
+      "predictedPrimary": "PRODUCT_CURIOUS",
+      "predictedSecondary": [
+        "RELEVANT_NEED"
+      ],
+      "confidence": 0.9,
+      "rawCandidates": [
+        {
+          "intent": "PRODUCT_CURIOUS",
+          "score": 0.9
+        },
+        {
+          "intent": "RELEVANT_NEED",
+          "score": 0.88
+        }
+      ],
+      "match": false,
+      "secondaryExactMatch": false,
+      "secondaryPrecision": 0,
+      "secondaryRecall": 1,
+      "criticalError": false,
+      "errorType": "COMMERCIAL_FALSE_POSITIVE",
+      "category": "RELEVANT_NEED",
+      "difficulty": "medium"
+    },
+    {
+      "id": "holdout_043",
+      "message": "برای ترید و صرافی بایننس به یه آیپی بدون قطعی نیاز دارم وگرنه حسابم بسته میشه",
+      "context": {
+        "previousUserMessages": [],
+        "previousIntents": [],
+        "conversationState": "ENGAGED",
+        "lastAssistantMessage": null,
+        "productMentioned": false,
+        "promotionState": null
+      },
+      "groundTruthPrimary": "RELEVANT_NEED",
+      "groundTruthSecondary": [
+        "PRODUCT_CURIOUS"
+      ],
+      "predictedPrimary": "PRODUCT_CURIOUS",
+      "predictedSecondary": [
+        "GOODBYE"
+      ],
+      "confidence": 0.9,
+      "rawCandidates": [
+        {
+          "intent": "GOODBYE",
+          "score": 0.94
+        },
+        {
+          "intent": "PRODUCT_CURIOUS",
+          "score": 0.9
+        },
+        {
+          "intent": "RELEVANT_NEED",
+          "score": 0.88
+        }
+      ],
+      "match": false,
+      "secondaryExactMatch": false,
+      "secondaryPrecision": 0,
+      "secondaryRecall": 0,
+      "criticalError": false,
+      "errorType": "COMMERCIAL_FALSE_POSITIVE",
+      "category": "RELEVANT_NEED",
+      "difficulty": "medium"
     },
     {
       "id": "holdout_045",
@@ -1037,6 +1207,43 @@
       "difficulty": "medium"
     },
     {
+      "id": "holdout_049",
+      "message": "نت خونه ما رایتله از دیشب کلاً فیلترینگ شدید شده هیچی بالا نمیاد",
+      "context": {
+        "previousUserMessages": [],
+        "previousIntents": [],
+        "conversationState": "ENGAGED",
+        "lastAssistantMessage": null,
+        "productMentioned": false,
+        "promotionState": null
+      },
+      "groundTruthPrimary": "RELEVANT_NEED",
+      "groundTruthSecondary": [],
+      "predictedPrimary": "PRODUCT_CURIOUS",
+      "predictedSecondary": [
+        "RELEVANT_NEED"
+      ],
+      "confidence": 0.9,
+      "rawCandidates": [
+        {
+          "intent": "PRODUCT_CURIOUS",
+          "score": 0.9
+        },
+        {
+          "intent": "RELEVANT_NEED",
+          "score": 0.88
+        }
+      ],
+      "match": false,
+      "secondaryExactMatch": false,
+      "secondaryPrecision": 0,
+      "secondaryRecall": 1,
+      "criticalError": false,
+      "errorType": "COMMERCIAL_FALSE_POSITIVE",
+      "category": "RELEVANT_NEED",
+      "difficulty": "easy"
+    },
+    {
       "id": "holdout_050",
       "message": "توی یوتیوب میخوام آموزش پایتون ببینم ولی ارور کانکشن میده",
       "context": {
@@ -1049,18 +1256,64 @@
       },
       "groundTruthPrimary": "RELEVANT_NEED",
       "groundTruthSecondary": [],
-      "predictedPrimary": "UNKNOWN",
+      "predictedPrimary": "PRODUCT_CURIOUS",
       "predictedSecondary": [],
-      "confidence": 0.6,
-      "rawCandidates": [],
+      "confidence": 0.9,
+      "rawCandidates": [
+        {
+          "intent": "PRODUCT_CURIOUS",
+          "score": 0.9
+        }
+      ],
       "match": false,
       "secondaryExactMatch": true,
       "secondaryPrecision": 1,
       "secondaryRecall": 1,
       "criticalError": false,
-      "errorType": "INTENT_MISCLASSIFICATION",
+      "errorType": "COMMERCIAL_FALSE_POSITIVE",
       "category": "RELEVANT_NEED",
       "difficulty": "easy"
+    },
+    {
+      "id": "holdout_055",
+      "message": "یه vpn میخوام که راحت روی ویندوز لپ‌تاپم ست بشه",
+      "context": {
+        "previousUserMessages": [],
+        "previousIntents": [],
+        "conversationState": "NEED_DETECTED",
+        "lastAssistantMessage": null,
+        "productMentioned": false,
+        "promotionState": null
+      },
+      "groundTruthPrimary": "VPN_REQUEST",
+      "groundTruthSecondary": [
+        "PRODUCT_CURIOUS"
+      ],
+      "predictedPrimary": "OFF_TOPIC",
+      "predictedSecondary": [],
+      "confidence": 0.92,
+      "rawCandidates": [
+        {
+          "intent": "VPN_REQUEST",
+          "score": 0.94
+        },
+        {
+          "intent": "OFF_TOPIC",
+          "score": 0.92
+        },
+        {
+          "intent": "PRODUCT_CURIOUS",
+          "score": 0.9
+        }
+      ],
+      "match": false,
+      "secondaryExactMatch": false,
+      "secondaryPrecision": 0,
+      "secondaryRecall": 0,
+      "criticalError": false,
+      "errorType": "INTENT_MISCLASSIFICATION",
+      "category": "VPN_REQUEST",
+      "difficulty": "medium"
     },
     {
       "id": "holdout_057",
@@ -1227,10 +1480,14 @@
       },
       "groundTruthPrimary": "PRODUCT_CURIOUS",
       "groundTruthSecondary": [],
-      "predictedPrimary": "QUESTION",
+      "predictedPrimary": "VPN_REQUEST",
       "predictedSecondary": [],
-      "confidence": 0.85,
+      "confidence": 0.94,
       "rawCandidates": [
+        {
+          "intent": "VPN_REQUEST",
+          "score": 0.94
+        },
         {
           "intent": "QUESTION",
           "score": 0.85
@@ -1318,37 +1575,6 @@
       "errorType": "INTENT_MISCLASSIFICATION",
       "category": "PRODUCT_CURIOUS",
       "difficulty": "easy"
-    },
-    {
-      "id": "holdout_076",
-      "message": "آیا برای یوتیوب مناسبه یا محدودیت پهنای باند داره؟",
-      "context": {
-        "previousUserMessages": [],
-        "previousIntents": [],
-        "conversationState": "PRODUCT_INTEREST",
-        "lastAssistantMessage": null,
-        "productMentioned": true,
-        "promotionState": null
-      },
-      "groundTruthPrimary": "PRODUCT_CURIOUS",
-      "groundTruthSecondary": [],
-      "predictedPrimary": "QUESTION",
-      "predictedSecondary": [],
-      "confidence": 0.85,
-      "rawCandidates": [
-        {
-          "intent": "QUESTION",
-          "score": 0.85
-        }
-      ],
-      "match": false,
-      "secondaryExactMatch": true,
-      "secondaryPrecision": 1,
-      "secondaryRecall": 1,
-      "criticalError": false,
-      "errorType": "INTENT_MISCLASSIFICATION",
-      "category": "PRODUCT_CURIOUS",
-      "difficulty": "medium"
     },
     {
       "id": "holdout_079",
@@ -1489,53 +1715,6 @@
       "errorType": "INTENT_MISCLASSIFICATION",
       "category": "PRICE_REQUEST",
       "difficulty": "hard"
-    },
-    {
-      "id": "holdout_099",
-      "message": "چند درمیاد سالیانه‌اش اگه تخفیف بدید؟",
-      "context": {
-        "previousUserMessages": [],
-        "previousIntents": [],
-        "conversationState": "PRICE_DISCUSSION",
-        "lastAssistantMessage": null,
-        "productMentioned": true,
-        "promotionState": null
-      },
-      "groundTruthPrimary": "PRICE_REQUEST",
-      "groundTruthSecondary": [
-        "OBJECTION"
-      ],
-      "predictedPrimary": "OBJECTION",
-      "predictedSecondary": [
-        "PRICE_REQUEST"
-      ],
-      "confidence": 0.92,
-      "rawCandidates": [
-        {
-          "intent": "PRICE_REQUEST",
-          "score": 0.94
-        },
-        {
-          "intent": "PLAN_REQUEST",
-          "score": 0.93
-        },
-        {
-          "intent": "OBJECTION",
-          "score": 0.92
-        },
-        {
-          "intent": "QUESTION",
-          "score": 0.85
-        }
-      ],
-      "match": false,
-      "secondaryExactMatch": false,
-      "secondaryPrecision": 0,
-      "secondaryRecall": 0,
-      "criticalError": false,
-      "errorType": "INTENT_MISCLASSIFICATION",
-      "category": "PRICE_REQUEST",
-      "difficulty": "medium"
     },
     {
       "id": "holdout_106",
@@ -1781,32 +1960,6 @@
       "errorType": "INTENT_MISCLASSIFICATION",
       "category": "OBJECTION",
       "difficulty": "easy"
-    },
-    {
-      "id": "holdout_196",
-      "message": "برای خرید لپ‌تاپ ایسوس دنبال یه فروشگاه معتبر تو بازار رضام",
-      "context": {
-        "previousUserMessages": [],
-        "previousIntents": [],
-        "conversationState": "ENGAGED",
-        "lastAssistantMessage": null,
-        "productMentioned": false,
-        "promotionState": null
-      },
-      "groundTruthPrimary": "OFF_TOPIC",
-      "groundTruthSecondary": [],
-      "predictedPrimary": "UNKNOWN",
-      "predictedSecondary": [],
-      "confidence": 0.6,
-      "rawCandidates": [],
-      "match": false,
-      "secondaryExactMatch": true,
-      "secondaryPrecision": 1,
-      "secondaryRecall": 1,
-      "criticalError": false,
-      "errorType": "INTENT_MISCLASSIFICATION",
-      "category": "COMMERCIAL_TRAP",
-      "difficulty": "hard"
     }
   ]
 }

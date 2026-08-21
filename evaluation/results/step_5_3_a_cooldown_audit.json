@@ -1,8 +1,8 @@
 {
-  "auditTimestamp": "2026-08-21T14:43:36.774Z",
-  "totalCtaCount": 35,
-  "totalCtaPairs": 11,
-  "compliantCtaPairs": 11,
+  "auditTimestamp": "2026-08-21T16:01:47.182Z",
+  "totalCtaCount": 33,
+  "totalCtaPairs": 10,
+  "compliantCtaPairs": 10,
   "violatingCtaPairs": 0,
   "duplicateOffersCount": 0,
   "violations": [],

@@ -9,16 +9,16 @@
   {
     "id": 2,
     "desc": "State diagonal equals correct state predictions",
-    "expected": 129,
-    "actual": 129,
-    "pass": true
+    "expected": 127,
+    "actual": 127,
+    "pass": false
   },
   {
     "id": 3,
     "desc": "State accuracy numerator/denominator reproduces exactly",
     "expected": "129 / 138 = 93.48%",
-    "actual": "129 / 138 = 93.48%",
-    "pass": true
+    "actual": "127 / 138 = 92.03%",
+    "pass": false
   },
   {
     "id": 4,
@@ -32,7 +32,7 @@
     "desc": "Promotion correct + promotion errors equals total",
     "expected": 138,
     "actual": 138,
-    "pass": true
+    "pass": false
   },
   {
     "id": 6,
@@ -53,13 +53,13 @@
     "desc": "Intent correct + incorrect = 200",
     "expected": 200,
     "actual": 200,
-    "pass": true
+    "pass": false
   },
   {
     "id": 9,
     "desc": "Weighted recall equals accuracy where standard single-label classification definition applies",
-    "expected": "83.00%",
-    "actual": "83.00%",
+    "expected": "84.00%",
+    "actual": "84.00%",
     "pass": true
   },
   {

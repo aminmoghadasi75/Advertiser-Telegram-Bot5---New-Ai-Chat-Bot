@@ -74,7 +74,7 @@
   {
     "caseId": "holdout_003",
     "inputText": "سلااام چطوری؟ خوبی چه خبرا؟",
-    "normalizedText": "سلاام چطوری؟ خوبی چه خبرا؟",
+    "normalizedText": "سلام چطوری؟ خوبی چه خبرا؟",
     "conversationContext": {
       "previousUserMessages": [],
       "previousIntents": [],
@@ -93,16 +93,16 @@
     ],
     "topCandidates": [
       {
+        "intent": "SMALL_TALK",
+        "score": 0.95
+      },
+      {
         "intent": "GREETING",
         "score": 0.9
       },
       {
-        "intent": "SMALL_TALK",
-        "score": 0.9
-      },
-      {
         "intent": "QUESTION",
-        "score": 0.85
+        "score": 0.5
       }
     ],
     "confidence": 0.9,
@@ -177,16 +177,16 @@
     ],
     "topCandidates": [
       {
+        "intent": "SMALL_TALK",
+        "score": 0.95
+      },
+      {
         "intent": "GREETING",
         "score": 0.9
       },
       {
-        "intent": "SMALL_TALK",
-        "score": 0.9
-      },
-      {
         "intent": "QUESTION",
-        "score": 0.85
+        "score": 0.5
       }
     ],
     "confidence": 0.9,
@@ -206,7 +206,7 @@
   {
     "caseId": "holdout_006",
     "inputText": "سلامممم، شبت خوش داداش",
-    "normalizedText": "سلامم شبت خوش داداش",
+    "normalizedText": "سلام شبت خوش داداش",
     "conversationContext": {
       "previousUserMessages": [],
       "previousIntents": [],
@@ -217,25 +217,25 @@
     },
     "expectedPrimaryIntent": "GREETING",
     "expectedSecondaryIntents": [],
-    "predictedPrimaryIntent": "GOODBYE",
+    "predictedPrimaryIntent": "GREETING",
     "predictedSecondaryIntents": [],
     "topCandidates": [
       {
-        "intent": "GOODBYE",
-        "score": 0.94
+        "intent": "GREETING",
+        "score": 0.98
       },
       {
-        "intent": "GREETING",
-        "score": 0.9
+        "intent": "GOODBYE",
+        "score": 0.1
       }
     ],
-    "confidence": 0.94,
+    "confidence": 0.98,
     "reasonCodes": [
-      "GOODBYE_OVERRIDE",
-      "CONVERSATIONAL_GOODBYE"
+      "GREETING_OPENING_PRIMARY",
+      "GREETING_FORMULA"
     ],
-    "exactMatch": false,
-    "primaryMatch": false,
+    "exactMatch": true,
+    "primaryMatch": true,
     "difficulty": "easy",
     "isContextual": false,
     "isMultiIntent": false,
@@ -451,27 +451,25 @@
     "expectedSecondaryIntents": [
       "QUESTION"
     ],
-    "predictedPrimaryIntent": "SMALL_TALK",
-    "predictedSecondaryIntents": [
-      "QUESTION"
-    ],
+    "predictedPrimaryIntent": "QUESTION",
+    "predictedSecondaryIntents": [],
     "topCandidates": [
       {
-        "intent": "SMALL_TALK",
-        "score": 0.9
+        "intent": "QUESTION",
+        "score": 0.95
       },
       {
-        "intent": "QUESTION",
-        "score": 0.85
+        "intent": "SMALL_TALK",
+        "score": 0.5
       }
     ],
-    "confidence": 0.9,
+    "confidence": 0.95,
     "reasonCodes": [
-      "SMALL_TALK_PRIMARY",
-      "SMALL_TALK_PERSONAL_SHARING"
+      "GENERAL_QUESTION_PRIMARY",
+      "GENERAL_CONVERSATION_QUESTION"
     ],
-    "exactMatch": true,
-    "primaryMatch": true,
+    "exactMatch": false,
+    "primaryMatch": false,
     "difficulty": "medium",
     "isContextual": true,
     "isMultiIntent": true,
@@ -1057,21 +1055,27 @@
     },
     "expectedPrimaryIntent": "QUESTION",
     "expectedSecondaryIntents": [],
-    "predictedPrimaryIntent": "QUESTION",
-    "predictedSecondaryIntents": [],
+    "predictedPrimaryIntent": "SUSPICION_BOT",
+    "predictedSecondaryIntents": [
+      "QUESTION"
+    ],
     "topCandidates": [
+      {
+        "intent": "SUSPICION_BOT",
+        "score": 0.92
+      },
       {
         "intent": "QUESTION",
         "score": 0.85
       }
     ],
-    "confidence": 0.85,
+    "confidence": 0.92,
     "reasonCodes": [
-      "GENERAL_QUESTION_PRIMARY",
-      "GENERAL_CONVERSATION_QUESTION"
+      "BOT_SUSPICION_OVERRIDE",
+      "BOT_SUSPICION_DETECTED"
     ],
-    "exactMatch": true,
-    "primaryMatch": true,
+    "exactMatch": false,
+    "primaryMatch": false,
     "difficulty": "medium",
     "isContextual": true,
     "isMultiIntent": false,
@@ -1362,10 +1366,14 @@
     "topCandidates": [
       {
         "intent": "RELEVANT_NEED",
-        "score": 0.88
+        "score": 0.95
+      },
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.5
       }
     ],
-    "confidence": 0.88,
+    "confidence": 0.95,
     "reasonCodes": [
       "ACTIONABLE_COMMERCIAL_OVERRIDE",
       "PAIN_POINT_NEED_DETECTED"
@@ -1397,12 +1405,18 @@
     },
     "expectedPrimaryIntent": "RELEVANT_NEED",
     "expectedSecondaryIntents": [],
-    "predictedPrimaryIntent": "UNKNOWN",
+    "predictedPrimaryIntent": "PRODUCT_CURIOUS",
     "predictedSecondaryIntents": [],
-    "topCandidates": [],
-    "confidence": 0.6,
+    "topCandidates": [
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      }
+    ],
+    "confidence": 0.9,
     "reasonCodes": [
-      "UNKNOWN_BY_INSUFFICIENT_EVIDENCE"
+      "ACTIONABLE_COMMERCIAL_OVERRIDE",
+      "PRODUCT_FEATURE_AND_COMPATIBILITY_INQUIRY"
     ],
     "exactMatch": false,
     "primaryMatch": false,
@@ -1410,7 +1424,7 @@
     "isContextual": true,
     "isMultiIntent": false,
     "isCriticalError": false,
-    "isCommercialFP": false,
+    "isCommercialFP": true,
     "isRejectionFN": false
   },
   {
@@ -1427,26 +1441,32 @@
     },
     "expectedPrimaryIntent": "RELEVANT_NEED",
     "expectedSecondaryIntents": [],
-    "predictedPrimaryIntent": "RELEVANT_NEED",
-    "predictedSecondaryIntents": [],
+    "predictedPrimaryIntent": "PRODUCT_CURIOUS",
+    "predictedSecondaryIntents": [
+      "RELEVANT_NEED"
+    ],
     "topCandidates": [
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      },
       {
         "intent": "RELEVANT_NEED",
         "score": 0.88
       }
     ],
-    "confidence": 0.88,
+    "confidence": 0.9,
     "reasonCodes": [
       "ACTIONABLE_COMMERCIAL_OVERRIDE",
-      "PAIN_POINT_NEED_DETECTED"
+      "PRODUCT_FEATURE_AND_COMPATIBILITY_INQUIRY"
     ],
-    "exactMatch": true,
-    "primaryMatch": true,
+    "exactMatch": false,
+    "primaryMatch": false,
     "difficulty": "easy",
     "isContextual": true,
     "isMultiIntent": false,
     "isCriticalError": false,
-    "isCommercialFP": false,
+    "isCommercialFP": true,
     "isRejectionFN": false
   },
   {
@@ -1463,12 +1483,18 @@
     },
     "expectedPrimaryIntent": "RELEVANT_NEED",
     "expectedSecondaryIntents": [],
-    "predictedPrimaryIntent": "UNKNOWN",
+    "predictedPrimaryIntent": "PRODUCT_CURIOUS",
     "predictedSecondaryIntents": [],
-    "topCandidates": [],
-    "confidence": 0.6,
+    "topCandidates": [
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      }
+    ],
+    "confidence": 0.9,
     "reasonCodes": [
-      "UNKNOWN_BY_INSUFFICIENT_EVIDENCE"
+      "ACTIONABLE_COMMERCIAL_OVERRIDE",
+      "PRODUCT_FEATURE_AND_COMPATIBILITY_INQUIRY"
     ],
     "exactMatch": false,
     "primaryMatch": false,
@@ -1476,7 +1502,7 @@
     "isContextual": true,
     "isMultiIntent": false,
     "isCriticalError": false,
-    "isCommercialFP": false,
+    "isCommercialFP": true,
     "isRejectionFN": false
   },
   {
@@ -1533,26 +1559,32 @@
     },
     "expectedPrimaryIntent": "RELEVANT_NEED",
     "expectedSecondaryIntents": [],
-    "predictedPrimaryIntent": "RELEVANT_NEED",
-    "predictedSecondaryIntents": [],
+    "predictedPrimaryIntent": "PRODUCT_CURIOUS",
+    "predictedSecondaryIntents": [
+      "RELEVANT_NEED"
+    ],
     "topCandidates": [
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      },
       {
         "intent": "RELEVANT_NEED",
         "score": 0.88
       }
     ],
-    "confidence": 0.88,
+    "confidence": 0.9,
     "reasonCodes": [
       "ACTIONABLE_COMMERCIAL_OVERRIDE",
-      "PAIN_POINT_NEED_DETECTED"
+      "PRODUCT_FEATURE_AND_COMPATIBILITY_INQUIRY"
     ],
-    "exactMatch": true,
-    "primaryMatch": true,
+    "exactMatch": false,
+    "primaryMatch": false,
     "difficulty": "medium",
     "isContextual": true,
     "isMultiIntent": false,
     "isCriticalError": false,
-    "isCommercialFP": false,
+    "isCommercialFP": true,
     "isRejectionFN": false
   },
   {
@@ -1571,7 +1603,7 @@
     "expectedSecondaryIntents": [
       "PRODUCT_CURIOUS"
     ],
-    "predictedPrimaryIntent": "RELEVANT_NEED",
+    "predictedPrimaryIntent": "PRODUCT_CURIOUS",
     "predictedSecondaryIntents": [
       "GOODBYE"
     ],
@@ -1581,22 +1613,26 @@
         "score": 0.94
       },
       {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      },
+      {
         "intent": "RELEVANT_NEED",
         "score": 0.88
       }
     ],
-    "confidence": 0.88,
+    "confidence": 0.9,
     "reasonCodes": [
       "ACTIONABLE_COMMERCIAL_OVERRIDE",
-      "PAIN_POINT_NEED_DETECTED"
+      "PRODUCT_FEATURE_AND_COMPATIBILITY_INQUIRY"
     ],
     "exactMatch": false,
-    "primaryMatch": true,
+    "primaryMatch": false,
     "difficulty": "medium",
     "isContextual": true,
     "isMultiIntent": true,
     "isCriticalError": false,
-    "isCommercialFP": false,
+    "isCommercialFP": true,
     "isRejectionFN": false
   },
   {
@@ -1795,26 +1831,32 @@
     },
     "expectedPrimaryIntent": "RELEVANT_NEED",
     "expectedSecondaryIntents": [],
-    "predictedPrimaryIntent": "RELEVANT_NEED",
-    "predictedSecondaryIntents": [],
+    "predictedPrimaryIntent": "PRODUCT_CURIOUS",
+    "predictedSecondaryIntents": [
+      "RELEVANT_NEED"
+    ],
     "topCandidates": [
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      },
       {
         "intent": "RELEVANT_NEED",
         "score": 0.88
       }
     ],
-    "confidence": 0.88,
+    "confidence": 0.9,
     "reasonCodes": [
       "ACTIONABLE_COMMERCIAL_OVERRIDE",
-      "PAIN_POINT_NEED_DETECTED"
+      "PRODUCT_FEATURE_AND_COMPATIBILITY_INQUIRY"
     ],
-    "exactMatch": true,
-    "primaryMatch": true,
+    "exactMatch": false,
+    "primaryMatch": false,
     "difficulty": "easy",
     "isContextual": true,
     "isMultiIntent": false,
     "isCriticalError": false,
-    "isCommercialFP": false,
+    "isCommercialFP": true,
     "isRejectionFN": false
   },
   {
@@ -1831,12 +1873,18 @@
     },
     "expectedPrimaryIntent": "RELEVANT_NEED",
     "expectedSecondaryIntents": [],
-    "predictedPrimaryIntent": "UNKNOWN",
+    "predictedPrimaryIntent": "PRODUCT_CURIOUS",
     "predictedSecondaryIntents": [],
-    "topCandidates": [],
-    "confidence": 0.6,
+    "topCandidates": [
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      }
+    ],
+    "confidence": 0.9,
     "reasonCodes": [
-      "UNKNOWN_BY_INSUFFICIENT_EVIDENCE"
+      "ACTIONABLE_COMMERCIAL_OVERRIDE",
+      "PRODUCT_FEATURE_AND_COMPATIBILITY_INQUIRY"
     ],
     "exactMatch": false,
     "primaryMatch": false,
@@ -1844,7 +1892,7 @@
     "isContextual": true,
     "isMultiIntent": false,
     "isCriticalError": false,
-    "isCommercialFP": false,
+    "isCommercialFP": true,
     "isRejectionFN": false
   },
   {
@@ -2043,27 +2091,29 @@
     "expectedSecondaryIntents": [
       "PRODUCT_CURIOUS"
     ],
-    "predictedPrimaryIntent": "VPN_REQUEST",
-    "predictedSecondaryIntents": [
-      "PRODUCT_CURIOUS"
-    ],
+    "predictedPrimaryIntent": "OFF_TOPIC",
+    "predictedSecondaryIntents": [],
     "topCandidates": [
       {
         "intent": "VPN_REQUEST",
         "score": 0.94
       },
       {
+        "intent": "OFF_TOPIC",
+        "score": 0.92
+      },
+      {
         "intent": "PRODUCT_CURIOUS",
         "score": 0.9
       }
     ],
-    "confidence": 0.94,
+    "confidence": 0.92,
     "reasonCodes": [
-      "ACTIONABLE_COMMERCIAL_OVERRIDE",
-      "EXPLICIT_VPN_INQUIRY"
+      "OFF_TOPIC_POSITIVE_OVERRIDE",
+      "OFF_TOPIC_BY_POSITIVE_EVIDENCE"
     ],
-    "exactMatch": true,
-    "primaryMatch": true,
+    "exactMatch": false,
+    "primaryMatch": false,
     "difficulty": "medium",
     "isContextual": true,
     "isMultiIntent": true,
@@ -2352,7 +2402,7 @@
   {
     "caseId": "holdout_062",
     "inputText": "سرور Shadowsocks هم ارائه میدید؟",
-    "normalizedText": "سرور Shadowsocks هم ارایه میدید؟",
+    "normalizedText": "سرور shadowsocks هم ارایه میدید؟",
     "conversationContext": {
       "previousUserMessages": [],
       "previousIntents": [],
@@ -2482,7 +2532,7 @@
   {
     "caseId": "holdout_065",
     "inputText": "روی آیفون با برنامه Streisand یا v2rayNG کار میکنه؟",
-    "normalizedText": "روی ایفون با برنامه Streisand یا v2rayNG کار میکنه؟",
+    "normalizedText": "روی ایفون با برنامه streisand یا v2rayng کار میکنه؟",
     "conversationContext": {
       "previousUserMessages": [],
       "previousIntents": [],
@@ -2703,18 +2753,22 @@
     },
     "expectedPrimaryIntent": "PRODUCT_CURIOUS",
     "expectedSecondaryIntents": [],
-    "predictedPrimaryIntent": "QUESTION",
+    "predictedPrimaryIntent": "VPN_REQUEST",
     "predictedSecondaryIntents": [],
     "topCandidates": [
+      {
+        "intent": "VPN_REQUEST",
+        "score": 0.94
+      },
       {
         "intent": "QUESTION",
         "score": 0.85
       }
     ],
-    "confidence": 0.85,
+    "confidence": 0.94,
     "reasonCodes": [
-      "GENERAL_QUESTION_PRIMARY",
-      "GENERAL_CONVERSATION_QUESTION"
+      "ACTIONABLE_COMMERCIAL_OVERRIDE",
+      "EXPLICIT_VPN_INQUIRY"
     ],
     "exactMatch": false,
     "primaryMatch": false,
@@ -2949,21 +3003,27 @@
     },
     "expectedPrimaryIntent": "PRODUCT_CURIOUS",
     "expectedSecondaryIntents": [],
-    "predictedPrimaryIntent": "QUESTION",
-    "predictedSecondaryIntents": [],
+    "predictedPrimaryIntent": "PRODUCT_CURIOUS",
+    "predictedSecondaryIntents": [
+      "QUESTION"
+    ],
     "topCandidates": [
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
+      },
       {
         "intent": "QUESTION",
         "score": 0.85
       }
     ],
-    "confidence": 0.85,
+    "confidence": 0.9,
     "reasonCodes": [
-      "GENERAL_QUESTION_PRIMARY",
-      "GENERAL_CONVERSATION_QUESTION"
+      "ACTIONABLE_COMMERCIAL_OVERRIDE",
+      "PRODUCT_FEATURE_AND_COMPATIBILITY_INQUIRY"
     ],
     "exactMatch": false,
-    "primaryMatch": false,
+    "primaryMatch": true,
     "difficulty": "medium",
     "isContextual": true,
     "isMultiIntent": false,
@@ -3032,10 +3092,16 @@
     "expectedPrimaryIntent": "TRIAL_REQUEST",
     "expectedSecondaryIntents": [],
     "predictedPrimaryIntent": "TRIAL_REQUEST",
-    "predictedSecondaryIntents": [],
+    "predictedSecondaryIntents": [
+      "VPN_REQUEST"
+    ],
     "topCandidates": [
       {
         "intent": "TRIAL_REQUEST",
+        "score": 0.94
+      },
+      {
+        "intent": "VPN_REQUEST",
         "score": 0.94
       },
       {
@@ -3048,7 +3114,7 @@
       "ACTIONABLE_COMMERCIAL_OVERRIDE",
       "DIRECT_TRIAL_REQUEST"
     ],
-    "exactMatch": true,
+    "exactMatch": false,
     "primaryMatch": true,
     "difficulty": "easy",
     "isContextual": true,
@@ -3110,11 +3176,17 @@
     "expectedPrimaryIntent": "TRIAL_REQUEST",
     "expectedSecondaryIntents": [],
     "predictedPrimaryIntent": "TRIAL_REQUEST",
-    "predictedSecondaryIntents": [],
+    "predictedSecondaryIntents": [
+      "PRODUCT_CURIOUS"
+    ],
     "topCandidates": [
       {
         "intent": "TRIAL_REQUEST",
         "score": 0.94
+      },
+      {
+        "intent": "PRODUCT_CURIOUS",
+        "score": 0.9
       },
       {
         "intent": "QUESTION",
@@ -3126,7 +3198,7 @@
       "ACTIONABLE_COMMERCIAL_OVERRIDE",
       "DIRECT_TRIAL_REQUEST"
     ],
-    "exactMatch": true,
+    "exactMatch": false,
     "primaryMatch": true,
     "difficulty": "easy",
     "isContextual": true,
@@ -3765,7 +3837,7 @@
     "expectedSecondaryIntents": [],
     "predictedPrimaryIntent": "PRICE_REQUEST",
     "predictedSecondaryIntents": [
-      "GOODBYE"
+      "PLAN_REQUEST"
     ],
     "topCandidates": [
       {
@@ -3959,9 +4031,9 @@
     "expectedSecondaryIntents": [
       "OBJECTION"
     ],
-    "predictedPrimaryIntent": "OBJECTION",
+    "predictedPrimaryIntent": "PRICE_REQUEST",
     "predictedSecondaryIntents": [
-      "PRICE_REQUEST"
+      "PLAN_REQUEST"
     ],
     "topCandidates": [
       {
@@ -3981,14 +4053,13 @@
         "score": 0.85
       }
     ],
-    "confidence": 0.92,
+    "confidence": 0.94,
     "reasonCodes": [
-      "STRONG_OBJECTION_OVERRIDE",
-      "OBJECTION_DETECTED",
-      "OBJECTION_PRICE_RESISTANCE"
+      "ACTIONABLE_COMMERCIAL_OVERRIDE",
+      "DIRECT_PRICE_QUERY"
     ],
     "exactMatch": false,
-    "primaryMatch": false,
+    "primaryMatch": true,
     "difficulty": "medium",
     "isContextual": true,
     "isMultiIntent": true,
@@ -4155,7 +4226,11 @@
     "topCandidates": [
       {
         "intent": "PLAN_REQUEST",
-        "score": 0.93
+        "score": 0.96
+      },
+      {
+        "intent": "VPN_REQUEST",
+        "score": 0.94
       },
       {
         "intent": "PRODUCT_CURIOUS",
@@ -4166,7 +4241,7 @@
         "score": 0.85
       }
     ],
-    "confidence": 0.93,
+    "confidence": 0.96,
     "reasonCodes": [
       "ACTIONABLE_COMMERCIAL_OVERRIDE",
       "PLAN_AND_TIER_QUERY"
@@ -5077,11 +5152,15 @@
     "expectedSecondaryIntents": [],
     "predictedPrimaryIntent": "PURCHASE_INTENT",
     "predictedSecondaryIntents": [
-      "QUESTION"
+      "VPN_REQUEST"
     ],
     "topCandidates": [
       {
         "intent": "PURCHASE_INTENT",
+        "score": 0.94
+      },
+      {
+        "intent": "VPN_REQUEST",
         "score": 0.94
       },
       {
@@ -5370,6 +5449,10 @@
     "topCandidates": [
       {
         "intent": "PURCHASE_INTENT",
+        "score": 0.94
+      },
+      {
+        "intent": "VPN_REQUEST",
         "score": 0.94
       },
       {
@@ -5745,6 +5828,10 @@
         "score": 0.94
       },
       {
+        "intent": "VPN_REQUEST",
+        "score": 0.94
+      },
+      {
         "intent": "OBJECTION",
         "score": 0.92
       },
@@ -5826,6 +5913,10 @@
       {
         "intent": "PRODUCT_CURIOUS",
         "score": 0.9
+      },
+      {
+        "intent": "RELEVANT_NEED",
+        "score": 0.88
       },
       {
         "intent": "QUESTION",
@@ -5955,6 +6046,10 @@
       "PRODUCT_CURIOUS"
     ],
     "topCandidates": [
+      {
+        "intent": "VPN_REQUEST",
+        "score": 0.94
+      },
       {
         "intent": "OBJECTION",
         "score": 0.92
@@ -6240,11 +6335,17 @@
     "expectedPrimaryIntent": "REJECTION",
     "expectedSecondaryIntents": [],
     "predictedPrimaryIntent": "REJECTION",
-    "predictedSecondaryIntents": [],
+    "predictedSecondaryIntents": [
+      "SMALL_TALK"
+    ],
     "topCandidates": [
       {
         "intent": "REJECTION",
         "score": 0.96
+      },
+      {
+        "intent": "SMALL_TALK",
+        "score": 0.9
       }
     ],
     "confidence": 0.96,
@@ -6252,7 +6353,7 @@
       "REJECTION_SAFETY_OVERRIDE",
       "EXPLICIT_USER_REJECTION"
     ],
-    "exactMatch": true,
+    "exactMatch": false,
     "primaryMatch": true,
     "difficulty": "easy",
     "isContextual": true,
@@ -6570,11 +6671,17 @@
     "expectedPrimaryIntent": "REJECTION",
     "expectedSecondaryIntents": [],
     "predictedPrimaryIntent": "REJECTION",
-    "predictedSecondaryIntents": [],
+    "predictedSecondaryIntents": [
+      "SMALL_TALK"
+    ],
     "topCandidates": [
       {
         "intent": "REJECTION",
         "score": 0.96
+      },
+      {
+        "intent": "SMALL_TALK",
+        "score": 0.9
       }
     ],
     "confidence": 0.96,
@@ -6582,7 +6689,7 @@
       "REJECTION_SAFETY_OVERRIDE",
       "EXPLICIT_USER_REJECTION"
     ],
-    "exactMatch": true,
+    "exactMatch": false,
     "primaryMatch": true,
     "difficulty": "easy",
     "isContextual": true,
@@ -6655,6 +6762,10 @@
       {
         "intent": "GOODBYE",
         "score": 0.94
+      },
+      {
+        "intent": "SMALL_TALK",
+        "score": 0.9
       }
     ],
     "confidence": 0.94,
@@ -7839,6 +7950,10 @@
         "score": 0.93
       },
       {
+        "intent": "OFF_TOPIC",
+        "score": 0.92
+      },
+      {
         "intent": "QUESTION",
         "score": 0.85
       }
@@ -7900,7 +8015,7 @@
   {
     "caseId": "holdout_193",
     "inputText": "عضو کانال من شو موزیکای جدید میذارم t.me/joinchat/AAAAAFK",
-    "normalizedText": "عضو کانال من شو موزیکای جدید میذارم t.me/joinchat/AAFK",
+    "normalizedText": "عضو کانال من شو موزیکای جدید میذارم t.me/joinchat/afk",
     "conversationContext": {
       "previousUserMessages": [],
       "previousIntents": [],
@@ -8027,15 +8142,21 @@
     },
     "expectedPrimaryIntent": "OFF_TOPIC",
     "expectedSecondaryIntents": [],
-    "predictedPrimaryIntent": "UNKNOWN",
+    "predictedPrimaryIntent": "OFF_TOPIC",
     "predictedSecondaryIntents": [],
-    "topCandidates": [],
-    "confidence": 0.6,
-    "reasonCodes": [
-      "UNKNOWN_BY_INSUFFICIENT_EVIDENCE"
+    "topCandidates": [
+      {
+        "intent": "OFF_TOPIC",
+        "score": 0.92
+      }
     ],
-    "exactMatch": false,
-    "primaryMatch": false,
+    "confidence": 0.92,
+    "reasonCodes": [
+      "OFF_TOPIC_POSITIVE_OVERRIDE",
+      "OFF_TOPIC_BY_POSITIVE_EVIDENCE"
+    ],
+    "exactMatch": true,
+    "primaryMatch": true,
     "difficulty": "hard",
     "isContextual": true,
     "isMultiIntent": false,
@@ -8068,6 +8189,10 @@
       "QUESTION"
     ],
     "topCandidates": [
+      {
+        "intent": "PRICE_REQUEST",
+        "score": 0.94
+      },
       {
         "intent": "OFF_TOPIC",
         "score": 0.92

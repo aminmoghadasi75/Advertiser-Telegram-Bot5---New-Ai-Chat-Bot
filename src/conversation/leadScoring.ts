@@ -102,14 +102,15 @@ export function calculateLeadScoreUpdate(
   existingFactors: LeadScoreFactor[] = [],
   turn: number = 1
 ): ScoreUpdateResult {
+  const safeScore = Number.isFinite(currentScore) ? currentScore : 0;
   const rule = SCORE_RULES[intent];
   if (!rule) {
     return {
-      newScore: currentScore,
+      newScore: safeScore,
       delta: 0,
       reason: 'No score rule for intent',
       isDeduplicated: true,
-      scoreClassification: getScoreClassification(currentScore),
+      scoreClassification: getScoreClassification(safeScore),
     };
   }
 
@@ -132,15 +133,15 @@ export function calculateLeadScoreUpdate(
 
   if (delta === 0) {
     return {
-      newScore: currentScore,
+      newScore: safeScore,
       delta: 0,
       reason: `سقف امتیاز رده (${rule.description}) قبلاً تکمیل شده است (Deduplicated)`,
       isDeduplicated: true,
-      scoreClassification: getScoreClassification(currentScore),
+      scoreClassification: getScoreClassification(safeScore),
     };
   }
 
-  const boundedScore = Math.max(0, Math.min(100, currentScore + delta));
+  const boundedScore = Math.max(0, Math.min(100, safeScore + delta));
 
   const factor: LeadScoreFactor = {
     intent,

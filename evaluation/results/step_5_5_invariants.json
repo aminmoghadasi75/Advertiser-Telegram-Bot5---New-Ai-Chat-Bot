@@ -1,5 +1,5 @@
 {
-  "allInvariantsPassed": true,
+  "allInvariantsPassed": false,
   "invariants": {
     "raw_records_match": {
       "passed": true,
@@ -17,14 +17,14 @@
       "actual": 200
     },
     "confusion_diagonal_matches_correct": {
-      "passed": true,
+      "passed": false,
       "expected": 166,
-      "actual": 166
+      "actual": 163
     },
     "accuracy_formula_exact": {
-      "passed": true,
+      "passed": false,
       "expected": 0.83,
-      "actual": 0.83
+      "actual": 0.815
     },
     "weighted_recall_equals_accuracy": {
       "passed": true,

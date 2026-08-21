@@ -166,11 +166,12 @@ export function transitionConversationState(
 
   // 4b. Support Handoff Persistence
   if (currentState === ConversationState.SUPPORT_HANDOFF) {
+    const currentIntent = intent as Intent;
     if (
-      intent !== Intent.GOODBYE &&
-      intent !== Intent.REJECTION &&
-      intent !== Intent.INAPPROPRIATE &&
-      intent !== Intent.SPAM
+      currentIntent !== Intent.GOODBYE &&
+      currentIntent !== Intent.REJECTION &&
+      currentIntent !== Intent.INAPPROPRIATE &&
+      currentIntent !== Intent.SPAM
     ) {
       return {
         newState: ConversationState.SUPPORT_HANDOFF,

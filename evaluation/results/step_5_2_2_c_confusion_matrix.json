@@ -22,7 +22,7 @@
   ],
   "matrix": [
     [
-      10,
+      11,
       0,
       0,
       0,
@@ -35,7 +35,7 @@
       0,
       0,
       0,
-      1,
+      0,
       0,
       0,
       0,
@@ -44,8 +44,8 @@
     ],
     [
       0,
-      9,
-      0,
+      8,
+      1,
       0,
       0,
       0,
@@ -66,7 +66,7 @@
     [
       0,
       1,
-      11,
+      10,
       0,
       0,
       0,
@@ -78,7 +78,7 @@
       0,
       0,
       0,
-      0,
+      1,
       0,
       0,
       0,
@@ -88,6 +88,8 @@
       0,
       2,
       0,
+      3,
+      0,
       7,
       0,
       0,
@@ -96,21 +98,19 @@
       0,
       0,
       0,
-      0,
-      0,
       1,
       0,
       0,
       0,
       0,
-      4
+      1
     ],
     [
       0,
       0,
       0,
       0,
-      11,
+      10,
       1,
       0,
       0,
@@ -123,16 +123,16 @@
       0,
       0,
       0,
-      0,
+      1,
       0
     ],
     [
       0,
       0,
-      4,
+      2,
       0,
-      1,
-      7,
+      2,
+      8,
       0,
       0,
       0,
@@ -176,11 +176,11 @@
       0,
       0,
       0,
-      9,
+      10,
       1,
       0,
       0,
-      1,
+      0,
       0,
       0,
       0,
@@ -396,8 +396,8 @@
       0,
       0,
       0,
-      3,
-      1
+      4,
+      0
     ],
     [
       0,
@@ -423,23 +423,28 @@
   ],
   "topConfusionPairs": [
     {
+      "actual": "RELEVANT_NEED",
+      "predicted": "PRODUCT_CURIOUS",
+      "count": 7
+    },
+    {
       "actual": "SMALL_TALK",
       "predicted": "UNKNOWN",
       "count": 4
     },
     {
       "actual": "RELEVANT_NEED",
-      "predicted": "UNKNOWN",
-      "count": 4
+      "predicted": "SMALL_TALK",
+      "count": 2
     },
     {
       "actual": "PRODUCT_CURIOUS",
       "predicted": "QUESTION",
-      "count": 4
+      "count": 2
     },
     {
-      "actual": "RELEVANT_NEED",
-      "predicted": "SMALL_TALK",
+      "actual": "PRODUCT_CURIOUS",
+      "predicted": "VPN_REQUEST",
       "count": 2
     },
     {
@@ -448,8 +453,8 @@
       "count": 2
     },
     {
-      "actual": "GREETING",
-      "predicted": "GOODBYE",
+      "actual": "SMALL_TALK",
+      "predicted": "QUESTION",
       "count": 1
     },
     {
@@ -458,8 +463,18 @@
       "count": 1
     },
     {
+      "actual": "QUESTION",
+      "predicted": "SUSPICION_BOT",
+      "count": 1
+    },
+    {
       "actual": "RELEVANT_NEED",
       "predicted": "GOODBYE",
+      "count": 1
+    },
+    {
+      "actual": "RELEVANT_NEED",
+      "predicted": "UNKNOWN",
       "count": 1
     },
     {
@@ -473,8 +488,8 @@
       "count": 1
     },
     {
-      "actual": "PRODUCT_CURIOUS",
-      "predicted": "VPN_REQUEST",
+      "actual": "VPN_REQUEST",
+      "predicted": "OFF_TOPIC",
       "count": 1
     },
     {
@@ -503,11 +518,6 @@
       "count": 1
     },
     {
-      "actual": "PRICE_REQUEST",
-      "predicted": "OBJECTION",
-      "count": 1
-    },
-    {
       "actual": "PLAN_REQUEST",
       "predicted": "PRICE_REQUEST",
       "count": 1
@@ -530,11 +540,6 @@
     {
       "actual": "OBJECTION",
       "predicted": "OFF_TOPIC",
-      "count": 1
-    },
-    {
-      "actual": "OFF_TOPIC",
-      "predicted": "UNKNOWN",
       "count": 1
     }
   ]

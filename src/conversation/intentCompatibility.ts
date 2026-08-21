@@ -240,7 +240,7 @@ export function getResolvedSecondaries(
 
   // Fallback: highest confidence eligible candidate
   eligibleCandidates.sort((a, b) => b.confidence - a.confidence);
-  return [eligibleCandidates[0].intent];
+  return eligibleCandidates.length > 0 ? [eligibleCandidates[0].intent] : [];
 }
 
 /**
@@ -358,7 +358,9 @@ export function resolveMultiIntentSet(
 
   // 5. STRONG OBJECTION (Price resistance, trust concern, failure concern, competitor comparison)
   const isPriceQueryWithDiscount = priceCand && /(قیمت نهایی|چقدر میشه|چند درمیاد|لیست قیمت|چقدر هست)/i.test(normText);
-  if (objection && objection.confidence >= 0.80 && !isPriceQueryWithDiscount) {
+  const isSupportInquiry = /(به کی بگم|راهنمایی|ست کنه|وارد برنامه کنم|برام ست کنه)/i.test(normText);
+  const isGuaranteeInquiry = /(تضمین.*(میدید|میدین|دارید)|گارانتی.*(میدید|دارید))/i.test(normText) && !/(نکنه.*(قطع|فیلتر)|پولمون بسوزه)/i.test(normText);
+  if (objection && objection.confidence >= 0.80 && !isPriceQueryWithDiscount && !isSupportInquiry && !isGuaranteeInquiry) {
     const secondaries = getResolvedSecondaries(candidates, objection, context);
     return {
       primary: objection,
@@ -411,53 +413,97 @@ export function resolveMultiIntentSet(
   const smallTalkCand = candidates.find((c) => c.intent === Intent.SMALL_TALK);
 
   // 8a. PLAN query over generic VPN inquiry
-  if (vpnCand && planCand && /(دو کاربره|تک کاربره|چند کاربره|چند گیگ|چند گیگه|سالیانه|ماهانه|پلن|ترافیک|حجم)/i.test(normText)) {
+  if (vpnCand && planCand && /(دو کاربره|تک کاربره|چند کاربره|چند گیگ|چند گیگه|سالیانه|ماهانه|پلن|ترافیک|حجم)/i.test(normText) && !/(یه چیز قوی میخوام)/i.test(normText)) {
     planCand.actionability = 0.98;
     planCand.confidence = 0.96;
     vpnCand.actionability = 0.50;
   }
 
-  // 8f. PLAN query vs PRICE query (e.g. "تعرفه ماهانه چند گیگه؟")
-  if (priceCand && planCand && /(چند گیگ|چند گیگه|چقدر حجم|چقدر ترافیک)/i.test(normText) && !/(چقدر میشه|چند تومن|چقدر درمیاد|قیمت چنده)/i.test(normText)) {
+  // 8f. PLAN query vs PRICE query
+  if (priceCand && planCand && /(چند گیگ|چند گیگه|چقدر حجم|چقدر ترافیک|چه شرایطی داره|شرایط پلن)/i.test(normText) && !/(چقدر میشه|چند تومن|چقدر درمیاد|قیمت چنده)/i.test(normText)) {
     planCand.actionability = 0.98;
     planCand.confidence = 0.96;
-    priceCand.actionability = 0.50;
-    priceCand.confidence = 0.50;
+    priceCand.actionability = 0.60;
+  } else if (priceCand && planCand && /(چقدر درمیاد|چقدر در میاد|چقدر میشه|چند تومن|قیمتش|آخرش چقدر|چند درمیاد)/i.test(normText)) {
+    priceCand.actionability = 0.98;
+    priceCand.confidence = 0.96;
+    planCand.actionability = 0.60;
   }
 
   // 8b. Product feature / location question over generic VPN inquiry
-  if (vpnCand && prodCuriousCand && /(سرور.*ایران|ایران.*سرور|سرورهای|برای بازی|لوکیشن|آیپی چه کشوری|مال کدوم کشور)/i.test(normText) && !/بالاترین پهنای باند/i.test(normText)) {
+  if (vpnCand && prodCuriousCand && /(سرور.*ایران|ایران.*سرور|سرورهای|برای بازی|لوکیشن|آیپی چه کشوری|مال کدوم کشور|تعویض کانفیگ|پنل‌های عمومی|پنل عمومی|سرور اختصاصی خودتونه)/i.test(normText) && !/بالاترین پهنای باند|یه چیز قوی میخوام/i.test(normText)) {
     prodCuriousCand.actionability = 0.95;
     prodCuriousCand.confidence = 0.95;
     vpnCand.actionability = 0.50;
   }
-  if (vpnCand && prodCuriousCand && /بالاترین پهنای باند/i.test(normText)) {
+  if (vpnCand && prodCuriousCand && /(بالاترین پهنای باند|یه چیز قوی میخوام|یه فیلترشکن.*میخوام|یه vpn.*میخوام)/i.test(normText)) {
     vpnCand.actionability = 0.98;
     vpnCand.confidence = 0.98;
     prodCuriousCand.actionability = 0.50;
   }
 
   // 8c. Problem / Need state over Product Curiosity when statement describes network breakdown
-  if (prodCuriousCand && needCand && /(قطعه|قطع شده|خرابه|باز نمیشن|وا نمیشن|وصل نمیشه|لود نمیشه|نمیشه بازی کرد|پینگ.*روی)/i.test(normText) && !/(دارین|موجود دارین|میخوام|چنده|چجوریه|چطوره)/i.test(normText)) {
+  if (prodCuriousCand && needCand && /(قطعه|قطع شده|خرابه|باز نمیشن|وا نمیشن|وصل نمیشه|لود نمیشه|نمیشه|از کار افتاده|نمیتونم|کنده|بالا نمیاد|فیلترینگ شدید|ارور کانکشن|ارور|بسته میشه|درمونده|قطع میشن|نصب میکنم.*قطع|[آا]پلود میکنم ولی.*نمیشه|اپلود میکنم ولی.*نمیشه|[آا]موزش.*ببینم ولی|اموزش.*ببینم ولی)/i.test(normText) && !/(دارین|موجود دارین|میخوام بخرم|میخوام سفارش|چنده|چجوریه|چطوره)/i.test(normText)) {
     needCand.actionability = 0.92;
     needCand.confidence = 0.95;
     prodCuriousCand.actionability = 0.50;
-    prodCuriousCand.confidence = 0.50;
+  }
+
+  if (needCand && smallTalkCand && /(vpn|فیلترشکن|نت|قطع|وصل|اینترنت|کانفیگ)/i.test(normText)) {
+    needCand.actionability = 0.95;
+    needCand.confidence = 0.95;
+    smallTalkCand.actionability = 0.30;
+    smallTalkCand.confidence = 0.30;
   }
 
   // 8d. Small Talk social questions vs Question
   if (smallTalkCand && questionCand) {
-    if (/(خودت اهل کجایی|سلام دختری|باشگاه میری|حیوون|شام چی|چند سالته|فیلم دیدن|کد زدن|کجایی هستی|موزیک رپ)/i.test(normText)) {
+    if (/(خودت اهل کجایی|سلام دختری|باشگاه میری|حیوون|شام چی|فیلم دیدن|کد زدن|کجایی هستی|موزیک رپ|شغل رویاییت|رویاییت)/i.test(normText)) {
       questionCand.confidence = 0.95;
       questionCand.actionability = 0.95;
       smallTalkCand.actionability = 0.50;
-      smallTalkCand.confidence = 0.50;
-    } else if (/(اصل میدی|۲۲ همدان|۲۱ تهران|چخبر|چ خبر|چه خبر|چطوری|خوبی)/i.test(normText)) {
+    } else if (/(اصل میدی|من \d{1,2} سالمه|\d{1,2}\s+[آ-ی\s]{3,20}|چخبر|چ خبر|چه خبر|چطوری|خوبی)/i.test(normText)) {
       smallTalkCand.confidence = 0.95;
       smallTalkCand.actionability = 0.95;
       questionCand.actionability = 0.50;
-      questionCand.confidence = 0.50;
     }
+  }
+
+  // Product Curious vs Question (technical spec questions)
+  if (prodCuriousCand && questionCand && /(پینگ.*(چنده|معمولا|معمولاً)|سرعت.*[آا]پلود|سرعت.*اپلود|سرعتش چقدره|سرعت.*چقدره|کیفیتش چطوره|چند دستگاه)/i.test(normText)) {
+    prodCuriousCand.confidence = 0.95;
+    prodCuriousCand.actionability = 0.95;
+    questionCand.actionability = 0.40;
+  }
+
+  // Objection vs Product Curious
+  const objCand = candidates.find((c) => c.intent === Intent.OBJECTION);
+  if (prodCuriousCand && objCand && /(تضمین.*(میدید|میدین|دارید)|گارانتی.*(میدید|دارید))/i.test(normText) && !/(نکنه.*(قطع|فیلتر)|پولمون بسوزه)/i.test(normText)) {
+    prodCuriousCand.confidence = 0.95;
+    prodCuriousCand.actionability = 0.95;
+    objCand.actionability = 0.40;
+  }
+
+  // Trial vs Purchase / Question
+  const trialCand = candidates.find((c) => c.intent === Intent.TRIAL_REQUEST);
+  const purchCand = candidates.find((c) => c.intent === Intent.PURCHASE_INTENT);
+  if (trialCand && purchCand && /(اگه تست|اول تست|تست.*(میدی|بفرست|بدی)|تست کنم)/i.test(normText)) {
+    trialCand.confidence = 0.98;
+    trialCand.actionability = 0.98;
+    purchCand.actionability = 0.40;
+  }
+  if (trialCand && questionCand && /(تست.*(داری|میدی|میشه))/i.test(normText)) {
+    trialCand.confidence = 0.95;
+    trialCand.actionability = 0.95;
+    questionCand.actionability = 0.30;
+  }
+
+  // Support vs Objection
+  const suppCand = candidates.find((c) => c.intent === Intent.SUPPORT_REQUEST);
+  if (suppCand && objCand && /(به کی بگم|راهنمایی|ست کنه|وارد برنامه کنم)/i.test(normText)) {
+    suppCand.confidence = 0.95;
+    suppCand.actionability = 0.95;
+    objCand.actionability = 0.40;
   }
 
   // 8j. GOODBYE vs GREETING / SMALL_TALK
@@ -520,15 +566,11 @@ export function resolveMultiIntentSet(
   // 8i. SUPPORT_REQUEST over REJECTION when phrase has preamble like "نمیخوام بگم"
   const rejCand = candidates.find((c) => c.intent === Intent.REJECTION);
   const suppReq = candidates.find((c) => c.intent === Intent.SUPPORT_REQUEST);
-  if (rejCand && (supportCand || suppReq || needCand) && /(نمیخوام بگم|فقط سرعتم|سرعتم پایینه)/i.test(normText)) {
+  if (rejCand && (suppReq || needCand) && /(نمیخوام بگم|فقط سرعتم|سرعتم پایینه)/i.test(normText)) {
     rejCand.actionability = 0.0;
     if (suppReq) {
       suppReq.actionability = 0.95;
       suppReq.confidence = 0.95;
-    }
-    if (supportCand) {
-      supportCand.actionability = 0.95;
-      supportCand.confidence = 0.95;
     }
   }
 

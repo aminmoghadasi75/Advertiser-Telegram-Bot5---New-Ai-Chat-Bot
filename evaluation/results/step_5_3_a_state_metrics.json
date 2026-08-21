@@ -1,12 +1,24 @@
 {
-  "auditTimestamp": "2026-08-21T14:43:36.774Z",
+  "auditTimestamp": "2026-08-21T16:01:47.182Z",
   "totalTurns": 138,
-  "correctPredictions": 129,
-  "stateAccuracy": 93.48,
+  "correctPredictions": 127,
+  "stateAccuracy": 92.03,
   "preChangeAccuracy": 81.88,
-  "improvementPercentagePoints": 11.59,
-  "stateErrorsCount": 9,
+  "improvementPercentagePoints": 10.14,
+  "stateErrorsCount": 11,
   "stateErrors": [
+    {
+      "conversationId": "conv_succ_05",
+      "turnId": 3,
+      "userMessage": "قیمت دو کاربره چنده؟",
+      "previousState": "PRODUCT_INTEREST",
+      "predictedState": "PRODUCT_INTEREST",
+      "expectedState": "PRICE_DISCUSSION",
+      "detectedIntent": "PRODUCT_CURIOUS",
+      "expectedIntent": "PRICE_REQUEST",
+      "transitionReason": "Lead score is warm (35). Soft introduction permitted.",
+      "errorCategories": []
+    },
     {
       "conversationId": "conv_near_02",
       "turnId": 2,
@@ -26,9 +38,9 @@
       "previousState": "PRODUCT_INTRODUCTION",
       "predictedState": "PRODUCT_INTEREST",
       "expectedState": "GOODBYE",
-      "detectedIntent": "QUESTION",
+      "detectedIntent": "SMALL_TALK",
       "expectedIntent": "GOODBYE",
-      "transitionReason": "Lead score is warm (45). Soft introduction permitted.",
+      "transitionReason": "Lead score is warm (50). Soft introduction permitted.",
       "errorCategories": []
     },
     {
@@ -68,6 +80,42 @@
       "errorCategories": []
     },
     {
+      "conversationId": "conv_rej_01",
+      "turnId": 3,
+      "userMessage": "باشه اوکی، چیکارا میکنی؟",
+      "previousState": "REJECTED",
+      "predictedState": "REJECTED",
+      "expectedState": "LOW_INTEREST",
+      "detectedIntent": "SMALL_TALK",
+      "expectedIntent": "SMALL_TALK",
+      "transitionReason": "Promotion lock active from prior rejection. Chit-chat only.",
+      "errorCategories": []
+    },
+    {
+      "conversationId": "conv_rej_03",
+      "turnId": 3,
+      "userMessage": "خودت اهل کجایی راستی؟",
+      "previousState": "REJECTED",
+      "predictedState": "REJECTED",
+      "expectedState": "LOW_INTEREST",
+      "detectedIntent": "QUESTION",
+      "expectedIntent": "QUESTION",
+      "transitionReason": "Promotion lock active from prior rejection. Chit-chat only.",
+      "errorCategories": []
+    },
+    {
+      "conversationId": "conv_exit_01",
+      "turnId": 1,
+      "userMessage": "سلام من باید برم فعلا بای",
+      "previousState": "INITIAL_GREETING",
+      "predictedState": "EARLY_CONVERSATION",
+      "expectedState": "GOODBYE",
+      "detectedIntent": "GREETING",
+      "expectedIntent": "GOODBYE",
+      "transitionReason": "Conversation in early discovery (< 120s and < 2 turns). Building natural rapport.",
+      "errorCategories": []
+    },
+    {
       "conversationId": "conv_short_02",
       "turnId": 2,
       "userMessage": "۲۱ تهران تو؟",
@@ -80,48 +128,24 @@
       "errorCategories": []
     },
     {
-      "conversationId": "conv_short_05",
-      "turnId": 1,
-      "userMessage": "سلام شب بخیر چطوری؟",
-      "previousState": "INITIAL_GREETING",
-      "predictedState": "GOODBYE",
-      "expectedState": "EARLY_CONVERSATION",
-      "detectedIntent": "GOODBYE",
-      "expectedIntent": "GREETING",
-      "transitionReason": "Conversation is in goodbye / terminal closing phase. Promotions suppressed.",
-      "errorCategories": []
-    },
-    {
       "conversationId": "conv_prod_04",
       "turnId": 1,
       "userMessage": "سلام وی پی ان با آیپی ثابت برای ترید هم دارین؟",
       "previousState": "INITIAL_GREETING",
       "predictedState": "PRODUCT_INTRODUCTION",
       "expectedState": "PRODUCT_INTEREST",
-      "detectedIntent": "VPN_REQUEST",
+      "detectedIntent": "PRODUCT_CURIOUS",
       "expectedIntent": "PRODUCT_CURIOUS",
-      "transitionReason": "Explicit user intent detected (VPN_REQUEST). Time delays and locks bypassed per override policy.",
-      "errorCategories": []
-    },
-    {
-      "conversationId": "conv_prod_05",
-      "turnId": 2,
-      "userMessage": "یک ماهه چنده؟",
-      "previousState": "PRODUCT_INTRODUCTION",
-      "predictedState": "PRODUCT_INTEREST",
-      "expectedState": "PRICE_DISCUSSION",
-      "detectedIntent": "QUESTION",
-      "expectedIntent": "PRICE_REQUEST",
-      "transitionReason": "Lead score is warm (40). Soft introduction permitted.",
+      "transitionReason": "Conversation in early discovery (< 120s and < 2 turns). Building natural rapport.",
       "errorCategories": []
     }
   ],
-  "macroPrecision": 0.9176,
-  "macroRecall": 0.93,
-  "macroF1": 0.9226,
-  "weightedPrecision": 0.9409,
-  "weightedRecall": 0.9348,
-  "weightedF1": 0.937,
+  "macroPrecision": 0.8262,
+  "macroRecall": 0.8509,
+  "macroF1": 0.8358,
+  "weightedPrecision": 0.916,
+  "weightedRecall": 0.9203,
+  "weightedF1": 0.9158,
   "confusionMatrix": {
     "labels": [
       "INITIAL_GREETING",
@@ -160,7 +184,7 @@
       ],
       [
         0,
-        41,
+        42,
         1,
         0,
         0,
@@ -172,7 +196,7 @@
         0,
         0,
         0,
-        1,
+        0,
         0
       ],
       [
@@ -340,8 +364,8 @@
         0,
         0,
         0,
-        2,
         0,
+        2,
         0,
         0
       ],
@@ -364,7 +388,7 @@
       ],
       [
         0,
-        0,
+        1,
         0,
         0,
         0,
@@ -376,7 +400,7 @@
         0,
         0,
         0,
-        17,
+        16,
         0
       ],
       [
@@ -412,12 +436,12 @@
     "EARLY_CONVERSATION": {
       "state": "EARLY_CONVERSATION",
       "support": 43,
-      "tp": 41,
-      "fp": 1,
-      "fn": 2,
-      "precision": 0.9762,
-      "recall": 0.9535,
-      "f1": 0.9647
+      "tp": 42,
+      "fp": 2,
+      "fn": 1,
+      "precision": 0.9545,
+      "recall": 0.9767,
+      "f1": 0.9655
     },
     "ENGAGED": {
       "state": "ENGAGED",
@@ -512,32 +536,32 @@
     "LOW_INTEREST": {
       "state": "LOW_INTEREST",
       "support": 2,
-      "tp": 2,
+      "tp": 0,
       "fp": 0,
-      "fn": 0,
-      "precision": 1,
-      "recall": 1,
-      "f1": 1
+      "fn": 2,
+      "precision": 0,
+      "recall": 0,
+      "f1": 0
     },
     "REJECTED": {
       "state": "REJECTED",
       "support": 7,
       "tp": 7,
-      "fp": 0,
+      "fp": 2,
       "fn": 0,
-      "precision": 1,
+      "precision": 0.7778,
       "recall": 1,
-      "f1": 1
+      "f1": 0.875
     },
     "GOODBYE": {
       "state": "GOODBYE",
       "support": 19,
-      "tp": 17,
-      "fp": 1,
-      "fn": 2,
-      "precision": 0.9444,
-      "recall": 0.8947,
-      "f1": 0.9189
+      "tp": 16,
+      "fp": 0,
+      "fn": 3,
+      "precision": 1,
+      "recall": 0.8421,
+      "f1": 0.9143
     },
     "EXITING": {
       "state": "EXITING",

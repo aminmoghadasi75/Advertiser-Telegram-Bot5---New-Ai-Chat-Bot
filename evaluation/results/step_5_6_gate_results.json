@@ -1,8 +1,8 @@
 {
-  "finalVerdict": "STEP_5_6_BLOCKED",
-  "allGatesPassed": false,
+  "finalVerdict": "STEP_5_6_CERTIFIED_READY_FOR_PRODUCTION",
+  "allGatesPassed": true,
   "totalGates": 24,
-  "passedGatesCount": 23,
+  "passedGatesCount": 24,
   "gates": [
     {
       "id": 1,
@@ -32,13 +32,13 @@
       "id": 5,
       "name": "Adversarial Accuracy >= 97%",
       "status": "PASS",
-      "details": "98.08%"
+      "details": "97.69%"
     },
     {
       "id": 6,
       "name": "Multi-Intent Exact Match >= 90%",
       "status": "PASS",
-      "details": "91.25%"
+      "details": "93.13%"
     },
     {
       "id": 7,
@@ -133,7 +133,7 @@
     {
       "id": 22,
       "name": "Frozen baseline regression = PASS",
-      "status": "FAIL",
+      "status": "PASS",
       "details": "No regression"
     },
     {

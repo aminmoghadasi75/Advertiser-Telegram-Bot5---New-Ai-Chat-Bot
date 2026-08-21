@@ -3,14 +3,14 @@
     "id": 1,
     "name": "State Accuracy >= 90.00%",
     "target": ">= 90.00%",
-    "actual": "93.48% (129/138)",
+    "actual": "92.03% (127/138)",
     "pass": true
   },
   {
     "id": 2,
     "name": "State improvement vs pre-change >= 5 percentage points",
     "target": ">= +5.00%",
-    "actual": "+11.59% (81.88% -> 93.48%)",
+    "actual": "+10.14% (81.88% -> 92.03%)",
     "pass": true
   },
   {
@@ -24,8 +24,8 @@
     "id": 4,
     "name": "Promotion Error Rate <= 5.00%",
     "target": "<= 5.00%",
-    "actual": "3.62% (5/138)",
-    "pass": true
+    "actual": "5.07% (7/138)",
+    "pass": false
   },
   {
     "id": 5,
@@ -59,7 +59,7 @@
     "id": 9,
     "name": "Frozen Intent Baseline Preserved (Holdout Acc >= 83.00%, Critical = 0)",
     "target": "Acc >= 83.00%, Critical = 0, FPR <= 3%, FNR <= 5%",
-    "actual": "Acc=83.00%, MacroF1=0.8217, Critical=0, FPR=0.00%, FNR=0.00%",
+    "actual": "Acc=84.00%, MacroF1=0.8307, Critical=0, FPR=2.56%, FNR=0.00%",
     "pass": true
   },
   {
@@ -80,7 +80,7 @@
     "id": 12,
     "name": "All mathematical consistency invariants PASS",
     "target": "15/15 invariants PASS",
-    "actual": "15/15 passed",
-    "pass": true
+    "actual": "11/15 passed",
+    "pass": false
   }
 ]

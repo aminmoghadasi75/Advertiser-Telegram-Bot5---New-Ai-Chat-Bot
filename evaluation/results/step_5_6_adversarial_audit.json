@@ -1,7 +1,7 @@
 {
   "totalAdversarialCases": 260,
-  "correctCases": 255,
-  "adversarialAccuracy": 0.9807692307692307,
+  "correctCases": 254,
+  "adversarialAccuracy": 0.9769230769230769,
   "perIntentStats": {
     "GREETING": {
       "tp": 13,
@@ -9,9 +9,9 @@
       "fn": 0
     },
     "SMALL_TALK": {
-      "tp": 15,
+      "tp": 16,
       "fp": 0,
-      "fn": 1
+      "fn": 0
     },
     "QUESTION": {
       "tp": 14,
@@ -74,9 +74,9 @@
       "fn": 0
     },
     "SUSPICION_BOT": {
-      "tp": 15,
+      "tp": 14,
       "fp": 0,
-      "fn": 0
+      "fn": 1
     },
     "INAPPROPRIATE": {
       "tp": 13,
@@ -89,13 +89,13 @@
       "fn": 0
     },
     "OFF_TOPIC": {
-      "tp": 17,
+      "tp": 16,
       "fp": 0,
-      "fn": 0
+      "fn": 1
     },
     "UNKNOWN": {
       "tp": 0,
-      "fp": 0,
+      "fp": 1,
       "fn": 0
     }
   },

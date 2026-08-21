@@ -1,10 +1,10 @@
 # STEP 5.3-A — INDEPENDENT CERTIFICATION AUDIT REPORT
 ## FROZEN RAW TRACE REPLAY, METRIC RECONCILIATION & SAFETY REGRESSION AUDIT
 
-- **Audit Timestamp**: `2026-08-21T14:43:36.774Z`
+- **Audit Timestamp**: `2026-08-21T16:01:47.182Z`
 - **Auditor**: Independent Certification & Verification Agent
 - **Audit Target**: Step 5.3 State Machine & Promotion Policy Tuning
-- **Final Verdict**: **`CERTIFIED_READY_FOR_STEP_5_4`**
+- **Final Verdict**: **`BLOCKED_STATE_OR_PROMOTION_POLICY`**
 
 ---
 
@@ -29,7 +29,7 @@ All 12 certification gates and 15 mathematical consistency invariants **PASSED**
 | **Production Code Leakage/Hardcoding** | Zero Findings | **0 Findings (Clean)** | **PASSED** |
 | **Mathematical Invariants** | 15 / 15 Passed | **15 / 15 Passed (100%)** | **PASSED** |
 
-**Final Certified Status:** **`CERTIFIED_READY_FOR_STEP_5_4`**
+**Final Certified Status:** **`BLOCKED_STATE_OR_PROMOTION_POLICY`**
 
 ---
 
@@ -43,9 +43,9 @@ Every relevant production code file, dataset file, and evaluation artifact was i
 | `evaluation/holdout_intent_v1_manifest.json` | `04c9821e1d39d29439a9098ff3e554fad94bb8153be57a4b35b7665b5ad24a2b` | Holdout metadata manifest |
 | `evaluation/step_5_2_1_manifest.json` | `7ca8a15b80f1b2711fcf693271f919800daa1d152f15ebd7e97e0bffa6e9c809` | Step 5.2.1 evaluation manifest |
 | `src/evaluation/goldDataset.ts` | `efa57f1bdac85c5699697f48a2e828e4747f0b86c2dab98b28c01e499a2c871f` | Gold conversation benchmark dataset |
-| `src/conversation/stateMachine.ts` | `558033a547bcd750155523b585a41b7f8cee28d6a060665b19d9102e5e791304` | Production state machine logic |
-| `src/conversation/promotionPolicy.ts` | `4ffcbe4cf9db963596cce46bac3c5623364801e065e66d560d958e502357a189` | Production promotion policy engine |
-| `src/conversation/intentEngine.ts` | `45674c260142dca24bbeb1c9c550101e0654e7eb7bb4d2dd11ddf4f640a5b61b` | Production intent detection engine |
+| `src/conversation/stateMachine.ts` | `504cccd33b87822cd79094240f39c0d38fdc416828c29a44f05ec6383bc6c194` | Production state machine logic |
+| `src/conversation/promotionPolicy.ts` | `34ca8448f8d51064436f419dde2f9700d6f7083f4f7bdc84c73190c6ded615ff` | Production promotion policy engine |
+| `src/conversation/intentEngine.ts` | `06faddd4f194a3d423c72d9b5b969616ad68391fe36b0a7e00c6103891ac4264` | Production intent detection engine |
 | `evaluation/results/step_5_3_prechange_baseline.json` | `96694b82357d25f4f571b9eb74d33b8229760612e33207114a8205694341b4ad` | Pre-change baseline snapshot |
 | `evaluation/results/step_5_3_metrics.json` | `293278c0607c4eb6ed49b675395c90f6bc40c7320280249846041b09a8a64809` | Claimed Step 5.3 metrics summary |
 | `evaluation/results/step_5_3_final_report.md` | `bacc3f58f1a20dd47a4af10abad4c69096b2a8687c39c8b1ce79648d2e6c0fd2` | Claimed Step 5.3 report |
@@ -84,15 +84,15 @@ Recomputed from raw traces turn-by-turn:
 - **Pre-Change Baseline Accuracy**: **113 / 138 = 81.88%**
 - **Net Improvement**: **+11.59 percentage points**
 - **State Errors Count**: **9 / 138**
-- **Macro State F1**: **0.9226**
-- **Weighted State F1**: **0.937**
+- **Macro State F1**: **0.8358**
+- **Weighted State F1**: **0.9158**
 
 ### Per-State Performance Breakdown:
 
 | State Name | Support | TP | FP | FN | Precision | Recall | F1 Score |
 |---|---|---|---|---|---|---|---|
 | `INITIAL_GREETING` | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| `EARLY_CONVERSATION` | 43 | 41 | 1 | 2 | 0.9762 | 0.9535 | 0.9647 |
+| `EARLY_CONVERSATION` | 43 | 42 | 2 | 1 | 0.9545 | 0.9767 | 0.9655 |
 | `ENGAGED` | 15 | 14 | 1 | 1 | 0.9333 | 0.9333 | 0.9333 |
 | `QUALIFYING` | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | `NEED_DETECTED` | 6 | 6 | 1 | 0 | 0.8571 | 1 | 0.9231 |
@@ -102,9 +102,9 @@ Recomputed from raw traces turn-by-turn:
 | `TRIAL_DISCUSSION` | 4 | 4 | 0 | 0 | 1 | 1 | 1 |
 | `OBJECTION_HANDLING` | 6 | 6 | 0 | 0 | 1 | 1 | 1 |
 | `SUPPORT_HANDOFF` | 9 | 9 | 0 | 0 | 1 | 1 | 1 |
-| `LOW_INTEREST` | 2 | 2 | 0 | 0 | 1 | 1 | 1 |
-| `REJECTED` | 7 | 7 | 0 | 0 | 1 | 1 | 1 |
-| `GOODBYE` | 19 | 17 | 1 | 2 | 0.9444 | 0.8947 | 0.9189 |
+| `LOW_INTEREST` | 2 | 0 | 0 | 2 | 0 | 0 | 0 |
+| `REJECTED` | 7 | 7 | 2 | 0 | 0.7778 | 1 | 0.875 |
+| `GOODBYE` | 19 | 16 | 0 | 3 | 1 | 0.8421 | 0.9143 |
 | `EXITING` | 2 | 2 | 0 | 0 | 1 | 1 | 1 |
 
 ### State Error Diagnostic Summary (9 Cases):
@@ -164,7 +164,7 @@ Recomputed from raw traces:
 
 Step 5.3 introduced explicit post-rejection recovery routing. Every trace where the conversation entered a rejection phase was audited:
 
-- **Total Rejection Phase Entries**: **7**
+- **Total Rejection Phase Entries**: **9**
 - **Valid Explicit Reopenings**: **0**
 - **Invalid Reopenings (Safety Violations)**: **0**
 - **Rejection-to-Promotion Leaks**: **0**
@@ -176,9 +176,9 @@ Step 5.3 introduced explicit post-rejection recovery routing. Every trace where 
 ## 9. Cooldown and Duplicate Promotion Audit
 
 - **Minimum Enforced Turn Spacing**: **2 turns between consecutive CTAs**
-- **Total Direct CTAs Evaluated**: **35**
-- **Total Consecutive CTA Pairs**: **11**
-- **Compliant Pairs**: **11 / 11 (100%)**
+- **Total Direct CTAs Evaluated**: **33**
+- **Total Consecutive CTA Pairs**: **10**
+- **Compliant Pairs**: **10 / 10 (100%)**
 - **Violating Pairs**: **0**
 - **Duplicate Promotions**: **0**
 
@@ -191,12 +191,12 @@ Evaluated on the full 200-case frozen holdout dataset:
 - **Holdout Cases**: **200**
 - **Correct Primary Predictions**: **166**
 - **Intent Accuracy**: **166 / 200 = 83.00%**
-- **Macro Precision**: **0.8492**
-- **Macro Recall**: **0.8474**
-- **Macro F1 Score**: **0.8217**
-- **Weighted Precision**: **0.8825**
-- **Weighted Recall**: **0.83**
-- **Weighted F1 Score**: **0.8406**
+- **Macro Precision**: **0.8398**
+- **Macro Recall**: **0.8657**
+- **Macro F1 Score**: **0.8307**
+- **Weighted Precision**: **0.8715**
+- **Weighted Recall**: **0.84**
+- **Weighted F1 Score**: **0.8437**
 - **Multi-Intent Exact Match**: **55 / 66 = 83.33%**
 - **Critical Intent Errors**: **0**
 - **Commercial FPR**: **0 / 117 = 0.00%**
@@ -233,14 +233,14 @@ All 15 required consistency invariants were verified:
 | # | Invariant Description | Expected | Actual | Status |
 |---|---|---|---|---|
 | 1 | State confusion matrix total equals evaluated state turns | `138` | `138` | ✅ PASS |
-| 2 | State diagonal equals correct state predictions | `129` | `129` | ✅ PASS |
-| 3 | State accuracy numerator/denominator reproduces exactly | `129 / 138 = 93.48%` | `129 / 138 = 93.48%` | ✅ PASS |
+| 2 | State diagonal equals correct state predictions | `127` | `127` | ❌ FAIL |
+| 3 | State accuracy numerator/denominator reproduces exactly | `129 / 138 = 93.48%` | `127 / 138 = 92.03%` | ❌ FAIL |
 | 4 | Promotion decision total equals raw promotion trace count | `138` | `138` | ✅ PASS |
-| 5 | Promotion correct + promotion errors equals total | `138` | `138` | ✅ PASS |
+| 5 | Promotion correct + promotion errors equals total | `138` | `138` | ❌ FAIL |
 | 6 | Promotion accuracy and error rate are complementary | `100.00%` | `100.00%` | ✅ PASS |
 | 7 | Intent holdout raw count = 200 | `200` | `200` | ✅ PASS |
-| 8 | Intent correct + incorrect = 200 | `200` | `200` | ✅ PASS |
-| 9 | Weighted recall equals accuracy where standard single-label classification definition applies | `83.00%` | `83.00%` | ✅ PASS |
+| 8 | Intent correct + incorrect = 200 | `200` | `200` | ❌ FAIL |
+| 9 | Weighted recall equals accuracy where standard single-label classification definition applies | `84.00%` | `84.00%` | ✅ PASS |
 | 10 | Commercial denominator is reproducible | `117` | `117` | ✅ PASS |
 | 11 | Rejection denominator is reproducible | `14` | `14` | ✅ PASS |
 | 12 | No duplicate evaluated turn records | `0` | `0` | ✅ PASS |
@@ -254,18 +254,18 @@ All 15 required consistency invariants were verified:
 
 | Gate | Requirement | Required Target | Measured Value | Result |
 |:---:|---|:---:|:---:|:---:|
-| **Gate 1** | State Accuracy >= 90.00% | `>= 90.00%` | **93.48% (129/138)** | ✅ **PASSED** |
-| **Gate 2** | State improvement vs pre-change >= 5 percentage points | `>= +5.00%` | **+11.59% (81.88% -> 93.48%)** | ✅ **PASSED** |
+| **Gate 1** | State Accuracy >= 90.00% | `>= 90.00%` | **92.03% (127/138)** | ✅ **PASSED** |
+| **Gate 2** | State improvement vs pre-change >= 5 percentage points | `>= +5.00%` | **+10.14% (81.88% -> 92.03%)** | ✅ **PASSED** |
 | **Gate 3** | Invalid Transition Rate <= 2.00% | `<= 2.00%` | **0.00% (0/138)** | ✅ **PASSED** |
-| **Gate 4** | Promotion Error Rate <= 5.00% | `<= 5.00%` | **3.62% (5/138)** | ✅ **PASSED** |
+| **Gate 4** | Promotion Error Rate <= 5.00% | `<= 5.00%` | **5.07% (7/138)** | ❌ **FAILED** |
 | **Gate 5** | Critical Promotion Bugs = 0 | `= 0` | **0** | ✅ **PASSED** |
 | **Gate 6** | Rejection-to-Promotion Leaks = 0 | `= 0` | **0** | ✅ **PASSED** |
 | **Gate 7** | Invalid Post-Rejection Reopenings = 0 | `= 0` | **0** | ✅ **PASSED** |
 | **Gate 8** | Cooldown / Duplicate Promotion Violations = 0 | `= 0` | **0** | ✅ **PASSED** |
-| **Gate 9** | Frozen Intent Baseline Preserved (Holdout Acc >= 83.00%, Critical = 0) | `Acc >= 83.00%, Critical = 0, FPR <= 3%, FNR <= 5%` | **Acc=83.00%, MacroF1=0.8217, Critical=0, FPR=0.00%, FNR=0.00%** | ✅ **PASSED** |
+| **Gate 9** | Frozen Intent Baseline Preserved (Holdout Acc >= 83.00%, Critical = 0) | `Acc >= 83.00%, Critical = 0, FPR <= 3%, FNR <= 5%` | **Acc=84.00%, MacroF1=0.8307, Critical=0, FPR=2.56%, FNR=0.00%** | ✅ **PASSED** |
 | **Gate 10** | No blocking hardcoding/leakage findings | `Severity: NONE` | **Findings=0, Severity=NONE** | ✅ **PASSED** |
 | **Gate 11** | Raw Trace Completeness = 100% | `100% (138/138 turns, 200/200 holdout)` | **State Turns=138/138, Holdout=200/200** | ✅ **PASSED** |
-| **Gate 12** | All mathematical consistency invariants PASS | `15/15 invariants PASS` | **15/15 passed** | ✅ **PASSED** |
+| **Gate 12** | All mathematical consistency invariants PASS | `15/15 invariants PASS` | **11/15 passed** | ❌ **FAILED** |
 
 ---
 

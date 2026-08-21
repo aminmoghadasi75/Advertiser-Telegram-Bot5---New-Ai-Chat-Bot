@@ -1,5 +1,5 @@
 {
-  "auditTimestamp": "2026-08-21T14:43:36.774Z",
+  "auditTimestamp": "2026-08-21T16:01:47.182Z",
   "holdout": {
     "path": "/app/applet/evaluation/holdout_intent_v1.json",
     "caseCount": 200,
@@ -44,17 +44,17 @@
     },
     {
       "path": "src/conversation/stateMachine.ts",
-      "sha256": "558033a547bcd750155523b585a41b7f8cee28d6a060665b19d9102e5e791304",
+      "sha256": "504cccd33b87822cd79094240f39c0d38fdc416828c29a44f05ec6383bc6c194",
       "description": "Production state machine logic"
     },
     {
       "path": "src/conversation/promotionPolicy.ts",
-      "sha256": "4ffcbe4cf9db963596cce46bac3c5623364801e065e66d560d958e502357a189",
+      "sha256": "34ca8448f8d51064436f419dde2f9700d6f7083f4f7bdc84c73190c6ded615ff",
       "description": "Production promotion policy engine"
     },
     {
       "path": "src/conversation/intentEngine.ts",
-      "sha256": "45674c260142dca24bbeb1c9c550101e0654e7eb7bb4d2dd11ddf4f640a5b61b",
+      "sha256": "06faddd4f194a3d423c72d9b5b969616ad68391fe36b0a7e00c6103891ac4264",
       "description": "Production intent detection engine"
     },
     {
