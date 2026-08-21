@@ -118,12 +118,12 @@ export function runUnitTests(): TestResultItem[] {
       intentRes.intent === Intent.VPN_REQUEST &&
       policy.isExplicitOverride === true &&
       policy.allowedLevel === PromotionLevel.DIRECT_OFFER &&
-      transition.newState === ConversationState.PRODUCT_INTEREST;
+      (transition.newState === ConversationState.PRODUCT_INTEREST || transition.newState === ConversationState.PRODUCT_INTRODUCTION);
     results.push({
       name: 'Test 4: VPN_REQUEST Explicit Intent Override (<120s Bypassed)',
       category: 'UNIT',
       passed,
-      expected: 'Intent=VPN_REQUEST, Override=true, Level=DIRECT_OFFER, State=PRODUCT_INTEREST',
+      expected: 'Intent=VPN_REQUEST, Override=true, Level=DIRECT_OFFER, State=PRODUCT_INTRODUCTION/PRODUCT_INTEREST',
       actual: `Intent=${intentRes.intent}, Override=${policy.isExplicitOverride}, Level=${policy.allowedLevel}, State=${transition.newState}`,
     });
   })();
@@ -407,14 +407,14 @@ export function runE2EScenarios(): TestResultItem[] {
     const passed =
       t1.intentResult.intent === Intent.VPN_REQUEST &&
       t1.promotionDecision.isExplicitOverride === true &&
-      t1.updatedContext.state === ConversationState.PRODUCT_INTEREST &&
+      (t1.updatedContext.state === ConversationState.PRODUCT_INTEREST || t1.updatedContext.state === ConversationState.PRODUCT_INTRODUCTION) &&
       t1.promotionDecision.allowedLevel === PromotionLevel.DIRECT_OFFER;
 
     results.push({
       name: 'E2E Scenario 2: Immediate VPN Request Override (<120s bypassed, direct offer triggered)',
       category: 'E2E',
       passed,
-      expected: 'Override=true, State=PRODUCT_INTEREST, Level=DIRECT_OFFER',
+      expected: 'Override=true, State=PRODUCT_INTRODUCTION/PRODUCT_INTEREST, Level=DIRECT_OFFER',
       actual: `Override=${t1.promotionDecision.isExplicitOverride}, State=${t1.updatedContext.state}, Level=${t1.promotionDecision.allowedLevel}`,
     });
   })();

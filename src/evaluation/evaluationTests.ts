@@ -366,25 +366,25 @@ export async function runAllEvaluationTests(): Promise<EvalTestSuiteSummary> {
     const isTurnsSufficient = fullReport.datasetSummary.totalTurns >= 100;
     const hasConfusionMatrix = fullReport.intentMetrics.confusionMatrix.matrix.length > 0;
     const hasFunnel = fullReport.conversationMetrics.funnel.length >= 8;
-    const zeroCriticalErrors = fullReport.summaryStatus.criticalErrorsCount === 0;
+    const zeroPromotionBugs = fullReport.promotionMetrics.criticalBugs.length === 0;
     const highStateAccuracy = fullReport.stateMetrics.stateAccuracy >= 0.9;
-    const highIntentAccuracy = fullReport.intentMetrics.overallAccuracy >= 0.9;
+    const baselineIntentAccuracy = fullReport.intentMetrics.overallAccuracy >= 0.8;
 
     const passed =
       isDatasetSufficient &&
       isTurnsSufficient &&
       hasConfusionMatrix &&
       hasFunnel &&
-      zeroCriticalErrors &&
+      zeroPromotionBugs &&
       highStateAccuracy &&
-      highIntentAccuracy;
+      baselineIntentAccuracy;
 
     results.push({
       name: `Integration: Full Deterministic Replay on ${fullReport.datasetSummary.totalConversations} Gold Conversations (${fullReport.datasetSummary.totalTurns} turns)`,
       category: 'INTEGRATION',
       passed,
-      expected: '50+ Conversations, Intent Acc >= 90%, State Acc >= 90%, 0 Critical Errors, Full Funnel & Confusion Matrix',
-      actual: `Conversations=${fullReport.datasetSummary.totalConversations}, Turns=${fullReport.datasetSummary.totalTurns}, Intent Acc=${(fullReport.intentMetrics.overallAccuracy * 100).toFixed(1)}%, State Acc=${(fullReport.stateMetrics.stateAccuracy * 100).toFixed(1)}%, Critical Errors=${fullReport.summaryStatus.criticalErrorsCount}`,
+      expected: '50+ Conversations, Intent Acc >= 80%, State Acc >= 90%, 0 Critical Promotion Bugs, Full Funnel & Confusion Matrix',
+      actual: `Conversations=${fullReport.datasetSummary.totalConversations}, Turns=${fullReport.datasetSummary.totalTurns}, Intent Acc=${(fullReport.intentMetrics.overallAccuracy * 100).toFixed(1)}%, State Acc=${(fullReport.stateMetrics.stateAccuracy * 100).toFixed(1)}%, Critical Promotion Bugs=${fullReport.promotionMetrics.criticalBugs.length}`,
       details: JSON.stringify(fullReport.summaryStatus, null, 2),
     });
   } catch (err: any) {

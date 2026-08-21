@@ -103,10 +103,11 @@ export function generateCandidates(
 
   // 3. REJECTION
   const isExplicitRejection =
-    entities.hasRejectionEntity ||
-    /(نمیخوام|لازم ندارم|نیاز ندارم|علاقه ندارم|تبلیغ نکن|اسپم نکن|خریدار نیستم|پول ندارم بدم|بس کن|حوصله ندارم|ولش کن نمیخوام|فیلترشکن نمیخوام|اصلا نمیخوام|قصد خرید ندارم|لازمم نمیشه|به دردم نمیخوره)/i.test(
+    !/نمیخوام بگم/i.test(normText) &&
+    (entities.hasRejectionEntity ||
+    /(نمیخوام|لازم ندارم|نیاز ندارم|علاقه ندارم|تبلیغ نکن|اسپم نکن|خریدار نیستم|پول ندارم بدم|بس کن|حوصله ندارم|ولش کن نمیخوام|فیلترشکن نمیخوام|اصلا نمیخوام|قصد خرید ندارم|لازمم نمیشه|به دردم نمیخوره|از جای دیگه خریدم|از جای دیگه گرفتم|خریدم از جای دیگه|از جای دیگه|جای دیگه خریدم|از جا دیگه)/i.test(
       normText
-    );
+    ));
 
   if (isExplicitRejection) {
     candidates.push({
@@ -150,7 +151,7 @@ export function generateCandidates(
   // 5. SUPPORT_REQUEST
   const isDirectSupport =
     entities.hasSupportEntity ||
-    /(آیدی ادمین|ایدی ادمین|آیدی پشتیبانی|ایدی پشتیبانی|آیدی شو داری|آیدیشو داری|آیدیشو|آیدی شو|آیدی بده|ایدی بده|آیدی تلگرام|از کجا بخرم|از کجا بگیرم|از کجا باید تهیه کنم|از کجا تهیه کنم|چطوری تهیه کنم|چجوری تهیه کنم|کجا پیام بدم|به کی پیام بدم|لینک خرید|لینک پشتیبانی|کانال کجاست|کانال یا آیدی|آیدی فروش|برای خرید به کجا پیام|آیدی رو بده|آیدی کانال|ادمین صحبت|وارد برنامه کنم|ست کنه بلد نیستم|پیوی ادمین|پشتیبانیتون|ادمین چنل)/i.test(
+    /(آیدی ادمین|ایدی ادمین|آیدی پشتیبانی|ایدی پشتیبانی|آیدی شو داری|آیدیشو داری|آیدیشو|آیدی شو|آیدی بده|ایدی بده|آیدی تلگرام|از کجا بخرم|از کجا بگیرم|از کجا باید تهیه کنم|از کجا تهیه کنم|چطوری تهیه کنم|چجوری تهیه کنم|کجا پیام بدم|به کی پیام بدم|لینک خرید|لینک پشتیبانی|کانال کجاست|کانال یا آیدی|آیدی فروش|برای خرید به کجا پیام|آیدی رو بده|آیدی کانال|ادمین صحبت|وارد برنامه کنم|ست کنه بلد نیستم|پیوی ادمین|پشتیبانیتون|ادمین چنل|پینگم بالا رفته|بازی نمیتونم بکنم|سرورم وصل نمیشه|سرعتم پایینه|افت سرعت دارم)/i.test(
       normText
     );
 
@@ -169,11 +170,13 @@ export function generateCandidates(
   }
 
   // 6. PURCHASE_INTENT
+  const isPriceAmountQuery = /(چقدر|چند|چقدر باید|چقد).*(واریز|پرداخت)/i.test(normText);
   const isDirectPurchase =
-    entities.hasPurchaseEntity ||
+    !isPriceAmountQuery &&
+    (entities.hasPurchaseEntity ||
     /(میخوام بخرم|میخوام سفارش بدم|شماره کارت|شماره کارت بده|شماره کارت بفرست|شماره حساب|شماره شبا|اطلاعات پرداخت|الان واریز کنم|الان پرداخت میکنم|واریز کنم|پرداخت کنم|برام فعال کن|خرید قطعی|من یه دونه میخوام|اکانت میخوام بخرم|چجوری پرداخت کنم|میخوامش|اوکی میخوامش|برام اوکی کن الان واریز|مبلغ رو زدم|وجه رو انتقال|میخام بخرم|سفارشمو ثبت کن)/i.test(
       normText
-    );
+    ));
 
   if (isDirectPurchase) {
     candidates.push({
@@ -194,7 +197,8 @@ export function generateCandidates(
   const isDirectPrice =
     !isPerformanceOrLimitQuery &&
     (entities.hasPriceEntity ||
-    (/(قیمت|قیمتش|هزینه|هزینش|چند تومن|چندتومنه|تعرفه|نرخ|ماهی چنده|ماهانه چقدر|چند میدی|چند درمیاد|لیست قیمت|تعرفه‌ها|تعرفه ها|چقدر میشه|چقدر باید بدم|چند هزار تومن|چقدر درمیاد آخرش|باید پرداخت کنیم|ماهی چقدر باید بابتش بدم|ارزونتر|تخفیف|چرا اینقدر گرونه)/i.test(
+    isPriceAmountQuery ||
+    (/(قیمت|قیمتش|هزینه|هزینش|چند تومن|چندتومنه|تعرفه|نرخ|ماهی چنده|یک ماهه چنده|ماهانه چنده|ماهانه چقدر|چند میدی|چند درمیاد|لیست قیمت|تعرفه‌ها|تعرفه ها|چقدر میشه|چقدر باید بدم|چند هزار تومن|چقدر درمیاد آخرش|باید پرداخت کنیم|ماهی چقدر باید بابتش بدم|ارزونتر|تخفیف|چرا اینقدر گرونه)/i.test(
       normText
     ) &&
       !entities.hasCommercialTrapEntity));
@@ -261,10 +265,10 @@ export function generateCandidates(
 
   // 10. VPN_REQUEST (Explicit inquiries for VPN/config product availability)
   const isDirectVpn =
-    /(خودت با چه برنامه‌ای وصل میشی|با چی وصل میشی|فیلترشکن خوب داری|فیلترشکن داری|vpn داری|کانفیگ داری|v2ray داری|سرور داری|فیلترشکن میخوام|کانفیگ vless|کانفیگ vmess|کانفیگ shadowsocks|وی پی ان اختصاصی|پروکسی تلگرام.*(داری|بدی)|فیلترشکن.*برام بفرستی|فیلترشکن.*معرفی کنی|کانفیگ میخوام|چه وی پی انی|از چه وی پی انی|فیلترشکن پولی|سرویسی داری که)/i.test(
+    /(خودت با چه برنامه‌ای وصل میشی|با چی وصل میشی|فیلترشکن خوب داری|فیلترشکن داری|vpn داری|کانفیگ داری|v2ray داری|سرور داری|فیلترشکن میخوام|کانفیگ vless|کانفیگ vmess|کانفیگ shadowsocks|وی پی ان اختصاصی|سرور اختصاصی|پروکسی تلگرام.*(داری|بدی)|فیلترشکن.*برام بفرستی|فیلترشکن.*معرفی کنی|کانفیگ میخوام|چه وی پی انی|از چه وی پی انی|فیلترشکن پولی|سرویسی داری که)/i.test(
       normText
     ) ||
-    (entities.hasProductEntity && /(داری|موجود داری|ارائه میدی|میدی|بفرستی|معرفی کنی|میخوام)/i.test(normText));
+    (entities.hasProductEntity && /(داری|موجود داری|ارائه میدی|میدی|بفرستی|معرفی کنی|میخوام|پهنای باند)/i.test(normText));
 
   if (isDirectVpn) {
     candidates.push({
@@ -297,15 +301,14 @@ export function generateCandidates(
 
   // 12. PRODUCT_CURIOUS (Technical specs, device compatibility, protocols, locations, ping inquiries)
   const isProductCurious =
-    !entities.hasNeedEntity &&
-    (entities.productCuriousConcepts.hasDeviceOrOs ||
+    entities.productCuriousConcepts.hasDeviceOrOs ||
       entities.productCuriousConcepts.hasIspOrNetwork ||
       entities.productCuriousConcepts.hasProtocolOrTech ||
       entities.productCuriousConcepts.hasLocationOrServer ||
       entities.productCuriousConcepts.hasFixedIpOrKillSwitch ||
-      /(روی.*(ویندوز|مک|آیفون|ios|اندروید|لپتاپ|گوشی|مودم)|با.*(همراه اول|ایرانسل|رایتل|مخابرات|وای فای)|(سرور|لوکیشن).*(آلمان|هلند|فرانسه|فنلاند|ترکیه|آمریکا)|آیپی ثابت|پروتکل|vless|vmess|v2box|reality|سرعتش چطوره|پینگش چطوره|افت سرعت داره|پینگ میده|پینگ زیر|روی چند دستگاه|همزمان وصل)/i.test(
+      /(روی.*(ویندوز|مک|آیفون|ios|اندروید|لپتاپ|گوشی|مودم)|با.*(همراه اول|ایرانسل|رایتل|مخابرات|وای فای)|(سرور|لوکیشن).*(آلمان|هلند|فرانسه|فنلاند|ترکیه|آمریکا|ایران)|اینستاگرام|یوتیوب|آیپی ثابت|پروتکل|vless|vmess|v2box|reality|سرعتش چطوره|سرعتش خوبه|پینگش چطوره|افت سرعت داره|پینگ میده|پینگ زیر|روی چند دستگاه|همزمان وصل|کیفیت سرور)/i.test(
         normText
-      ));
+      );
 
   if (isProductCurious) {
     candidates.push({
@@ -412,7 +415,7 @@ export function generateCandidates(
   }
 
   // 19. SHORT UNKNOWN / CLARIFICATION EXPRESSION
-  if (/^(خب|خب چی شد|یعنی چی|یعنی چی واقعا|چی|منظورت چیه|اوکی|باشه|باش|مرسی|دمت گرم|؟|\?|\.\.\.)[\s\?؟\.]*$/i.test(normText.trim())) {
+  if (/^(خب|خب چی شد|یعنی چی|یعنی چی واقعا|چی|منظورت چیه|اوکی|باشه|باش|مرسی|؟|\?|\.\.\.)[\s\?؟\.]*$/i.test(normText.trim())) {
     candidates.push({
       intent: Intent.UNKNOWN,
       lexicalEvidence: 0.98,
@@ -480,8 +483,6 @@ export function detectIntent(
     Intent.PRICE_REQUEST,
     Intent.PLAN_REQUEST,
     Intent.VPN_REQUEST,
-    Intent.PRODUCT_CURIOUS,
-    Intent.OBJECTION,
   ].includes(primary.intent);
 
   const isObjectionOrRejection = [

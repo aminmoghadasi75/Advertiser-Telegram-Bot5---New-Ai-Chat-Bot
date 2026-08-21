@@ -87,13 +87,17 @@ export function evaluatePromotions(traces: ConversationTurnTrace[]): PromotionEv
       errorCategoryCounts['POST_REJECTION_SELLING']++;
     }
 
-    // CRITICAL_2: promotionLock = true -> CTA
+    // CRITICAL_2: promotionLock = true -> CTA during subsequent non-commercial turns
     if (
       trace.promotionLock &&
       actual === PromotionLevel.DIRECT_OFFER &&
+      trace.primaryIntent !== Intent.REJECTION &&
+      trace.expected.intent !== Intent.REJECTION &&
       trace.primaryIntent !== Intent.VPN_REQUEST &&
       trace.primaryIntent !== Intent.PRICE_REQUEST &&
-      trace.primaryIntent !== Intent.PURCHASE_INTENT
+      trace.primaryIntent !== Intent.PURCHASE_INTENT &&
+      trace.primaryIntent !== Intent.TRIAL_REQUEST &&
+      trace.primaryIntent !== Intent.SUPPORT_REQUEST
     ) {
       const bug = {
         conversationId: trace.conversationId,

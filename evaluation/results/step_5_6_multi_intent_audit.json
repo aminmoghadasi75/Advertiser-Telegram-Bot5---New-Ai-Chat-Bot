@@ -1,0 +1,6 @@
+{
+  "totalMultiIntentCases": 160,
+  "exactMatches": 146,
+  "exactMatchRate": 0.9125,
+  "pass": true
+}

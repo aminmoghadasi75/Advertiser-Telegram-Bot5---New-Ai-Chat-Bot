@@ -34,6 +34,24 @@ export function transitionConversationState(
     };
   }
 
+  if (currentState === ConversationState.EXITING) {
+    return {
+      newState: ConversationState.EXITING,
+      previousState,
+      transitionReason: 'Already in exiting state',
+      isTerminalState: true,
+    };
+  }
+
+  if (currentState === ConversationState.GOODBYE) {
+    return {
+      newState: ConversationState.EXITING,
+      previousState,
+      transitionReason: 'Goodbye concluded, transitioning to exit',
+      isTerminalState: true,
+    };
+  }
+
   if (intent === Intent.GOODBYE) {
     return {
       newState: ConversationState.GOODBYE,
@@ -43,7 +61,7 @@ export function transitionConversationState(
     };
   }
 
-  // 2. Rejection Rule (Sets REJECTED state)
+  // 2. Rejection Dominance
   if (intent === Intent.REJECTION) {
     return {
       newState: ConversationState.REJECTED,
@@ -53,58 +71,54 @@ export function transitionConversationState(
     };
   }
 
-  // 3. Max Turn Exceeded
-  if (context.turnCount >= maxTurns && currentState !== ConversationState.SUPPORT_HANDOFF) {
-    return {
-      newState: ConversationState.GOODBYE,
-      previousState,
-      transitionReason: `Maximum conversation turns reached (${context.turnCount}/${maxTurns})`,
-      isTerminalState: false,
-    };
-  }
-
-  // 4. Recovery from Rejection / Low Interest
-  if (currentState === ConversationState.REJECTED) {
-    // If user explicitly asks about product in a later turn, recover!
-    if ([Intent.VPN_REQUEST, Intent.PRODUCT_CURIOUS, Intent.TRIAL_REQUEST, Intent.PRICE_REQUEST, Intent.PURCHASE_INTENT].includes(intent)) {
+  // 3. Post-Rejection & Low Interest Recovery
+  if (currentState === ConversationState.REJECTED || currentState === ConversationState.LOW_INTEREST) {
+    if (intent === Intent.PURCHASE_INTENT || intent === Intent.SUPPORT_REQUEST) {
+      return {
+        newState: ConversationState.SUPPORT_HANDOFF,
+        previousState,
+        transitionReason: 'User requested purchase/support after rejection/low interest.',
+        isTerminalState: false,
+      };
+    }
+    if (intent === Intent.TRIAL_REQUEST) {
+      return {
+        newState: ConversationState.TRIAL_DISCUSSION,
+        previousState,
+        transitionReason: 'User requested trial after rejection/low interest.',
+        isTerminalState: false,
+      };
+    }
+    if (intent === Intent.PRICE_REQUEST) {
+      return {
+        newState: ConversationState.PRICE_DISCUSSION,
+        previousState,
+        transitionReason: 'User requested pricing after rejection/low interest.',
+        isTerminalState: false,
+      };
+    }
+    if (intent === Intent.VPN_REQUEST || intent === Intent.PRODUCT_CURIOUS || intent === Intent.PLAN_REQUEST) {
       return {
         newState: ConversationState.PRODUCT_INTEREST,
         previousState,
-        transitionReason: 'User re-initiated product interest after rejection. Lock released.',
+        transitionReason: 'User initiated product interest from rejection/low interest.',
         isTerminalState: false,
       };
     }
     return {
-      newState: ConversationState.LOW_INTEREST,
+      newState: currentState === ConversationState.REJECTED ? ConversationState.REJECTED : ConversationState.LOW_INTEREST,
       previousState,
-      transitionReason: 'Continuing casual conversation after user rejection',
+      transitionReason: 'Maintaining state until explicit commercial intent',
       isTerminalState: false,
     };
   }
 
-  if (currentState === ConversationState.LOW_INTEREST) {
-    if ([Intent.VPN_REQUEST, Intent.PRODUCT_CURIOUS].includes(intent)) {
-      return {
-        newState: ConversationState.PRODUCT_INTEREST,
-        previousState,
-        transitionReason: 'User initiated product interest from low interest state',
-        isTerminalState: false,
-      };
-    }
-    return {
-      newState: ConversationState.LOW_INTEREST,
-      previousState,
-      transitionReason: 'Staying in low interest / casual chit-chat',
-      isTerminalState: false,
-    };
-  }
-
-  // 5. Objection Handling Transitions
+  // 4. Objection Handling Transitions
   if (intent === Intent.OBJECTION) {
     return {
       newState: ConversationState.OBJECTION_HANDLING,
       previousState,
-      transitionReason: 'Objection detected regarding price, trust, or complexity',
+      transitionReason: 'Objection detected regarding price, trust, complexity or existing solution',
       isTerminalState: false,
     };
   }
@@ -126,23 +140,48 @@ export function transitionConversationState(
         isTerminalState: false,
       };
     }
-    if (intent === Intent.PRICE_REQUEST) {
+    if (intent === Intent.PRICE_REQUEST || intent === Intent.PLAN_REQUEST) {
       return {
         newState: ConversationState.PRICE_DISCUSSION,
         previousState,
-        transitionReason: 'Objection transitioned to pricing discussion',
+        transitionReason: 'Objection transitioned to pricing/plan discussion',
+        isTerminalState: false,
+      };
+    }
+    if (intent === Intent.VPN_REQUEST || intent === Intent.PRODUCT_CURIOUS) {
+      return {
+        newState: ConversationState.PRODUCT_INTEREST,
+        previousState,
+        transitionReason: 'Objection addressed; exploring product capabilities',
         isTerminalState: false,
       };
     }
     return {
       newState: ConversationState.PRODUCT_INTEREST,
       previousState,
-      transitionReason: 'Objection acknowledged, returning to product interest',
+      transitionReason: 'Objection acknowledged, returning to product interest dialogue',
       isTerminalState: false,
     };
   }
 
-  // 6. Direct Explicit Intent Overrides (Can happen from any conversational phase)
+  // 4b. Support Handoff Persistence
+  if (currentState === ConversationState.SUPPORT_HANDOFF) {
+    if (
+      intent !== Intent.GOODBYE &&
+      intent !== Intent.REJECTION &&
+      intent !== Intent.INAPPROPRIATE &&
+      intent !== Intent.SPAM
+    ) {
+      return {
+        newState: ConversationState.SUPPORT_HANDOFF,
+        previousState,
+        transitionReason: 'Maintaining support handoff state during post-handoff discussion',
+        isTerminalState: false,
+      };
+    }
+  }
+
+  // 5. Actionable High-Priority Commercial Intents
   if (intent === Intent.PURCHASE_INTENT || intent === Intent.SUPPORT_REQUEST) {
     return {
       newState: ConversationState.SUPPORT_HANDOFF,
@@ -161,20 +200,71 @@ export function transitionConversationState(
     };
   }
 
-  if (intent === Intent.PRICE_REQUEST || intent === Intent.PLAN_REQUEST) {
+  if (intent === Intent.PRICE_REQUEST) {
     return {
       newState: ConversationState.PRICE_DISCUSSION,
       previousState,
-      transitionReason: 'User inquired about pricing, tariffs, or plan options',
+      transitionReason: 'User inquired about pricing, tariffs, or package costs',
       isTerminalState: false,
     };
   }
 
-  if (intent === Intent.VPN_REQUEST || intent === Intent.PRODUCT_CURIOUS) {
+  if (intent === Intent.PLAN_REQUEST) {
+    if (currentState === ConversationState.PRICE_DISCUSSION) {
+      return {
+        newState: ConversationState.PRICE_DISCUSSION,
+        previousState,
+        transitionReason: 'Continuing plan/pricing discussion',
+        isTerminalState: false,
+      };
+    }
+    return {
+      newState: ConversationState.PRODUCT_INTEREST,
+      previousState,
+      transitionReason: 'User inquired about plan configurations/multi-user capabilities',
+      isTerminalState: false,
+    };
+  }
+
+  if (intent === Intent.VPN_REQUEST) {
+    if (
+      currentState === ConversationState.INITIAL_GREETING ||
+      currentState === ConversationState.CONNECTING ||
+      currentState === ConversationState.EARLY_CONVERSATION ||
+      currentState === ConversationState.NEED_DETECTED
+    ) {
+      return {
+        newState: ConversationState.PRODUCT_INTRODUCTION,
+        previousState,
+        transitionReason: 'Initial VPN/product request in early conversation, introducing solution',
+        isTerminalState: false,
+      };
+    }
     return {
       newState: ConversationState.PRODUCT_INTEREST,
       previousState,
       transitionReason: 'User asked about VPN / product capabilities',
+      isTerminalState: false,
+    };
+  }
+
+  if (intent === Intent.PRODUCT_CURIOUS) {
+    if (
+      currentState === ConversationState.INITIAL_GREETING ||
+      currentState === ConversationState.CONNECTING ||
+      currentState === ConversationState.NEED_DETECTED
+    ) {
+      return {
+        newState: ConversationState.PRODUCT_INTRODUCTION,
+        previousState,
+        transitionReason: 'Early product curiosity, introducing solution',
+        isTerminalState: false,
+      };
+    }
+    return {
+      newState: ConversationState.PRODUCT_INTEREST,
+      previousState,
+      transitionReason: 'User expressing curiosity in product features',
       isTerminalState: false,
     };
   }
@@ -188,7 +278,37 @@ export function transitionConversationState(
     };
   }
 
-  // 7. Natural Progressive Transitions
+  // Handle follow-up inquiry from NEED_DETECTED before max turns timeout
+  if (currentState === ConversationState.NEED_DETECTED && intent === Intent.QUESTION) {
+    return {
+      newState: ConversationState.PRODUCT_INTEREST,
+      previousState,
+      transitionReason: 'User asked follow-up inquiry following pain point',
+      isTerminalState: false,
+    };
+  }
+
+  // 6. Max Turn Exceeded for Idle / Non-Commercial Conversational States
+  const isCommercialActiveState = [
+    ConversationState.PRODUCT_INTRODUCTION,
+    ConversationState.PRODUCT_INTEREST,
+    ConversationState.PRICE_DISCUSSION,
+    ConversationState.TRIAL_DISCUSSION,
+    ConversationState.SUPPORT_HANDOFF,
+    ConversationState.OBJECTION_HANDLING,
+    ConversationState.NEED_DETECTED,
+  ].includes(currentState);
+
+  if (context.turnCount >= maxTurns && !isCommercialActiveState) {
+    return {
+      newState: ConversationState.GOODBYE,
+      previousState,
+      transitionReason: `Maximum conversation turns reached (${context.turnCount}/${maxTurns})`,
+      isTerminalState: false,
+    };
+  }
+
+  // 7. Progressive Lifecycle Transitions
   switch (currentState) {
     case ConversationState.CONNECTING:
       return {
@@ -207,7 +327,7 @@ export function transitionConversationState(
       };
 
     case ConversationState.EARLY_CONVERSATION:
-      if (context.turnCount >= 2 || intent === Intent.SMALL_TALK || intent === Intent.QUESTION) {
+      if (intent === Intent.SMALL_TALK || intent === Intent.QUESTION || context.turnCount >= 2) {
         return {
           newState: ConversationState.ENGAGED,
           previousState,
@@ -293,22 +413,6 @@ export function transitionConversationState(
         previousState,
         transitionReason: 'Support handoff provided, preparing graceful exit',
         isTerminalState: false,
-      };
-
-    case ConversationState.GOODBYE:
-      return {
-        newState: ConversationState.EXITING,
-        previousState,
-        transitionReason: 'Goodbye finished, exiting chat session',
-        isTerminalState: true,
-      };
-
-    case ConversationState.EXITING:
-      return {
-        newState: ConversationState.EXITING,
-        previousState,
-        transitionReason: 'Already in exiting state',
-        isTerminalState: true,
       };
 
     default:

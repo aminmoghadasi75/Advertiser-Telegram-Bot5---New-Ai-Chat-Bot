@@ -16,7 +16,7 @@ export interface NormalizedMessage {
 export function normalizePersianText(input: string): string {
   if (!input) return '';
 
-  let text = input.trim();
+  let text = input.trim().toLowerCase();
 
   // 1. Remove non-printable and invisible control characters
   text = text.replace(/[\u200B\u200C\u200D\u200E\u200F\uFEFF\u00A0]/g, ' ');
@@ -46,8 +46,8 @@ export function normalizePersianText(input: string): string {
   // 4. Remove diacritics / Tashkeel / Tanween
   text = text.replace(/[\u064B-\u065F\u0670]/g, '');
 
-  // 5. Compress 3+ repeated characters (e.g., سلاااااام -> سلام, خخخخخ -> خخ)
-  text = text.replace(/(.)\1{2,}/g, '$1$1');
+  // 5. Compress 3+ repeated characters (e.g., سلاااااام -> سلام, خخخخخ -> خ)
+  text = text.replace(/(.)\1{2,}/g, '$1');
 
   // 6. Colloquial spelling normalization (prefixes, negations, compounds)
   // Standardize common VPN spellings

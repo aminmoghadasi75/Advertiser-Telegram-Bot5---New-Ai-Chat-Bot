@@ -1,0 +1,405 @@
+{
+  "metadata": {
+    "evaluationStep": "5.2.2-C",
+    "executionTimestamp": "2026-08-21T14:24:34.751Z",
+    "dataset": "holdout_intent_v1.json",
+    "datasetSha256": "deb6d74e403e1476dee6b5259d9b873fee1020bdd0e8214d50c3d32c6546b821",
+    "totalCases": 200,
+    "certificationVerdict": "CERTIFIED_READY_FOR_STEP_5_3"
+  },
+  "primaryClassificationMetrics": {
+    "totalSamples": 200,
+    "correctPredictions": 166,
+    "overallIntentAccuracy": 83,
+    "macroPrecision": 0.8492,
+    "macroRecall": 0.8474,
+    "macroF1": 0.8217,
+    "weightedPrecision": 0.8825,
+    "weightedRecall": 0.83,
+    "weightedF1": 0.8406
+  },
+  "multiIntentMetrics": {
+    "multiIntentCasesCount": 66,
+    "exactMatchCount": 55,
+    "multiIntentExactMatchRate": 83.33,
+    "secondaryIntentPrecision": 0.8333,
+    "secondaryIntentRecall": 0.8333,
+    "secondaryIntentF1": 0.8333,
+    "failedMultiIntentCount": 11
+  },
+  "safetyMetrics": {
+    "criticalIntentErrors": 0,
+    "criticalErrorCaseIds": [],
+    "rejectionCases": 14,
+    "rejectionFalseNegativeCount": 0,
+    "rejectionFNR": 0,
+    "rejectionRecall": 100,
+    "botSuspicionCases": 9,
+    "botSuspicionTruePositives": 9,
+    "botSuspicionRecall": 100,
+    "safetyCases": 27,
+    "safetyTruePositives": 27,
+    "safetyFalsePositives": 0,
+    "safetyFalseNegatives": 0,
+    "safetyPrecision": 1
+  },
+  "commercialSafetyMetrics": {
+    "taxonomy": "Commercial: [PRICE_REQUEST, TRIAL_REQUEST, PURCHASE_INTENT, SUPPORT_REQUEST, VPN_REQUEST, PLAN_REQUEST, PRODUCT_CURIOUS]",
+    "nonCommercialCount": 117,
+    "commercialFalsePositiveCount": 0,
+    "commercialFalsePositiveRate": 0,
+    "commercialFalsePositivesList": []
+  },
+  "robustnessSliceMetrics": {
+    "easyAccuracy": 87.29,
+    "mediumAccuracy": 77.78,
+    "hardAccuracy": 70,
+    "standaloneAccuracy": 93.75,
+    "contextualAccuracy": 80.95,
+    "slices": {
+      "easy": {
+        "total": 118,
+        "correct": 103
+      },
+      "medium": {
+        "total": 72,
+        "correct": 56
+      },
+      "hard": {
+        "total": 10,
+        "correct": 7
+      },
+      "contextual": {
+        "total": 168,
+        "correct": 136
+      },
+      "standalone": {
+        "total": 32,
+        "correct": 30
+      }
+    }
+  },
+  "perClassMetrics": {
+    "GREETING": {
+      "intent": "GREETING",
+      "support": 11,
+      "tp": 10,
+      "fp": 0,
+      "fn": 1,
+      "precision": 1,
+      "recall": 0.9091,
+      "f1": 0.9524
+    },
+    "SMALL_TALK": {
+      "intent": "SMALL_TALK",
+      "support": 13,
+      "tp": 9,
+      "fp": 3,
+      "fn": 4,
+      "precision": 0.75,
+      "recall": 0.6923,
+      "f1": 0.72
+    },
+    "QUESTION": {
+      "intent": "QUESTION",
+      "support": 12,
+      "tp": 11,
+      "fp": 5,
+      "fn": 1,
+      "precision": 0.6875,
+      "recall": 0.9167,
+      "f1": 0.7857
+    },
+    "RELEVANT_NEED": {
+      "intent": "RELEVANT_NEED",
+      "support": 14,
+      "tp": 7,
+      "fp": 0,
+      "fn": 7,
+      "precision": 1,
+      "recall": 0.5,
+      "f1": 0.6667
+    },
+    "VPN_REQUEST": {
+      "intent": "VPN_REQUEST",
+      "support": 13,
+      "tp": 11,
+      "fp": 1,
+      "fn": 2,
+      "precision": 0.9167,
+      "recall": 0.8462,
+      "f1": 0.88
+    },
+    "PRODUCT_CURIOUS": {
+      "intent": "PRODUCT_CURIOUS",
+      "support": 13,
+      "tp": 7,
+      "fp": 1,
+      "fn": 6,
+      "precision": 0.875,
+      "recall": 0.5385,
+      "f1": 0.6667
+    },
+    "TRIAL_REQUEST": {
+      "intent": "TRIAL_REQUEST",
+      "support": 12,
+      "tp": 10,
+      "fp": 0,
+      "fn": 2,
+      "precision": 1,
+      "recall": 0.8333,
+      "f1": 0.9091
+    },
+    "PRICE_REQUEST": {
+      "intent": "PRICE_REQUEST",
+      "support": 12,
+      "tp": 9,
+      "fp": 1,
+      "fn": 3,
+      "precision": 0.9,
+      "recall": 0.75,
+      "f1": 0.8182
+    },
+    "PLAN_REQUEST": {
+      "intent": "PLAN_REQUEST",
+      "support": 8,
+      "tp": 6,
+      "fp": 1,
+      "fn": 2,
+      "precision": 0.8571,
+      "recall": 0.75,
+      "f1": 0.8
+    },
+    "SUPPORT_REQUEST": {
+      "intent": "SUPPORT_REQUEST",
+      "support": 13,
+      "tp": 11,
+      "fp": 0,
+      "fn": 2,
+      "precision": 1,
+      "recall": 0.8462,
+      "f1": 0.9167
+    },
+    "PURCHASE_INTENT": {
+      "intent": "PURCHASE_INTENT",
+      "support": 12,
+      "tp": 12,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.8571,
+      "recall": 1,
+      "f1": 0.9231
+    },
+    "OBJECTION": {
+      "intent": "OBJECTION",
+      "support": 13,
+      "tp": 10,
+      "fp": 3,
+      "fn": 3,
+      "precision": 0.7692,
+      "recall": 0.7692,
+      "f1": 0.7692
+    },
+    "REJECTION": {
+      "intent": "REJECTION",
+      "support": 14,
+      "tp": 14,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    "GOODBYE": {
+      "intent": "GOODBYE",
+      "support": 12,
+      "tp": 12,
+      "fp": 3,
+      "fn": 0,
+      "precision": 0.8,
+      "recall": 1,
+      "f1": 0.8889
+    },
+    "SUSPICION_BOT": {
+      "intent": "SUSPICION_BOT",
+      "support": 9,
+      "tp": 9,
+      "fp": 2,
+      "fn": 0,
+      "precision": 0.8182,
+      "recall": 1,
+      "f1": 0.9
+    },
+    "INAPPROPRIATE": {
+      "intent": "INAPPROPRIATE",
+      "support": 7,
+      "tp": 7,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    "SPAM": {
+      "intent": "SPAM",
+      "support": 6,
+      "tp": 6,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    "OFF_TOPIC": {
+      "intent": "OFF_TOPIC",
+      "support": 4,
+      "tp": 3,
+      "fp": 1,
+      "fn": 1,
+      "precision": 0.75,
+      "recall": 0.75,
+      "f1": 0.75
+    },
+    "UNKNOWN": {
+      "intent": "UNKNOWN",
+      "support": 2,
+      "tp": 2,
+      "fp": 11,
+      "fn": 0,
+      "precision": 0.1538,
+      "recall": 1,
+      "f1": 0.2667
+    }
+  },
+  "acceptanceGates": [
+    {
+      "name": "Overall Accuracy >= 80.00%",
+      "target": ">= 80.00%",
+      "actual": "83.00%",
+      "rawValue": 83,
+      "pass": true
+    },
+    {
+      "name": "Macro F1 >= 0.7500",
+      "target": ">= 0.7500",
+      "actual": "0.8217",
+      "rawValue": 0.8217490112226956,
+      "pass": true
+    },
+    {
+      "name": "Weighted F1 >= 0.8000",
+      "target": ">= 0.8000",
+      "actual": "0.8406",
+      "rawValue": 0.8406281218781219,
+      "pass": true
+    },
+    {
+      "name": "Critical Intent Errors = 0",
+      "target": "= 0",
+      "actual": "0",
+      "rawValue": 0,
+      "pass": true
+    },
+    {
+      "name": "Commercial FPR <= 3.00%",
+      "target": "<= 3.00%",
+      "actual": "0.00%",
+      "rawValue": 0,
+      "pass": true
+    },
+    {
+      "name": "Rejection FNR <= 5.00%",
+      "target": "<= 5.00%",
+      "actual": "0.00%",
+      "rawValue": 0,
+      "pass": true
+    },
+    {
+      "name": "Multi-Intent Exact Match >= 70.00%",
+      "target": ">= 70.00%",
+      "actual": "83.33%",
+      "rawValue": 83.33333333333334,
+      "pass": true
+    }
+  ],
+  "invariantsCheck": [
+    {
+      "id": 1,
+      "desc": "Sum of confusion matrix cells = 200",
+      "actual": 200,
+      "pass": true
+    },
+    {
+      "id": 2,
+      "desc": "Correct predictions = sum of confusion matrix diagonal",
+      "actual": "166 == 166",
+      "pass": true
+    },
+    {
+      "id": 3,
+      "desc": "Accuracy = correct / 200",
+      "actual": "0.83 == 0.83",
+      "pass": true
+    },
+    {
+      "id": 4,
+      "desc": "Per-class supports sum to 200",
+      "actual": 200,
+      "pass": true
+    },
+    {
+      "id": 5,
+      "desc": "Weighted metrics use correct support weighting",
+      "actual": "0.8300 == 0.8300",
+      "pass": true
+    },
+    {
+      "id": 6,
+      "desc": "Multi-intent denominator equals actual count of multi-intent labels",
+      "actual": 66,
+      "pass": true
+    },
+    {
+      "id": 7,
+      "desc": "Rejection denominator equals actual rejection ground-truth count",
+      "actual": 14,
+      "pass": true
+    },
+    {
+      "id": 8,
+      "desc": "Commercial FPR denominator is explicitly reproducible from taxonomy rules",
+      "actual": 117,
+      "pass": true
+    },
+    {
+      "id": 9,
+      "desc": "Every listed error corresponds to an actual raw record",
+      "actual": "Verified",
+      "pass": true
+    },
+    {
+      "id": 10,
+      "desc": "No case is counted twice",
+      "actual": 200,
+      "pass": true
+    },
+    {
+      "id": 11,
+      "desc": "No raw prediction is missing",
+      "actual": "None missing",
+      "pass": true
+    },
+    {
+      "id": 12,
+      "desc": "Every case ID is unique",
+      "actual": "All unique",
+      "pass": true
+    },
+    {
+      "id": 13,
+      "desc": "Raw records count exactly equals holdout case count",
+      "actual": "200 == 200",
+      "pass": true
+    }
+  ]
+}

@@ -243,10 +243,6 @@ export async function replaySingleConversation(
       text: validatorResult.sanitizedText,
       timestamp: new Date().toISOString(),
     });
-
-    if (stepOutput.isTerminal) {
-      break;
-    }
   }
 
   return traces;
