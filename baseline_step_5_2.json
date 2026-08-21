@@ -1,0 +1,384 @@
+{
+  "timestamp": "2026-08-21T13:45:00.337Z",
+  "datasetSummary": {
+    "totalConversations": 58,
+    "totalTurns": 138,
+    "categoriesBreakdown": {
+      "successful_conversion": 6,
+      "near_conversion": 6,
+      "product_rejection": 7,
+      "early_exit": 5,
+      "long_conversation": 6,
+      "short_conversation": 5,
+      "product_related": 5,
+      "no_product": 5,
+      "objection": 7,
+      "suspicion_bot": 6
+    }
+  },
+  "intentMetrics": {
+    "totalTurns": 138,
+    "evaluatedTurns": 138,
+    "ambiguousTurns": 0,
+    "overallAccuracy": 0.9710144927536232,
+    "macroF1": 0.95,
+    "byIntent": {
+      "GREETING": {
+        "truePositives": 29,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 29
+      },
+      "SMALL_TALK": {
+        "truePositives": 15,
+        "falsePositives": 1,
+        "falseNegatives": 0,
+        "precision": 0.9375,
+        "recall": 1,
+        "f1": 0.967741935483871,
+        "support": 15
+      },
+      "QUESTION": {
+        "truePositives": 13,
+        "falsePositives": 0,
+        "falseNegatives": 1,
+        "precision": 1,
+        "recall": 0.9285714285714286,
+        "f1": 0.962962962962963,
+        "support": 14
+      },
+      "RELEVANT_NEED": {
+        "truePositives": 6,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 6
+      },
+      "VPN_REQUEST": {
+        "truePositives": 10,
+        "falsePositives": 3,
+        "falseNegatives": 0,
+        "precision": 0.7692307692307693,
+        "recall": 1,
+        "f1": 0.8695652173913044,
+        "support": 10
+      },
+      "PRODUCT_CURIOUS": {
+        "truePositives": 1,
+        "falsePositives": 0,
+        "falseNegatives": 3,
+        "precision": 1,
+        "recall": 0.25,
+        "f1": 0.4,
+        "support": 4
+      },
+      "TRIAL_REQUEST": {
+        "truePositives": 4,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 4
+      },
+      "PRICE_REQUEST": {
+        "truePositives": 11,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 11
+      },
+      "SUPPORT_REQUEST": {
+        "truePositives": 7,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 7
+      },
+      "PURCHASE_INTENT": {
+        "truePositives": 2,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 2
+      },
+      "OBJECTION": {
+        "truePositives": 6,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 6
+      },
+      "REJECTION": {
+        "truePositives": 7,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 7
+      },
+      "GOODBYE": {
+        "truePositives": 19,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 19
+      },
+      "SUSPICION_BOT": {
+        "truePositives": 2,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 2
+      },
+      "INAPPROPRIATE": {
+        "truePositives": 1,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 1
+      },
+      "SPAM": {
+        "truePositives": 1,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 1
+      },
+      "OFF_TOPIC": {
+        "truePositives": 0,
+        "falsePositives": 0,
+        "falseNegatives": 0,
+        "precision": 0,
+        "recall": 0,
+        "f1": 0,
+        "support": 0
+      }
+    },
+    "criticalErrors": []
+  },
+  "stateMetrics": {
+    "totalTransitions": 138,
+    "correctTransitions": 118,
+    "stateAccuracy": 0.855072463768116,
+    "invalidTransitionCount": 20,
+    "invalidTransitions": [
+      {
+        "conversationId": "conv_succ_01",
+        "turnId": 4,
+        "fromState": "PRICE_DISCUSSION",
+        "toState": "GOODBYE",
+        "expectedState": "SUPPORT_HANDOFF",
+        "reason": "Expected state SUPPORT_HANDOFF, but state machine transitioned to GOODBYE"
+      },
+      {
+        "conversationId": "conv_succ_02",
+        "turnId": 4,
+        "fromState": "TRIAL_DISCUSSION",
+        "toState": "GOODBYE",
+        "expectedState": "SUPPORT_HANDOFF",
+        "reason": "Expected state SUPPORT_HANDOFF, but state machine transitioned to GOODBYE"
+      },
+      {
+        "conversationId": "conv_succ_03",
+        "turnId": 2,
+        "fromState": "EARLY_CONVERSATION",
+        "toState": "PRODUCT_INTEREST",
+        "expectedState": "PRODUCT_INTRODUCTION",
+        "reason": "Expected state PRODUCT_INTRODUCTION, but state machine transitioned to PRODUCT_INTEREST"
+      },
+      {
+        "conversationId": "conv_succ_03",
+        "turnId": 4,
+        "fromState": "PRICE_DISCUSSION",
+        "toState": "GOODBYE",
+        "expectedState": "SUPPORT_HANDOFF",
+        "reason": "Expected state SUPPORT_HANDOFF, but state machine transitioned to GOODBYE"
+      },
+      {
+        "conversationId": "conv_succ_04",
+        "turnId": 2,
+        "fromState": "EARLY_CONVERSATION",
+        "toState": "PRODUCT_INTEREST",
+        "expectedState": "PRODUCT_INTRODUCTION",
+        "reason": "Expected state PRODUCT_INTRODUCTION, but state machine transitioned to PRODUCT_INTEREST"
+      },
+      {
+        "conversationId": "conv_succ_05",
+        "turnId": 4,
+        "fromState": "PRICE_DISCUSSION",
+        "toState": "GOODBYE",
+        "expectedState": "SUPPORT_HANDOFF",
+        "reason": "Expected state SUPPORT_HANDOFF, but state machine transitioned to GOODBYE"
+      },
+      {
+        "conversationId": "conv_succ_06",
+        "turnId": 4,
+        "fromState": "PRICE_DISCUSSION",
+        "toState": "GOODBYE",
+        "expectedState": "SUPPORT_HANDOFF",
+        "reason": "Expected state SUPPORT_HANDOFF, but state machine transitioned to GOODBYE"
+      },
+      {
+        "conversationId": "conv_near_05",
+        "turnId": 1,
+        "fromState": "INITIAL_GREETING",
+        "toState": "EARLY_CONVERSATION",
+        "expectedState": "ENGAGED",
+        "reason": "Expected state ENGAGED, but state machine transitioned to EARLY_CONVERSATION"
+      },
+      {
+        "conversationId": "conv_near_05",
+        "turnId": 2,
+        "fromState": "EARLY_CONVERSATION",
+        "toState": "PRODUCT_INTEREST",
+        "expectedState": "PRODUCT_INTRODUCTION",
+        "reason": "Expected state PRODUCT_INTRODUCTION, but state machine transitioned to PRODUCT_INTEREST"
+      },
+      {
+        "conversationId": "conv_long_01",
+        "turnId": 4,
+        "fromState": "NEED_DETECTED",
+        "toState": "GOODBYE",
+        "expectedState": "PRODUCT_INTEREST",
+        "reason": "Expected state PRODUCT_INTEREST, but state machine transitioned to GOODBYE"
+      },
+      {
+        "conversationId": "conv_long_01",
+        "turnId": 5,
+        "fromState": "GOODBYE",
+        "toState": "GOODBYE",
+        "expectedState": "SUPPORT_HANDOFF",
+        "reason": "Expected state SUPPORT_HANDOFF, but state machine transitioned to GOODBYE"
+      },
+      {
+        "conversationId": "conv_long_04",
+        "turnId": 3,
+        "fromState": "NEED_DETECTED",
+        "toState": "PRODUCT_INTEREST",
+        "expectedState": "PRODUCT_INTRODUCTION",
+        "reason": "Expected state PRODUCT_INTRODUCTION, but state machine transitioned to PRODUCT_INTEREST"
+      },
+      {
+        "conversationId": "conv_long_04",
+        "turnId": 4,
+        "fromState": "PRODUCT_INTEREST",
+        "toState": "GOODBYE",
+        "expectedState": "SUPPORT_HANDOFF",
+        "reason": "Expected state SUPPORT_HANDOFF, but state machine transitioned to GOODBYE"
+      },
+      {
+        "conversationId": "conv_short_02",
+        "turnId": 2,
+        "fromState": "EARLY_CONVERSATION",
+        "toState": "ENGAGED",
+        "expectedState": "EARLY_CONVERSATION",
+        "reason": "Expected state EARLY_CONVERSATION, but state machine transitioned to ENGAGED"
+      },
+      {
+        "conversationId": "conv_prod_01",
+        "turnId": 1,
+        "fromState": "INITIAL_GREETING",
+        "toState": "PRODUCT_INTEREST",
+        "expectedState": "PRODUCT_INTRODUCTION",
+        "reason": "Expected state PRODUCT_INTRODUCTION, but state machine transitioned to PRODUCT_INTEREST"
+      },
+      {
+        "conversationId": "conv_prod_03",
+        "turnId": 1,
+        "fromState": "INITIAL_GREETING",
+        "toState": "PRODUCT_INTEREST",
+        "expectedState": "PRODUCT_INTRODUCTION",
+        "reason": "Expected state PRODUCT_INTRODUCTION, but state machine transitioned to PRODUCT_INTEREST"
+      },
+      {
+        "conversationId": "conv_prod_05",
+        "turnId": 1,
+        "fromState": "INITIAL_GREETING",
+        "toState": "PRODUCT_INTEREST",
+        "expectedState": "PRODUCT_INTRODUCTION",
+        "reason": "Expected state PRODUCT_INTRODUCTION, but state machine transitioned to PRODUCT_INTEREST"
+      },
+      {
+        "conversationId": "conv_obj_01",
+        "turnId": 2,
+        "fromState": "EARLY_CONVERSATION",
+        "toState": "PRODUCT_INTEREST",
+        "expectedState": "PRODUCT_INTRODUCTION",
+        "reason": "Expected state PRODUCT_INTRODUCTION, but state machine transitioned to PRODUCT_INTEREST"
+      },
+      {
+        "conversationId": "conv_obj_04",
+        "turnId": 1,
+        "fromState": "INITIAL_GREETING",
+        "toState": "PRODUCT_INTEREST",
+        "expectedState": "PRODUCT_INTRODUCTION",
+        "reason": "Expected state PRODUCT_INTRODUCTION, but state machine transitioned to PRODUCT_INTEREST"
+      },
+      {
+        "conversationId": "conv_synth_04",
+        "turnId": 1,
+        "fromState": "INITIAL_GREETING",
+        "toState": "PRODUCT_INTEREST",
+        "expectedState": "PRODUCT_INTRODUCTION",
+        "reason": "Expected state PRODUCT_INTRODUCTION, but state machine transitioned to PRODUCT_INTEREST"
+      }
+    ]
+  },
+  "promotionMetrics": {
+    "totalTurns": 138,
+    "promotionAccuracy": 0.9492753623188406,
+    "errorRate": 0.050724637681159424,
+    "oversellingCount": 5,
+    "missedOpportunityCount": 2,
+    "criticalBugs": []
+  },
+  "responseMetrics": {
+    "averageScores": {
+      "relevance": 2,
+      "contextContinuity": 2,
+      "naturalness": 2,
+      "conciseness": 2,
+      "salesAppropriateness": 1.8,
+      "questionAnswered": 2,
+      "repetition": 2,
+      "tone": 2,
+      "unsupportedClaims": 2,
+      "overallAverageQuality": 1.98,
+      "overallPercentage": 99
+    }
+  },
+  "summaryStatus": {
+    "criticalErrorsCount": 0,
+    "intentF1Macro": 0.95,
+    "stateAccuracy": 0.855072463768116,
+    "promotionErrorRate": 0.050724637681159424,
+    "overallQualityScore": 99,
+    "readinessStatus": "READY_FOR_STEP_6",
+    "readinessNotes": [
+      "All decision metrics, state transitions, and safety locks verified successfully."
+    ]
+  }
+}
