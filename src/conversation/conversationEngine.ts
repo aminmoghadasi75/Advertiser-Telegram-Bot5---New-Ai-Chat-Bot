@@ -12,7 +12,8 @@ import { calculateLeadScoreUpdate, ScoreUpdateResult } from './leadScoring';
 import { evaluatePromotionPolicy, PromotionDecision } from './promotionPolicy';
 import { analyzeObjection, ObjectionAnalysis } from './objectionEngine';
 import { transitionConversationState, StateTransitionResult } from './stateMachine';
-import { validateAndSanitizeResponse, ValidationResult } from './responseValidator';
+import { validateAndSanitizeResponse, ValidationResult, MAX_BOT_MESSAGES_LIMIT } from './responseValidator';
+import { DEFAULT_PRODUCT_CONFIG, ProductConfig, formatProductPromptContext } from '../config/productConfig';
 
 export interface ConversationStepOutput {
   updatedContext: ConversationContext;
@@ -24,6 +25,7 @@ export interface ConversationStepOutput {
   promptDirective: string;
   shouldSendPhotoBanner: boolean;
   isTerminal: boolean;
+  messageLimitReached: boolean;
 }
 
 /**
@@ -31,8 +33,10 @@ export interface ConversationStepOutput {
  */
 export function createInitialConversationContext(
   partnerTag?: string,
-  partnerProfileSnippet?: string
+  partnerProfileSnippet?: string,
+  startedAt?: string
 ): ConversationContext {
+  const nowIso = startedAt || new Date().toISOString();
   return {
     state: ConversationState.INITIAL_GREETING,
     previousState: ConversationState.CONNECTING,
@@ -47,7 +51,15 @@ export function createInitialConversationContext(
     lastPromotionTurn: 0,
     lastCTATurn: 0,
     turnCount: 0,
+    botMessageCount: 0,
+    userMessageCount: 0,
+    maxBotMessages: MAX_BOT_MESSAGES_LIMIT,
+    conversationStartedAt: nowIso,
     elapsedSeconds: 0,
+    supportIdAvailable: false,
+    offerCount: 0,
+    recentBotMessages: [],
+    recentStrangerMessages: [],
     rejectionsCount: 0,
     objectionsCount: 0,
     partnerTag,
@@ -64,7 +76,8 @@ export function processConversationTurn(
   currentContext: ConversationContext,
   promotionConfig?: AnonymousProductPromotion,
   maxTurns: number = 4,
-  messageHistory: AnonymousChatMessage[] = []
+  messageHistory: AnonymousChatMessage[] = [],
+  productConfig: ProductConfig = DEFAULT_PRODUCT_CONFIG
 ): ConversationStepOutput {
   const currentTurn = currentContext.turnCount + 1;
   const historyForIntent = messageHistory.map((m) => ({
@@ -76,7 +89,17 @@ export function processConversationTurn(
   const intentResult = detectIntent(userMessage, historyForIntent);
   const currentIntent = intentResult.intent;
 
-  // Step 2: Handle Rejections & Objections counts
+  // Step 2: Handle Timing and Duration (A2)
+  const startedAtEpoch = currentContext.conversationStartedAt
+    ? new Date(currentContext.conversationStartedAt).getTime()
+    : Date.now();
+  const calculatedDurationSec = Math.max(
+    currentContext.elapsedSeconds || 0,
+    Math.floor((Date.now() - startedAtEpoch) / 1000)
+  );
+  const supportIdAvailable = calculatedDurationSec >= 120;
+
+  // Step 3: Handle Rejections & Objections counts
   let newPromotionLock = currentContext.promotionLock;
   let rejectionsCount = currentContext.rejectionsCount;
   let objectionsCount = currentContext.objectionsCount;
@@ -93,7 +116,7 @@ export function processConversationTurn(
     objectionsCount += 1;
   }
 
-  // Step 3: Calculate Lead Score with Deduplication
+  // Step 4: Calculate Lead Score with Deduplication
   const scoreUpdate = calculateLeadScoreUpdate(
     currentContext.leadScore,
     currentIntent,
@@ -105,12 +128,14 @@ export function processConversationTurn(
     ? [...currentContext.scoreFactors, scoreUpdate.factor]
     : currentContext.scoreFactors;
 
-  // Step 4: Evaluate Promotion Policy
+  // Step 5: Evaluate Promotion Policy
   const tempContextForPolicy: ConversationContext = {
     ...currentContext,
     intent: currentIntent,
     leadScore: scoreUpdate.newScore,
     turnCount: currentTurn,
+    elapsedSeconds: calculatedDurationSec,
+    supportIdAvailable,
     promotionLock: newPromotionLock,
   };
 
@@ -120,13 +145,13 @@ export function processConversationTurn(
     promotionConfig
   );
 
-  // Step 5: Analyze Objection if applicable
+  // Step 6: Analyze Objection if applicable
   let objectionAnalysis: ObjectionAnalysis | undefined;
   if (currentIntent === Intent.OBJECTION) {
     objectionAnalysis = analyzeObjection(userMessage);
   }
 
-  // Step 6: State Transition Engine
+  // Step 7: State Transition Engine
   const stateTransition = transitionConversationState(
     currentContext.state,
     currentIntent,
@@ -137,7 +162,7 @@ export function processConversationTurn(
     maxTurns
   );
 
-  // Step 7: Build Final Updated Context
+  // Step 8: Build Final Updated Context
   const isDirectCTA =
     promotionDecision.allowedLevel === PromotionLevel.DIRECT_OFFER &&
     (currentIntent === Intent.SUPPORT_REQUEST ||
@@ -145,8 +170,18 @@ export function processConversationTurn(
       currentIntent === Intent.PRICE_REQUEST ||
       stateTransition.newState === ConversationState.SUPPORT_HANDOFF);
 
+  const maxLimit = currentContext.maxBotMessages || MAX_BOT_MESSAGES_LIMIT;
+  const messageLimitReached = (currentContext.botMessageCount || 0) >= maxLimit;
+
+  let finalState = stateTransition.newState;
+  if (messageLimitReached) {
+    finalState = ConversationState.EXITING;
+  }
+
+  const updatedRecentStranger = [...(currentContext.recentStrangerMessages || []), userMessage].slice(-10);
+
   const updatedContext: ConversationContext = {
-    state: stateTransition.newState,
+    state: finalState,
     previousState: currentContext.state,
     intent: currentIntent,
     detectedIntentsHistory: [...currentContext.detectedIntentsHistory, currentIntent],
@@ -162,7 +197,17 @@ export function processConversationTurn(
         : currentContext.lastPromotionTurn,
     lastCTATurn: isDirectCTA ? currentTurn : currentContext.lastCTATurn,
     turnCount: currentTurn,
-    elapsedSeconds: currentContext.elapsedSeconds,
+    botMessageCount: currentContext.botMessageCount || 0,
+    userMessageCount: (currentContext.userMessageCount || 0) + 1,
+    maxBotMessages: maxLimit,
+    conversationStartedAt: currentContext.conversationStartedAt || new Date().toISOString(),
+    elapsedSeconds: calculatedDurationSec,
+    supportIdAvailable,
+    offerCount: promotionDecision.allowedLevel === PromotionLevel.DIRECT_OFFER
+      ? (currentContext.offerCount || 0) + 1
+      : (currentContext.offerCount || 0),
+    recentBotMessages: currentContext.recentBotMessages || [],
+    recentStrangerMessages: updatedRecentStranger,
     rejectionsCount,
     objectionsCount,
     lastObjectionCategory: objectionAnalysis?.category,
@@ -170,14 +215,15 @@ export function processConversationTurn(
     partnerProfileSnippet: currentContext.partnerProfileSnippet,
   };
 
-  // Step 8: Build Prompt Context Directive
+  // Step 9: Build Prompt Context Directive
   const promptDirective = buildPromptDirective(
     updatedContext,
     intentResult,
     promotionDecision,
     stateTransition,
     objectionAnalysis,
-    promotionConfig
+    promotionConfig,
+    productConfig
   );
 
   return {
@@ -189,7 +235,8 @@ export function processConversationTurn(
     objectionAnalysis,
     promptDirective,
     shouldSendPhotoBanner: promotionDecision.canSendBannerPhoto,
-    isTerminal: stateTransition.isTerminalState,
+    isTerminal: stateTransition.isTerminalState || messageLimitReached,
+    messageLimitReached,
   };
 }
 
@@ -202,7 +249,8 @@ export function buildPromptDirective(
   promotionDecision: PromotionDecision,
   stateTransition: StateTransitionResult,
   objectionAnalysis?: ObjectionAnalysis,
-  promotionConfig?: AnonymousProductPromotion
+  promotionConfig?: AnonymousProductPromotion,
+  productConfig: ProductConfig = DEFAULT_PRODUCT_CONFIG
 ): string {
   const lines: string[] = [];
 
@@ -211,6 +259,8 @@ export function buildPromptDirective(
   lines.push(`• Detected Intent: ${context.intent} (Confidence: ${Math.round(intentResult.confidence * 100)}%)`);
   lines.push(`• Lead Score: ${context.leadScore}/100 (${context.leadScore >= 56 ? 'HOT' : context.leadScore >= 26 ? 'WARM' : 'COLD'})`);
   lines.push(`• Promotion Policy: ${promotionDecision.allowedLevel} (Locked: ${context.promotionLock ? 'YES' : 'NO'})`);
+  lines.push(`• Bot Message Count: ${context.botMessageCount}/${context.maxBotMessages || 18}`);
+  lines.push(`• Conversation Duration: ${context.elapsedSeconds}s (Support ID Access: ${context.supportIdAvailable ? 'ALLOWED' : 'GATED (<120s)'})`);
 
   if (promotionDecision.isExplicitOverride) {
     lines.push(`⚡ EXPLICIT OVERRIDE ACTIVE: User asked for product/VPN directly. Answer immediately without stalling.`);
@@ -224,8 +274,11 @@ export function buildPromptDirective(
     lines.push(`🌱 MODE: SOFT BRIDGE. You may casually mention that you use a fast private config/VPN without sounding like a salesperson.`);
   } else if (promotionDecision.allowedLevel === PromotionLevel.DIRECT_OFFER) {
     lines.push(`🎯 MODE: DIRECT OFFER. Answer questions with product details, pricing, test config offer, and support link.`);
-    if (promotionConfig?.contactHandleOrLink) {
-      lines.push(`• Support Handle: ${promotionConfig.contactHandleOrLink.replace(/^@/, '')}`);
+    if (context.supportIdAvailable) {
+      const handle = (productConfig.support.handle || promotionConfig?.contactHandleOrLink || 'nova_vpn10').replace(/^@/, '');
+      lines.push(`• Support Handle: ${handle} (strictly without @)`);
+    } else {
+      lines.push(`• Support Handle: [LOCKED: conversation duration < 120s - DO NOT provide handle yet]`);
     }
   }
 
@@ -237,8 +290,9 @@ export function buildPromptDirective(
     });
   }
 
+  // A5: Exit behavior based on user context
   if (context.state === ConversationState.GOODBYE || context.intent === Intent.GOODBYE) {
-    lines.push(`👋 FAREWELL: Respond warmly and wish them well.`);
+    lines.push(`👋 FAREWELL: The user is leaving. Give a short, natural, warm goodbye. Do NOT force an advertisement on exit unless they explicitly asked.`);
   }
 
   lines.push(`========================================================`);

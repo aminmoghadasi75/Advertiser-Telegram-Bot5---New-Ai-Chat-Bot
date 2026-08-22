@@ -303,7 +303,17 @@ export interface ConversationContext {
   lastPromotionTurn: number;
   lastCTATurn: number;
   turnCount: number;
-  elapsedSeconds: number;
+  botMessageCount?: number;
+  userMessageCount?: number;
+  maxBotMessages?: number;
+  conversationStartedAt?: string;
+  endedAt?: string;
+  elapsedSeconds?: number;
+  supportIdAvailable?: boolean;
+  salesState?: string;
+  offerCount?: number;
+  recentBotMessages?: string[];
+  recentStrangerMessages?: string[];
   rejectionsCount: number;
   objectionsCount: number;
   lastObjectionCategory?: ObjectionCategory;
@@ -325,9 +335,19 @@ export interface AnonymousProductPromotion {
   knowledgeBaseText?: string; // پایگاه دانش و توضیحات آزاد قیمت‌ها، پلن‌ها و گارانتی
 }
 
+export interface SavedAiPrompt {
+  id: string;
+  title: string;
+  prompt: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface AnonymousChatInstructions {
   systemPrompt: string; // دستورالعمل متنی کامل هوش مصنوعی برای نحوه صحبت با کاربر ناشناس
+  savedPrompts?: SavedAiPrompt[]; // لیست دستورالعمل‌های اختصاصی ذخیره شده توسط خود کاربر
   maxMessagesPerChat: number; // تعداد پیامی که بات باید با کاربر صحبت کند قبل از خروج (مثلاً ۳ یا ۵)
+  maxBotMessages?: number; // حداکثر تعداد پیام‌های مجاز ارسالی ربات (مثلا ۱۸)
   autoExitOnPartnerBye?: boolean; // تشخیص هوشمند خداحافظی یا قصد خروج مخاطب و اجرای بلافاصله فرآیند خروج با ارسال بنر تبلیغاتی
   memoryWindowSize?: number; // تعداد پیام‌های اخیر مکالمه جاری که در حافظه هوش مصنوعی نگهداری می‌شود (پیش‌فرض: ۱۰ پیام)
   enforceSessionIsolation?: boolean; // تضمین تفکیک کامل حافظه بین جلسات و فراموشی خودکار افراد قبلی
@@ -398,6 +418,11 @@ export interface AnonymousChatSession {
   messagesCount: number;
   strangerMessagesCount: number;
   aiMessagesCount: number;
+  botMessageCount?: number;
+  userMessageCount?: number;
+  offerCount?: number;
+  supportIdAvailable?: boolean;
+  salesState?: string;
   promoSent?: boolean; // مشخص‌کننده اینکه آیا بنر و متن تبلیغاتی کمپین در این چت ارسال شده است یا خیر
   inquiryDetected?: boolean; // آیا مخاطب به تبلیغ علاقه نشان داد یا سوال پرسید؟
   inquirySnippet?: string; // خلاصه سوال یا درخواست هم‌صحبت پس از دیدن تبلیغ

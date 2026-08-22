@@ -35,7 +35,8 @@ import {
   buildPromptDirective,
   ConversationStepOutput,
 } from './src/conversation/conversationEngine.js';
-import { validateAndSanitizeResponse } from './src/conversation/responseValidator.js';
+import { validateAndSanitizeResponse, MAX_BOT_MESSAGES_LIMIT } from './src/conversation/responseValidator.js';
+import { DEFAULT_PRODUCT_CONFIG, formatProductPromptContext } from './src/config/productConfig.js';
 import { runAllConversationTests, TestSuiteSummary } from './src/conversation/conversationTests.js';
 import { GOLD_DATASET } from './src/evaluation/goldDataset.js';
 import { runFullEvaluation, replaySingleConversation } from './src/evaluation/replayEngine.js';
@@ -3729,15 +3730,17 @@ app.post('/api/scheduler/update-antibot', (req, res) => {
   res.json({ success: true, antiBot: appState.scheduler.antiBot });
 });
 
-// 18. Export Data Backup Endpoint
-app.get('/api/backup/export', (req, res) => {
+// 18. Export Data Backup Endpoints
+const handleExportBackup = (req: express.Request, res: express.Response) => {
   res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Content-Disposition', `attachment; filename=telegram_promoter_backup_${Date.now()}.json`);
+  res.setHeader('Content-Disposition', `attachment; filename=telegram_promoter_backup_${new Date().toISOString().slice(0, 10)}.json`);
   res.send(JSON.stringify(appState, null, 2));
-});
+};
+app.get('/api/backup/export', handleExportBackup);
+app.get('/api/download-backup', handleExportBackup);
 
-// 19. Import Data Backup Endpoint
-app.post('/api/backup/import', (req, res) => {
+// 19. Import Data Backup Endpoints
+const handleImportBackup = (req: express.Request, res: express.Response) => {
   const data = req.body;
   if (!data || typeof data !== 'object') {
     res.status(400).json({ error: 'فایل پشتیبان نامعتبر است.' });
@@ -3756,16 +3759,49 @@ app.post('/api/backup/import', (req, res) => {
   if (data.credentials) {
     appState.credentials = { ...appState.credentials, ...data.credentials };
   }
+  if (data.anonymousAutomator) {
+    appState.anonymousAutomator = {
+      ...appState.anonymousAutomator,
+      ...data.anonymousAutomator,
+      instructions: {
+        ...(appState.anonymousAutomator?.instructions || {}),
+        ...(data.anonymousAutomator.instructions || {}),
+        savedPrompts: Array.isArray(data.anonymousAutomator.instructions?.savedPrompts)
+          ? data.anonymousAutomator.instructions.savedPrompts
+          : (appState.anonymousAutomator?.instructions?.savedPrompts || []),
+      },
+    };
+  }
+  if (Array.isArray(data.accounts)) {
+    appState.accounts = data.accounts;
+  }
+  if (data.activeAccountId) {
+    appState.activeAccountId = data.activeAccountId;
+  }
+  if (Array.isArray(data.anonymousSessionHistory)) {
+    appState.anonymousSessionHistory = data.anonymousSessionHistory;
+  }
 
   saveData();
-  addLog('success', 'بازیابی موفق اطلاعات گروه‌ها و کمپین‌ها از فایل پشتیبان JSON انجام شد.');
+  addLog('success', 'بازیابی موفق تمام اطلاعات، دستورالعمل‌های ذخیره‌شده هوش مصنوعی و تنظیمات از فایل پشتیبان JSON انجام شد.');
 
   res.json({
     success: true,
-    message: 'اطلاعات با موفقیت بازیابی شد.',
+    message: 'اطلاعات و دستورالعمل‌های ذخیره‌شده با موفقیت بازیابی شد.',
     groupsCount: appState.groups.length,
     campaignsCount: appState.campaigns.length,
+    savedPromptsCount: appState.anonymousAutomator?.instructions?.savedPrompts?.length || 0,
+    state: appState,
   });
+};
+app.post('/api/backup/import', handleImportBackup);
+app.post('/api/restore-backup', handleImportBackup);
+
+// Save All Endpoint
+app.post('/api/save-all', (req, res) => {
+  saveData();
+  addLog('info', 'تمام تنظیمات و دستورالعمل‌های ذخیره‌شده در فایل پایگاه داده ذخیره شدند.');
+  res.json({ success: true, state: appState });
 });
 
 // 20. Multi-Account Management Endpoints
@@ -4376,10 +4412,7 @@ async function generateAnonymousAiReply(
 
     if (promo?.enabled && (updatedCtx.promotionLevel !== PromotionLevel.NO_PROMOTION || stepOutput.promotionDecision.isExplicitOverride)) {
       systemInstruction += `\n\n══════════════════════════════════════════════
-[اطلاعات محصول/تبلیغ برای این چت]:
-- نام محصول: ${promo.productName || 'فیلترشکن اختصاصی'}
-- متن توضیحات و آفر: ${promo.productDescription || ''}
-- آیدی پشتیبانی: ${effectiveSupportHandle} (بدون @)
+${formatProductPromptContext(DEFAULT_PRODUCT_CONFIG, updatedCtx.supportIdAvailable)}
 - سطح مجاز معرفی: ${updatedCtx.promotionLevel}
 ══════════════════════════════════════════════`;
 
@@ -6132,9 +6165,21 @@ async function sendIceBreakerGreeting(
   );
 
   try {
+    const maxBotLimit = instructions.maxBotMessages || MAX_BOT_MESSAGES_LIMIT;
+    if ((session.botMessageCount || 0) >= maxBotLimit) {
+      return;
+    }
     await client.sendMessage(botEntity, { message: greetText });
     session.aiMessagesCount = (session.aiMessagesCount || 0) + 1;
+    session.botMessageCount = (session.botMessageCount || 0) + 1;
     session.messagesCount = (session.messagesCount || 0) + 1;
+    if (session.conversationContext) {
+      session.conversationContext.botMessageCount = session.botMessageCount;
+      session.conversationContext.recentBotMessages = [
+        ...(session.conversationContext.recentBotMessages || []),
+        greetText,
+      ].slice(-10);
+    }
     session.transcript.push({
       id: 'msg_' + Date.now() + '_ai_greet',
       sender: 'me_melody',
@@ -6349,8 +6394,11 @@ async function executeExitAndNextPartner(
 ) {
   const instructions = appState.anonymousAutomator?.instructions || defaultAnonymousAutomatorConfig.instructions;
 
-  // For friendly or planned exits (max messages, silence, partner goodbye, etc.), send farewell if enabled
-  if (reason === 'max_messages_reached' || reason === 'partner_bye_exit' || reason === 'stranger_silence') {
+  // A6: User Disconnect handling -> Stop generation immediately, do NOT send any farewell or ad
+  if (reason === 'stranger_disconnected') {
+    addLog('info', `[چت ناشناس] 🔌 مخاطب قطع ارتباط کرد. جلسه بلافاصله پایان یافته و بدون ارسال هیچ پیامی ذخیره شد.`);
+  } else if (reason === 'max_messages_reached' || reason === 'partner_bye_exit' || reason === 'stranger_silence') {
+    // A5: Context-aware farewells without forced ads
     try {
       await sendPreExitFarewellIfEnabled(client, botEntity, session, instructions);
     } catch (farewellErr) {
@@ -6358,19 +6406,21 @@ async function executeExitAndNextPartner(
     }
   }
 
-  // GUARANTEE: In all exit scenarios (early disconnect, silence, manual skip, max messages, partner bye),
-  // always make sure the promotional message and banner are sent before initiating the exit sequence (unless already sent).
-  if (reason !== 'inappropriate_content' && reason !== 'spam_bot_skipped') {
-    try {
-      await sendCampaignPromotionBeforeExitIfPending(client, botEntity, session, instructions);
-    } catch (promoErr) {
-      console.warn('[چت ناشناس] خطا در ارسال تبلیغ تضمینی قبل از خروج:', promoErr);
-    }
-  }
-
+  // A9: Record all comprehensive session telemetry metrics
   session.exitReason = reason;
   session.status = 'ended';
   session.statusMessage = statusExplanation;
+  session.endedAt = new Date().toISOString();
+  session.durationSeconds = session.startedAt
+    ? Math.max(0, Math.floor((Date.now() - new Date(session.startedAt).getTime()) / 1000))
+    : 0;
+  session.botMessageCount = session.aiMessagesCount || 0;
+  session.userMessageCount = session.strangerMessagesCount || 0;
+  session.supportIdAvailable = (session.durationSeconds || 0) >= 120;
+  session.salesState = session.conversationContext?.promotionLevel || 'NO_PROMOTION';
+  session.conversationState = session.conversationContext?.state;
+  session.offerCount = session.conversationContext?.offerCount || 0;
+
   session.transcript.push({
     id: 'msg_' + Date.now() + '_exit',
     sender: 'bot_system',
@@ -7174,8 +7224,15 @@ async function runAnonymousChatWorker() {
               ? splitIntoNaturalBubbles(replyResult.text, instructions.multiBubbleMaxChunks || 2)
               : [replyResult.text];
 
+            const maxBotLimit = instructions.maxBotMessages || MAX_BOT_MESSAGES_LIMIT || 18;
+
             if (bubbles.length > 1) {
               for (let bIdx = 0; bIdx < bubbles.length; bIdx++) {
+                if ((activeAnonChatSession.botMessageCount || 0) >= maxBotLimit) {
+                  addLog('warning', `[سقف پیام ربات] سقف مجاز ${maxBotLimit} پیام ربات پر شد. توقف ارسال بخش‌های بعدی.`);
+                  break;
+                }
+
                 const bubbleText = bubbles[bIdx];
                 if (bIdx > 0) {
                   // Natural typing delay before sending subsequent bubble
@@ -7191,8 +7248,17 @@ async function runAnonymousChatWorker() {
 
                 await client.sendMessage(botEntity, { message: bubbleText });
                 activeAnonChatSession.aiMessagesCount = (activeAnonChatSession.aiMessagesCount || 0) + 1;
+                activeAnonChatSession.botMessageCount = (activeAnonChatSession.botMessageCount || 0) + 1;
                 activeAnonChatSession.messagesCount++;
                 lastAiReplyTime = Date.now();
+
+                if (activeAnonChatSession.conversationContext) {
+                  activeAnonChatSession.conversationContext.botMessageCount = activeAnonChatSession.botMessageCount;
+                  activeAnonChatSession.conversationContext.recentBotMessages = [
+                    ...(activeAnonChatSession.conversationContext.recentBotMessages || []),
+                    bubbleText,
+                  ].slice(-10);
+                }
 
                 activeAnonChatSession.transcript.push({
                   id: 'msg_' + Date.now() + `_ai_b${bIdx + 1}`,
@@ -7203,18 +7269,29 @@ async function runAnonymousChatWorker() {
                 saveData();
               }
             } else {
-              await client.sendMessage(botEntity, { message: replyResult.text });
-              activeAnonChatSession.aiMessagesCount = (activeAnonChatSession.aiMessagesCount || 0) + 1;
-              activeAnonChatSession.messagesCount++;
-              lastAiReplyTime = Date.now();
+              if ((activeAnonChatSession.botMessageCount || 0) < maxBotLimit) {
+                await client.sendMessage(botEntity, { message: replyResult.text });
+                activeAnonChatSession.aiMessagesCount = (activeAnonChatSession.aiMessagesCount || 0) + 1;
+                activeAnonChatSession.botMessageCount = (activeAnonChatSession.botMessageCount || 0) + 1;
+                activeAnonChatSession.messagesCount++;
+                lastAiReplyTime = Date.now();
 
-              activeAnonChatSession.transcript.push({
-                id: 'msg_' + Date.now() + '_ai',
-                sender: 'me_melody',
-                text: replyResult.text,
-                timestamp: new Date().toISOString(),
-              });
-              saveData();
+                if (activeAnonChatSession.conversationContext) {
+                  activeAnonChatSession.conversationContext.botMessageCount = activeAnonChatSession.botMessageCount;
+                  activeAnonChatSession.conversationContext.recentBotMessages = [
+                    ...(activeAnonChatSession.conversationContext.recentBotMessages || []),
+                    replyResult.text,
+                  ].slice(-10);
+                }
+
+                activeAnonChatSession.transcript.push({
+                  id: 'msg_' + Date.now() + '_ai',
+                  sender: 'me_melody',
+                  text: replyResult.text,
+                  timestamp: new Date().toISOString(),
+                });
+                saveData();
+              }
             }
 
             if (promo?.enabled && replyResult.promoMentioned && !activeAnonChatSession.promoSent) {
@@ -7224,16 +7301,21 @@ async function runAnonymousChatWorker() {
             }
           }
 
-          // Check if max messages reached -> Exit according to exitSteps!
-          if (activeAnonChatSession.aiMessagesCount >= maxMsgs) {
-            addLog('info', `[چت ناشناس] تعداد پیام‌های ربات به سقف مشخص شده (${maxMsgs}) رسید. آماده‌سازی خروج و بررسی ارسال پیام تبلیغاتی کمپین...`);
+          // Check if max bot messages limit reached (A1: MAX_BOT_MESSAGES = 18)
+          const maxBotLimit = instructions.maxBotMessages || MAX_BOT_MESSAGES_LIMIT || 18;
+          if (
+            (activeAnonChatSession.botMessageCount || 0) >= maxBotLimit ||
+            (activeAnonChatSession.aiMessagesCount || 0) >= maxMsgs
+          ) {
+            const actualLimit = (activeAnonChatSession.botMessageCount || 0) >= maxBotLimit ? maxBotLimit : maxMsgs;
+            addLog('info', `[چت ناشناس] تعداد پیام‌های ربات به سقف مشخص شده (${actualLimit}) رسید. آماده‌سازی خروج و اتمام جلسه...`);
             await executeExitAndNextPartner(
               client,
               botEntity,
               selectedBot,
               activeAnonChatSession,
               'max_messages_reached',
-              `اتمام ${maxMsgs} پیام مشخص‌شده. خروج طبق ترتیب دکمه‌های خروج و رفتن به نفر بعدی...`
+              `اتمام ${actualLimit} پیام مشخص‌شده ربات. خروج هوشمند و رفتن به نفر بعدی...`
             );
             exitTriggered = true;
             break;

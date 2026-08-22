@@ -78,8 +78,23 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const handleDownloadBackup = () => {
-    window.location.href = '/api/download-backup';
+  const handleDownloadBackup = async () => {
+    try {
+      const res = await fetch('/api/download-backup');
+      if (!res.ok) throw new Error('Failed to download backup');
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = `telegram_promoter_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      console.error('Backup download error:', err);
+      alert('خطا در دانلود فایل پشتیبان');
+    }
     setShowBackupMenu(false);
   };
 

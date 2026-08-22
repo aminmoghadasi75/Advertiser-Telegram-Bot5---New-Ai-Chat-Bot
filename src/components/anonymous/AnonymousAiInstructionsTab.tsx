@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AnonymousChatInstructions, AnonymousProductPromotion } from '../../types';
+import { AnonymousChatInstructions, AnonymousProductPromotion, SavedAiPrompt } from '../../types';
 import {
   Sparkles,
   Bot,
@@ -25,80 +25,19 @@ import {
   Flame,
   FileText,
   Trash2,
+  Bookmark,
+  Plus,
+  Edit3,
+  CheckCircle2,
+  FolderHeart,
+  Save,
+  X,
 } from 'lucide-react';
 
 interface AnonymousAiInstructionsTabProps {
   instructions: AnonymousChatInstructions;
   onSaveInstructions: (instructions: AnonymousChatInstructions) => Promise<void>;
 }
-
-const SAMPLE_PROMPTS = [
-  {
-    title: 'دستورالعمل جامع مبتنی بر ماشین حالت (S1-S15 پیشنهادی 🌸)',
-    prompt: `[هویت و شخصیت اصلی (Core Persona)]:
-شما یک دختر ۲۰ ساله ایرانی پرانرژی، مهربان و باهوش به نام سارا (ملودی) اهل تهران هستید که در یک ربات چت ناشناس تلگرام با یک فرد جدید در حال گپ زدن هستید.
-- لحن: کاملاً خودمانی، صمیمی، دخترانه، تهرانی عامیانه و روان. استفاده از ایموجی‌های ملایم مثل 🌸 و ✨.
-- طول پاسخ‌ها: حتماً و همیشه بسیار کوتاه (۱ الی ۲ جمله طبیعی تلگرامی).
-- خط قرمز انسانی: هرگز و تحت هیچ شرایطی نگویید هوش مصنوعی یا ربات هستید. شما یک انسان واقعی پای گوشی هستید. کلمات کتابی، رسمی یا پیام‌های تبلیغاتی قالبی اکیداً ممنوع است.
-
-══════════════════════════════════════════════
-[سلسله‌مراتب تصمیم‌گیری و اولویت رفتار (Hierarchical Behavioral Protocol)]:
-۱. اولویت یک (امنیت و احترام): اگر مخاطب بی‌احترامی کرد یا الفاظ زشت به کار برد، با متانت و کوتاهی پاسخ بده و وارد کل‌کل نشو (S13).
-۲. اولویت دو (خداحافظی و خروج): اگر مخاطب گفت بای/خداحافظ یا قصد رفتن داشت، با مهربانی خداحافظی کن (S12).
-۳. اولویت سه (عدم اصرار در رد پیشنهاد): اگر مخاطب گفت نه/نمیخوام/تبلیغه/علاقه‌ای ندارم، هرگز اصرار نکن، بحث تبلیغ را بلافاصله تمام کن و به چت دوستانه برگرد (S10).
-۴. اولویت چهار (پاسخ به سوالات و کنجکاوی): اگر مخاطب درباره اینترنت، فیلترشکن، سرعت، تست، قیمت، آیفون/اندروید سوال کرد، مستقیماً و خودمانی بر اساس پایگاه دانش پاسخ بده (S6/S8).
-۵. اولویت پنج (جریان طبیعی مکالمه و اولویت ارتباط): اولویت اول شما ارتباط انسانی و گفتگو است (Conversation First, Sales Second).
-
-══════════════════════════════════════════════
-[ماتریس حالات و رفتارهای مکالمه (State Machine Guidelines S1-S15)]:
-- وضعیت S1 (سلام و شروع): احوال‌پرسی گرم و کوتاه.
-- وضعیت S2 (تبادل اصل/سن/شهر): «سارا ۲۰ تهران، شما چی؟»
-- وضعیت S3 (گپ کوتاه روزمره): صحبت درباره روزمرگی، کارهای امروز، گوشی، موسیقی.
-- وضعیت S4 (پل ارتباطی ملایم): اشاره به وضعیت اینترنت یا کار با گوشی/اینستاگرام.
-- وضعیت S5 (معرفی نرم / سطح ۱): اشاره گذرا به فیلترشکن خوب بدون فشار فروش.
-- وضعیت S6 (پاسخ به کنجکاوی): پاسخ به سوالات مخاطب درباره کیفیت و سرعت.
-- وضعیت S7 (ارائه پیشنهاد / سطح ۲): توضیح پلن‌ها، تست رایگان ۱ ساعته، و درج تگ [SEND_PROMO_CARD].
-- وضعیت S8 (پاسخ به سوالات فنی و FAQ): سازگاری با سیستم‌عمل‌ها (iOS/Android/Windows)، پرداخت آسان، گارانتی بازگشت وجه.
-- وضعیت S9 (ارائه راه‌ارتباطی): آیدی پشتیبانی «nova_vpn10» (حتماً بدون علامت @).
-- وضعیت S10 (مدیریت عدم تمایل/نه شنیدن): پذیرش بدون اصرار: «باشه گلم اشکالی نداره، چه خبرا؟»
-- وضعیت S11 (ادامه گفتگوی دوستانه): ادامه چت معمولی و انسانی.
-- وضعیت S12 (خداحافظی قبل خروج): بهانه ملایم: «من کار فوری برام پیش اومد باید برم گلم، مراقب خودت باش 🌸»
-- وضعیت S13 (محتوای نامناسب): برخورد سرد و کوتاه.
-- وضعیت S14 (اسپم و بات): پاسخ بی‌تفاوت یا کوتاه.
-- وضعیت S15 (پیگیری سکوت): «هستی؟ 🌸»
-
-══════════════════════════════════════════════
-[سیاست سه‌سطحی معرفی و فروش (Three-Tier Promotion Policy)]:
-- سطح صفر (Level 0 - بدون تبلیغ): در دقایق اول چت یا هنگام احوال‌پرسی اولیه، هیچ تبلیغ یا پیشنهادی ندهید.
-- سطح یک (Level 1 - اشاره نرم): فقط در صورتی که بحث به اینترنت یا اینستاگرام کشیده شد، اشاره کوتاهی به فیلترشکن خوب کنید.
-- سطح دو (Level 2 - پیشنهاد کامل و CTA): فقط زمانی که مخاطب تمایل نشان داد، قیمت (۵۹ تومن تک‌کاربره، ۸۹ تومن دوکاربره) و تست رایگان را بگویید و تگ [SEND_PROMO_CARD] بزنید.
-
-══════════════════════════════════════════════
-[قوانین حیاتی نگارش و فرمت]:
-۱. تمام اعداد را حتماً به حروف فارسی بنویسید (مثلاً «بیست» به جای 20، «پنجاه و نه هزار» به جای 59000).
-۲. آیدی پشتیبانی را همیشه بدون کاراکتر @ بنویسید: nova_vpn10.
-۳. در ابتدای مکالمه کلمات یا حروف انگلیسی نفرستید.
-۴. بدون هیچ‌گونه پیشوند مانند «سارا:» یا علامت نقل‌قول پاسخ دهید.`,
-  },
-  {
-    title: 'معرفی هوشمندانه کانال / فیلترشکن (VPN)',
-    prompt: `شما یک کاربر عادی و بسیار صمیمی در چت ناشناس تلگرام هستید.
-دستورالعمل چت:
-۱. پاسخ‌های بسیار کوتاه (حداکثر ۱ یا ۲ جمله خودمانی).
-۲. ابتدا سلام و احوال‌پرسی کوتاه و گرم کن.
-۳. در پاسخ بعدی اگر از وضعیت پرسید یا پیام فرستاد، بگو داشتم تو اینستا می‌چرخیدم، راستی یه وی‌پی‌ان عالی پیدا کردم اصلا قطعی نداره برای یوتیوب و تلگرام.
-۴. لحن کاملاً دوستانه، دلسوزانه و طبیعی باشد بدون کلمات رسمی و کتابی.`,
-  },
-  {
-    title: 'چت آزاد و کوتاه دوستانه',
-    prompt: `شما در یک ربات چت ناشناس تلگرام با یک کاربر ناشناس صحبت می‌کنید.
-دستورالعمل:
-- پاسخ‌هایت حداکثر ۱۰ تا ۱۵ کلمه باشد.
-- با لحن عامیانه و تهرانی صحبت کن.
-- به حرف‌های مخاطب گوش بده و متناسب با موضوع او پاسخ کوتاه بده.
-- به هیچ وجه رسمی حرف نزن.`,
-  },
-];
 
 const PRESET_GREETINGS = [
   'سلام خوبی؟ 🌸',
@@ -129,6 +68,14 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
   const [savedSuccess, setSavedSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const lastSavedJsonRef = useRef<string>(JSON.stringify(instructions));
+
+  // State for user-defined saved prompts management
+  const [showSavePromptBox, setShowSavePromptBox] = useState(false);
+  const [newPromptTitle, setNewPromptTitle] = useState('');
+  const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
+  const [editingTitleText, setEditingTitleText] = useState('');
+  const [loadedPromptId, setLoadedPromptId] = useState<string | null>(null);
+  const [promptFeedback, setPromptFeedback] = useState<string | null>(null);
 
   // Local raw text inputs for dash-separated keywords to guarantee smooth typing
   const [rawIgnoredPhrases, setRawIgnoredPhrases] = useState<string>(
@@ -213,8 +160,77 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
     setIsDirty(false);
   };
 
-  const handleSelectSample = (sampleText: string) => {
-    updateField('systemPrompt', sampleText);
+  const savedPrompts = localInstructions.savedPrompts || [];
+
+  const handleSaveCurrentAsNewPrompt = () => {
+    const textToSave = (localInstructions.systemPrompt || '').trim();
+    if (!textToSave) {
+      alert('متن دستورالعمل در کادر خالی است. لطفاً ابتدا متن دستور را بنویسید.');
+      return;
+    }
+    const finalTitle = newPromptTitle.trim() || `دستورالعمل ذخیره‌شده ${savedPrompts.length + 1}`;
+    const newSaved: SavedAiPrompt = {
+      id: `prompt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      title: finalTitle,
+      prompt: textToSave,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    const updatedList = [newSaved, ...savedPrompts];
+    updateField('savedPrompts', updatedList);
+    setLoadedPromptId(newSaved.id);
+    setNewPromptTitle('');
+    setShowSavePromptBox(false);
+    setPromptFeedback(`دستور «${finalTitle}» با موفقیت در لیست ذخیره شد ✓`);
+    setTimeout(() => setPromptFeedback(null), 3000);
+  };
+
+  const handleLoadSavedPrompt = (saved: SavedAiPrompt) => {
+    updateField('systemPrompt', saved.prompt);
+    setLoadedPromptId(saved.id);
+    setPromptFeedback(`دستور «${saved.title}» روی کادر فعال شد ✓`);
+    setTimeout(() => setPromptFeedback(null), 3000);
+  };
+
+  const handleUpdateSavedPrompt = (savedId: string) => {
+    const textToSave = (localInstructions.systemPrompt || '').trim();
+    const updatedList = savedPrompts.map((p) =>
+      p.id === savedId
+        ? { ...p, prompt: textToSave, updatedAt: new Date().toISOString() }
+        : p
+    );
+    updateField('savedPrompts', updatedList);
+    setLoadedPromptId(savedId);
+    setPromptFeedback('دستورالعمل ذخیره‌شده با متن فعلی کادر به‌روزرسانی شد ✓');
+    setTimeout(() => setPromptFeedback(null), 3000);
+  };
+
+  const handleDeleteSavedPrompt = (savedId: string, title: string) => {
+    if (!window.confirm(`آیا از حذف دستورالعمل «${title}» از لیست اطمینان دارید؟`)) return;
+    const updatedList = savedPrompts.filter((p) => p.id !== savedId);
+    updateField('savedPrompts', updatedList);
+    if (loadedPromptId === savedId) {
+      setLoadedPromptId(null);
+    }
+    setPromptFeedback('دستورالعمل حذف شد.');
+    setTimeout(() => setPromptFeedback(null), 2500);
+  };
+
+  const handleStartRename = (saved: SavedAiPrompt) => {
+    setEditingPromptId(saved.id);
+    setEditingTitleText(saved.title);
+  };
+
+  const handleSaveRename = (savedId: string) => {
+    if (!editingTitleText.trim()) return;
+    const updatedList = savedPrompts.map((p) =>
+      p.id === savedId
+        ? { ...p, title: editingTitleText.trim(), updatedAt: new Date().toISOString() }
+        : p
+    );
+    updateField('savedPrompts', updatedList);
+    setEditingPromptId(null);
+    setEditingTitleText('');
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1376,43 +1392,272 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. MAIN AI SYSTEM PROMPT CARD */}
+      {/* 3. MAIN AI SYSTEM PROMPT & USER-SAVED INSTRUCTIONS MANAGER */}
       {/* ========================================================================= */}
-      <div className="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <label className="text-sm font-bold text-white flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-fuchsia-400" />
-            <span>دستورالعمل لحن و نحوه صحبت هوش مصنوعی (System Prompt):</span>
-          </label>
-
-          {/* Sample Prompts Chips */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] text-slate-400">نمونه پرامپت‌های آماده:</span>
-            {SAMPLE_PROMPTS.map((sp, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleSelectSample(sp.prompt)}
-                className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-fuchsia-950/50 border border-slate-800 hover:border-fuchsia-600 text-slate-300 hover:text-fuchsia-200 text-[11px] font-medium transition-all"
-              >
-                {sp.title}
-              </button>
-            ))}
+      <div className="bg-slate-950/60 p-5 rounded-2xl border border-fuchsia-500/30 space-y-4 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-800/80">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-fuchsia-500/20 border border-fuchsia-500/30 text-fuchsia-400 flex items-center justify-center shadow">
+              <MessageSquare className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-sm text-white">دستورالعمل لحن و نحوه صحبت هوش مصنوعی (System Prompt)</h4>
+                <span className="px-2 py-0.5 rounded-full text-[10px] bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 font-medium">
+                  دستورات اختصاصی شما ({savedPrompts.length})
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                تنها دستورالعمل‌هایی که خودتان می‌نویسید ذخیره می‌شوند و در فایل پشتیبان (Backup) ثبت خواهند شد.
+              </p>
+            </div>
           </div>
+
+          {/* Action button to save current textarea content into user's saved list */}
+          <button
+            type="button"
+            onClick={() => setShowSavePromptBox(!showSavePromptBox)}
+            className="px-3.5 py-2 rounded-xl bg-fuchsia-950/70 hover:bg-fuchsia-900 border border-fuchsia-600/50 text-fuchsia-200 text-xs font-bold flex items-center gap-1.5 transition-all shadow-md self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4 text-fuchsia-300" />
+            <span>+ ذخیره متن جاری به عنوان دستور جدید</span>
+          </button>
         </div>
 
-        <textarea
-          rows={7}
-          value={localInstructions.systemPrompt || ''}
-          onChange={(e) => updateField('systemPrompt', e.target.value)}
-          placeholder="دستورالعمل دقیق خود را برای هوش مصنوعی بنویسید (مثلاً: تو یک دختر ۲۰ ساله به نام سارا هستی. با لحن صمیمی و کوتاه ۱ یا ۲ جمله‌ای چت کن...)"
-          className="w-full bg-slate-900 border border-slate-800 focus:border-fuchsia-500 rounded-xl p-4 text-xs text-white placeholder:text-slate-600 focus:outline-none leading-relaxed font-sans"
-        />
+        {/* Feedback Alert if any */}
+        {promptFeedback && (
+          <div className="p-2.5 rounded-xl bg-emerald-950/70 border border-emerald-500/50 text-emerald-200 text-xs font-medium flex items-center gap-2 animate-fadeIn">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <span>{promptFeedback}</span>
+          </div>
+        )}
+
+        {/* Inline Save Box when user wants to save a new prompt */}
+        {showSavePromptBox && (
+          <div className="p-4 bg-fuchsia-950/30 border border-fuchsia-500/40 rounded-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Bookmark className="w-4 h-4 text-fuchsia-400" />
+                <span>نام‌گذاری و ذخیره دستورالعمل در لیست اختصاصی شما:</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowSavePromptBox(false)}
+                className="text-slate-400 hover:text-white p-1 rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              <input
+                type="text"
+                value={newPromptTitle}
+                onChange={(e) => setNewPromptTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSaveCurrentAsNewPrompt();
+                  }
+                }}
+                placeholder="عنوان دلخواه برای این دستور (مثلاً: سناریوی صمیمی دخترانه، معرفی VPN، چت کوتاه...)"
+                className="w-full sm:flex-1 bg-slate-900 border border-slate-700 focus:border-fuchsia-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none"
+                autoFocus
+              />
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={handleSaveCurrentAsNewPrompt}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>ثبت و ذخیره</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSavePromptBox(false)}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-all"
+                >
+                  انصراف
+                </button>
+              </div>
+            </div>
+            <p className="text-[11px] text-fuchsia-300/80">
+              💡 با ذخیره کردن، این دستورالعمل به لیست پایین اضافه می‌شود و در هر زمان با یک کلیک می‌توانید آن را فعال کنید.
+            </p>
+          </div>
+        )}
+
+        {/* The Textarea */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-300">
+              متن دستورالعمل فعال برای هوش مصنوعی (System Prompt):
+            </span>
+            <span className="text-[11px] text-slate-500 font-mono">
+              {(localInstructions.systemPrompt || '').length} کاراکتر
+            </span>
+          </div>
+          <textarea
+            rows={8}
+            value={localInstructions.systemPrompt || ''}
+            onChange={(e) => updateField('systemPrompt', e.target.value)}
+            placeholder="دستورالعمل دقیق خود را برای هوش مصنوعی بنویسید (مثلاً: تو یک دختر ۲۰ ساله به نام سارا هستی. با لحن صمیمی و کوتاه ۱ یا ۲ جمله‌ای چت کن...)"
+            className="w-full bg-slate-900 border border-slate-800 focus:border-fuchsia-500 rounded-xl p-4 text-xs text-white placeholder:text-slate-600 focus:outline-none leading-relaxed font-sans"
+          />
+        </div>
+
+        {/* Saved Prompts Switcher / Manager List */}
+        <div className="space-y-3 pt-3 border-t border-slate-800/80">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <FolderHeart className="w-4 h-4 text-fuchsia-400" />
+              <h5 className="font-bold text-xs text-white">
+                دستورالعمل‌های ذخیره‌شده شما (سوئیچ سریع بین دستورات):
+              </h5>
+            </div>
+            {savedPrompts.length > 0 && (
+              <span className="text-[11px] text-slate-400">
+                برای فعال‌سازی هر دستور روی دکمه «اعمال روی کادر» بزنید.
+              </span>
+            )}
+          </div>
+
+          {savedPrompts.length === 0 ? (
+            <div className="p-4 bg-slate-900/40 rounded-xl border border-dashed border-slate-800 text-center space-y-1.5">
+              <p className="text-xs font-semibold text-slate-300">
+                هنوز هیچ دستورالعمل اختصاصی ذخیره نشده است.
+              </p>
+              <p className="text-[11px] text-slate-500">
+                متن مورد نظر خود را در کادر بالا بنویسید و دکمه «+ ذخیره متن جاری به عنوان دستور جدید» را بزنید تا در اینجا ثبت شود و بتوانید به راحتی بین دستورات قبلی خود سوئیچ کنید.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {savedPrompts.map((sp) => {
+                const isActive = (localInstructions.systemPrompt || '').trim() === sp.prompt.trim();
+                const isEditing = editingPromptId === sp.id;
+
+                return (
+                  <div
+                    key={sp.id}
+                    className={`p-3.5 rounded-xl border transition-all space-y-2 flex flex-col justify-between ${
+                      isActive
+                        ? 'bg-fuchsia-950/40 border-fuchsia-500 ring-1 ring-fuchsia-500/50 shadow-lg shadow-fuchsia-950/30'
+                        : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2">
+                        {isEditing ? (
+                          <div className="flex items-center gap-1.5 flex-1">
+                            <input
+                              type="text"
+                              value={editingTitleText}
+                              onChange={(e) => setEditingTitleText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveRename(sp.id);
+                                if (e.key === 'Escape') setEditingPromptId(null);
+                              }}
+                              className="flex-1 bg-slate-950 border border-fuchsia-500 rounded-lg px-2 py-1 text-xs text-white focus:outline-none"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSaveRename(sp.id)}
+                              className="p-1 rounded bg-emerald-600 text-white text-[10px]"
+                              title="تایید نام"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingPromptId(null)}
+                              className="p-1 rounded bg-slate-800 text-slate-400 text-[10px]"
+                              title="انصراف"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className="font-bold text-xs text-white truncate">
+                              {sp.title}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleStartRename(sp)}
+                              className="text-slate-500 hover:text-slate-300 p-0.5 transition-colors"
+                              title="ویرایش نام"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+
+                        {isActive && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium flex items-center gap-1">
+                            <Check className="w-3 h-3" />
+                            فعال در کادر
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Prompt preview snippet */}
+                      <p className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed font-sans">
+                        {sp.prompt || '(متن خالی)'}
+                      </p>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleLoadSavedPrompt(sp)}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
+                            isActive
+                              ? 'bg-fuchsia-600/30 text-fuchsia-300 border border-fuchsia-500/50'
+                              : 'bg-fuchsia-600 hover:bg-fuchsia-500 text-white shadow-sm'
+                          }`}
+                        >
+                          <Zap className="w-3.5 h-3.5" />
+                          <span>{isActive ? 'در حال استفاده' : 'اعمال روی کادر'}</span>
+                        </button>
+
+                        {!isActive && (
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateSavedPrompt(sp.id)}
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium flex items-center gap-1 transition-all"
+                            title="متن این دستور را با متن فعلی کادر جایگزین کن"
+                          >
+                            <Save className="w-3 h-3" />
+                            <span>به‌روزرسانی با متن کادر</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSavedPrompt(sp.id, sp.title)}
+                        className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 rounded-lg transition-colors"
+                        title="حذف این دستورالعمل"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         <div className="p-3 bg-fuchsia-950/20 border border-fuchsia-800/30 rounded-xl flex items-start gap-2 text-[11px] text-fuchsia-200 leading-relaxed">
           <Info className="w-4 h-4 text-fuchsia-400 flex-shrink-0 mt-0.5" />
           <span>
-            <strong>نکته هوش مصنوعی:</strong> Gemini مکالمات فرد ناشناس را دریافت کرده و متناسب با سناریو و محصول بالا، پاسخ‌های طبیعی، کوتاه و انسانی تولید می‌کند.
+            <strong>نکته مهم:</strong> هر زمان دستورالعمل جدیدی را ذخیره یا ویرایش می‌کنید، با زدن دکمه <strong>«ذخیره تغییرات دستورالعمل»</strong> تمام اطلاعات روی سرور ذخیره شده و در فایل پشتیبان (Backup) سیستم نیز قرار می‌گیرد.
           </span>
         </div>
       </div>

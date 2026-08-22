@@ -133,18 +133,39 @@ export const AnonymousLiveMonitorTab: React.FC<AnonymousLiveMonitorTabProps> = (
   const handleDownloadReport = async (format: 'txt' | 'json') => {
     setIsDownloading(true);
     try {
-      const url = `/api/anonymous/export-history?format=${format}`;
+      let contentStr = '';
+      let mimeType = '';
+      let filename = '';
+      const dateStr = new Date().toISOString().slice(0, 10);
+
+      if (format === 'json') {
+        if (jsonModalContent && isJsonModalOpen) {
+          contentStr = jsonModalContent;
+        } else {
+          const res = await fetch('/api/anonymous/export-history?format=json');
+          if (!res.ok) throw new Error(`Export JSON failed with status: ${res.status}`);
+          const jsonData = await res.json();
+          contentStr = JSON.stringify(jsonData, null, 2);
+        }
+        mimeType = 'application/json;charset=utf-8;';
+        filename = `prompt_evaluation_clean_${dateStr}.json`;
+      } else {
+        const res = await fetch('/api/anonymous/export-history?format=txt');
+        if (!res.ok) throw new Error(`Export TXT failed with status: ${res.status}`);
+        contentStr = await res.text();
+        mimeType = 'text/plain;charset=utf-8;';
+        filename = `anonymous_chat_analysis_${dateStr}.txt`;
+      }
+
+      const blob = new Blob([contentStr], { type: mimeType });
+      const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute(
-        'download',
-        format === 'json'
-          ? `prompt_evaluation_clean_${new Date().toISOString().slice(0, 10)}.json`
-          : `anonymous_chat_analysis_${new Date().toISOString().slice(0, 10)}.txt`
-      );
+      link.href = blobUrl;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
     } catch (err) {
       console.error('Download error:', err);
     } finally {
