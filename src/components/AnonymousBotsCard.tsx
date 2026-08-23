@@ -149,15 +149,21 @@ export const AnonymousBotsCard: React.FC<AnonymousBotsCardProps> = ({
   };
 
   const rawInstructions = config?.instructions;
+  const configProducts = (Array.isArray(rawInstructions?.products) && rawInstructions.products.length > 0)
+    ? rawInstructions.products
+    : (Array.isArray(config?.products) ? config.products : []);
+  const activeProdId = rawInstructions?.activeProductId || config?.activeProductId || configProducts[0]?.productId || '';
+
   const instructions: AnonymousChatInstructions = {
-    systemPrompt: `شما یک دختر ۲۰ ساله ایرانی به نام سارا، اهل تهران هستید که در یک بات چت ناشناس تلگرام در حال صحبت با یک فرد ناشناس هستید.
+    systemPrompt: `شما یک دختر ۲۶ ساله ایرانی به نام سارا اهل تهران هستید که در یک بات چت ناشناس تلگرام در حال صحبت با یک فرد ناشناس هستید.
 
 دستورالعمل‌ها:
-۱. پاسخ‌های شما حتماً بسیار کوتاه، سریع و حداکثر ۱ الی ۲ جمله عامیانه تلگرامی باشد (مثل چت واقعی با کیبورد گوشی).
-۲. لحن کاملاً خودمانی، صمیمی و طبیعی باشد (کلمات کتابی و رسمی مثل «درود» یا «امیدوارم» اکیداً ممنوع است).
-۳. ابتدا سلام و احوال‌پرسی کن، بعد اگر اصل خواست بگو سارا ۲۰ تهران تو چند سالته؟
-۴. هرگز نگو ربات هستی یا هوش مصنوعی؛ مثل یک آدم واقعی و پرانرژی صحبت کن.
-۵. پیشوند «سارا:» یا علامت نقل‌قول در پاسخ نگذار و فقط خود پیام را ارسال کن.`,
+۱. طول هر پیام یا جمله حتماً و همیشه بسیار کوتاه (حداکثر ۳ الی ۷ کلمه) باشد.
+۲. از علائم نگارشی مثل نقطه در انتهای پیام (.)، علامت تعجب (!)، ویرگول (،) و گیومه اکیداً خودداری کنید تا حس ربات ندهد.
+۳. در پاسخ به اصل بگویید «سارا ۲۶ تهران شما چی؟» (سن ۲۶ به صورت عدد باشد و هرگز حروف ننویسید).
+۴. حافظه و جلوگیری از تکرار: پیام‌های قبلی چت را در نظر بگیرید و هرگز سوالی را که قبلاً پرسیده‌اید (مثل چیکار می‌کنی، چه خبر) تکرار نکنید. اگر کاربر پرسید چیکار می‌کنی درباره کارهای خودتان پاسخ دهید.
+۵. لحن کاملاً خودمانی، صمیمی و روان دخترانه باشد و هرگز نگویید ربات هستید.
+۶. پیشوند «سارا:» یا علامت نقل‌قول در پاسخ نگذارید و فقط خود پیام را ارسال کنید.`,
     maxMessagesPerChat: 4,
     initiateGreetingOnConnect: true,
     initialGreetingText: 'سلام خوبی؟ 🌸',
@@ -178,6 +184,8 @@ export const AnonymousBotsCard: React.FC<AnonymousBotsCardProps> = ({
     inappropriateKeywords: ['بلاک', 'اسپم', 'کس نگو', 'فحش', 'گمشو', 'کص', 'کیر', 'جنده', 'سکس', 'سیکتیر'],
     customIgnoredSystemPhrases: [],
     ...(rawInstructions || {}),
+    products: configProducts,
+    activeProductId: activeProdId,
     productPromotion: {
       enabled: true,
       productName: '',
@@ -486,7 +494,11 @@ export const AnonymousBotsCard: React.FC<AnonymousBotsCardProps> = ({
           <AnonymousAiInstructionsTab
             instructions={instructions}
             onSaveInstructions={async (newInstructions) => {
-              await onUpdateConfig({ instructions: newInstructions });
+              await onUpdateConfig({
+                instructions: newInstructions,
+                products: newInstructions.products || [],
+                activeProductId: newInstructions.activeProductId || '',
+              });
             }}
           />
         )}

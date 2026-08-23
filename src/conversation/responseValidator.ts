@@ -24,7 +24,163 @@ export interface ValidationResult {
   similarityInfo?: SimilarityCheckResult;
 }
 
-export const MAX_BOT_MESSAGES_LIMIT = 18;
+export const MAX_BOT_MESSAGES_LIMIT = 25;
+export const MAX_COMMERCIAL_LEAD_MESSAGES_LIMIT = 35;
+
+/**
+ * Repairs broken, truncated, or incomplete Persian sentence endings
+ * e.g., "چیکار می" -> "چیکار می‌کنی؟", dangling conjunctions/prepositions stripped
+ */
+export function repairIncompleteSentences(text: string): string {
+  if (!text) return '';
+  let fixed = text.trim();
+
+  // Repair specific common truncated verb phrases
+  if (/(?:چیکار|داری|داری چیکار|چیکارا)\s+می$/i.test(fixed)) {
+    fixed = fixed.replace(/\s+می$/i, ' می‌کنی؟');
+  } else if (/(?:کجا|داری)\s+می$/i.test(fixed)) {
+    fixed = fixed.replace(/\s+می$/i, ' می‌ری؟');
+  } else if (/(?:چی|چی شد|که)\s+می$/i.test(fixed)) {
+    fixed = fixed.replace(/\s+می$/i, ' می‌شه؟');
+  } else if (/\bمی$/i.test(fixed)) {
+    fixed = fixed.replace(/\s*می$/i, ' کنی؟');
+  } else if (/\bنمی$/i.test(fixed)) {
+    fixed = fixed.replace(/\s*نمی$/i, ' خوای؟');
+  }
+
+  // Remove dangling conjunctions or prepositions left at the very end
+  fixed = fixed.replace(/\s+(که|چون|اگر|برای|تا|به|با|از|رو|در|اما|ولی|یا|و)\s*$/i, '').trim();
+
+  // Remove dangling commas or trailing colons
+  fixed = fixed.replace(/[,،:;\-–—]+$/, '').trim();
+
+  return fixed;
+}
+
+/**
+ * Cleans prompt leakage, code artifacts, markdown remnants, stray slashes, quotes, brackets,
+ * and strips unnatural punctuation (periods at end of chat bubbles, multiple exclamation marks, formal quotes, colons).
+ * Normalizes textual age representations (e.g., "بیست و شش" -> "۲۶") into human-like digits.
+ */
+export function cleanCodeArtifactsAndPunctuation(rawText: string): string {
+  if (!rawText) return '';
+  let cleaned = rawText;
+
+  // 1. Remove markdown code blocks and inline code formatting
+  cleaned = cleaned.replace(/```[\s\S]*?```/g, '');
+  cleaned = cleaned.replace(/`([^`]+)`/g, '$1');
+
+  // 2. Remove comments and syntax artifacts (e.g. /* ... */, // ..., / "). * ", etc.)
+  cleaned = cleaned.replace(/\/\*[\s\S]*?\*\//g, '');
+  cleaned = cleaned.replace(/(?:\/{2,}|\/\*+|\*+\/|[\\\/]\s*["')\]]+\s*(?:\.\s*\*?\s*")?).*/g, '');
+  cleaned = cleaned.replace(/[\/\\*#_~`^<>{}[\]|•]+/g, ' ');
+
+  // 3. Remove stray quote and paren artifacts in middle of text
+  cleaned = cleaned.replace(/["'«»“”\(\)]\s*[\.\*\/\\\-]+\s*["'«»“”\(\)]/g, ' ');
+  cleaned = cleaned.replace(/["'«»“”]/g, '');
+
+  // 4. Remove leading/trailing symbols, quotes, brackets, slashes, colons
+  cleaned = cleaned.replace(/^["'«»“”(.)\/\\:;؛،,\s\-–—]+/, '');
+  cleaned = cleaned.replace(/["'«»“”(.)\/\\:;؛،,\s\-–—]+$/, '');
+
+  // 5. Clean unnatural punctuation for Telegram chat:
+  // - Remove multiple exclamation marks
+  cleaned = cleaned.replace(/!+/g, '');
+  // - Clean redundant question marks (leave at most one ؟)
+  cleaned = cleaned.replace(/([؟?]){2,}/g, '$1');
+  // - Clean redundant commas, semicolons, and colons
+  cleaned = cleaned.replace(/[,،;؛:：]+/g, ' ');
+  // - Remove trailing dots or dots at the end of sentences
+  cleaned = cleaned.replace(/\.+$/g, '');
+  cleaned = cleaned.replace(/\.+/g, ' ');
+
+  // 6. Normalize age: Convert written Persian words for age 26 (e.g. "بیست و شش") to natural digits "۲۶"
+  cleaned = cleaned
+    .replace(/بیست\s+و\s+شش/g, '۲۶')
+    .replace(/بیست\s+و\s+شیش/g, '۲۶')
+    .replace(/بیست\s+و\s+6/g, '۲۶')
+    .replace(/20\s+ساله/g, '۲۶ ساله')
+    .replace(/۲۰\s+ساله/g, '۲۶ ساله')
+    .replace(/بیست\s+ساله/g, '۲۶ ساله')
+    .replace(/بیست\s+سالمه/g, '۲۶ سالمه');
+
+  // 7. Clean multi-spaces and redundant whitespace
+  cleaned = cleaned.replace(/[ \t]+/g, ' ').trim();
+
+  // 8. Repair truncated verbs/prefixes
+  cleaned = repairIncompleteSentences(cleaned);
+
+  // 9. Final trim of trailing punctuation
+  cleaned = cleaned.replace(/[\.\:،,!;؛\-–—]+$/g, '').trim();
+
+  return cleaned;
+}
+
+/**
+ * Splits text into natural, ultra-short Telegram chat bubbles.
+ * Rule: NO single bubble may exceed 7 words. If a sentence is longer,
+ * it is broken down into small, conversational chunks (3-7 words each).
+ * All unnecessary punctuation (trailing periods, colons, quotes) is stripped.
+ */
+export function splitIntoNaturalBubbles(text: string, maxChunks: number = 6): string[] {
+  if (!text) return [];
+  const clean = cleanCodeArtifactsAndPunctuation(text).trim();
+  if (!clean) return [];
+
+  // 1. Initial split by explicit line breaks or question mark delimiters
+  const initialParts = clean
+    .split(/\n+|(?<=[!؟?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const rawBubbles: string[] = [];
+
+  for (const part of initialParts) {
+    const words = part.split(/\s+/).filter(Boolean);
+    if (words.length <= 7) {
+      rawBubbles.push(part);
+      continue;
+    }
+
+    // Split long sentence into sub-chunks of at most 7 words
+    let currentWords: string[] = [];
+    for (let i = 0; i < words.length; i++) {
+      const w = words[i];
+      currentWords.push(w);
+
+      const remaining = words.length - (i + 1);
+      // Check if we should break:
+      // a) We hit 7 words
+      // b) Or we have 4-6 words and next word is a natural conjunction/connector (و, که, چون, ولی, اما, بعد, راستی, آخه)
+      //    and the remaining words are at least 2 words
+      const nextWord = words[i + 1] || '';
+      const isNaturalBreakWord = /^(و|که|چون|ولی|اما|بعد|راستی|آخه|تا|اگه|اگر|چرا|واسه|شما)$/i.test(nextWord);
+      const shouldBreakOnConjunction = currentWords.length >= 4 && isNaturalBreakWord && remaining >= 2;
+      const shouldBreakOnMaxWords = currentWords.length >= 7;
+
+      if ((shouldBreakOnMaxWords || shouldBreakOnConjunction) && remaining > 0) {
+        rawBubbles.push(currentWords.join(' '));
+        currentWords = [];
+      }
+    }
+    if (currentWords.length > 0) {
+      rawBubbles.push(currentWords.join(' '));
+    }
+  }
+
+  // 2. Clean, repair and format each bubble
+  const finalBubbles: string[] = [];
+  for (let b of rawBubbles) {
+    let cleanedB = repairIncompleteSentences(b);
+    cleanedB = cleanedB.replace(/[\.\:،,!;؛\-–—]+$/g, '').trim();
+    if (cleanedB.length >= 2) {
+      finalBubbles.push(cleanedB);
+    }
+  }
+
+  const effectiveMax = Math.max(1, Math.min(maxChunks, 8));
+  return finalBubbles.length > 0 ? finalBubbles.slice(0, effectiveMax) : [clean];
+}
 
 /**
  * Validates and sanitizes AI-generated responses according to state, policy, similarity, and safety constraints.
@@ -44,15 +200,19 @@ export function validateAndSanitizeResponse(
   text = text.replace(/^(من|بات|ملودی|پاسخ|جواب|AI|Assistant|Melody)\s*[:：\-–]\s*/i, '');
   text = text.replace(/^["'«»](.*)["'«»]$/s, '$1').trim();
 
-  // 2. Empty or Too Short Check
-  const notEmpty = text.length >= 2;
+  // 2. Clean code artifacts, slashes, asterisks, brackets, hallucinated prompt remnants
+  text = cleanCodeArtifactsAndPunctuation(text);
+
+  // 3. Empty or Meaningful Persian Text Check
+  const persianCharCount = (text.match(/[\u0600-\u06FF]/g) || []).length;
+  const isMeaningful = persianCharCount >= 2 && text.length >= 2;
   ruleResults.push({
-    ruleName: 'empty_response',
-    passed: notEmpty,
-    message: notEmpty ? undefined : 'Response was empty or shorter than 2 characters',
+    ruleName: 'meaningful_persian_text',
+    passed: isMeaningful,
+    message: isMeaningful ? undefined : 'Response was empty, too short, or contained non-meaningful symbols/gibberish',
   });
-  if (!notEmpty) {
-    violations.push('Response was empty or too short');
+  if (!isMeaningful) {
+    violations.push('Response lacked meaningful Persian text or contained code artifacts');
     requiresRegeneration = true;
     text = getSafeFallbackText(context.state, context.intent, context.supportIdAvailable);
     return {
@@ -77,21 +237,35 @@ export function validateAndSanitizeResponse(
     text = text.slice(0, 500).trim() + '...';
   }
 
-  // 4. Message Counter Constraint Check (MAX_BOT_MESSAGES = 18)
-  const maxLimit = context.maxBotMessages || MAX_BOT_MESSAGES_LIMIT;
-  const isWithinMessageLimit = (context.botMessageCount || 0) < maxLimit;
+  // 4. Message Counter Constraint Check (Dynamic 18-25 messages, up to 35 for interested leads)
+  const isCommercialActive = [
+    ConversationState.PRODUCT_INTRODUCTION,
+    ConversationState.PRODUCT_INTEREST,
+    ConversationState.PRICE_DISCUSSION,
+    ConversationState.TRIAL_DISCUSSION,
+    ConversationState.SUPPORT_HANDOFF,
+    ConversationState.OBJECTION_HANDLING,
+    ConversationState.NEED_DETECTED,
+  ].includes(context.state);
+
+  const effectiveMaxLimit = (isCommercialActive || context.leadScore >= 35)
+    ? (context.maxBotMessages ? Math.max(context.maxBotMessages, MAX_COMMERCIAL_LEAD_MESSAGES_LIMIT) : MAX_COMMERCIAL_LEAD_MESSAGES_LIMIT)
+    : (context.maxBotMessages || MAX_BOT_MESSAGES_LIMIT);
+
+  const isWithinMessageLimit = (context.botMessageCount || 0) < effectiveMaxLimit;
   ruleResults.push({
     ruleName: 'message_count',
     passed: isWithinMessageLimit,
-    message: isWithinMessageLimit ? undefined : `Bot message count (${context.botMessageCount}) reached limit (${maxLimit})`,
+    message: isWithinMessageLimit ? undefined : `Bot message count (${context.botMessageCount}) reached limit (${effectiveMaxLimit})`,
   });
   if (!isWithinMessageLimit) {
-    violations.push(`Max bot message limit (${maxLimit}) reached. Bot should cease producing new turns.`);
+    violations.push(`Max bot message limit (${effectiveMaxLimit}) reached. Bot should cease producing new turns.`);
   }
 
-  // 5. Similarity / Duplicate Response Check against recent bot messages (A7)
+  // 5. Similarity / Duplicate Response Check against recent bot messages (A7) & Anti-Repetition
   const recentMessages = context.recentBotMessages || [];
-  const similarityInfo = checkResponseSimilarity(text, recentMessages, 0.72);
+  const lastUserMsg = (context.recentStrangerMessages || []).slice(-1)[0] || '';
+  const similarityInfo = checkResponseSimilarity(text, recentMessages, 0.72, lastUserMsg);
   ruleResults.push({
     ruleName: 'duplicate_response',
     passed: !similarityInfo.isDuplicate,
@@ -99,9 +273,9 @@ export function validateAndSanitizeResponse(
   });
 
   if (similarityInfo.isDuplicate) {
-    violations.push(`Duplicate response detected (${similarityInfo.reason})`);
+    violations.push(`Duplicate/Repetitive response detected (${similarityInfo.reason})`);
     requiresRegeneration = true;
-    text = getAlternativeVariedFallback(context.state, context.intent, recentMessages, context.supportIdAvailable);
+    text = similarityInfo.suggestedCorrection || getAlternativeVariedFallback(context.state, context.intent, recentMessages, context.supportIdAvailable, lastUserMsg);
     return {
       isValid: false,
       sanitizedText: text,
@@ -215,37 +389,37 @@ export function getSafeFallbackText(
 ): string {
   // Exit / Goodbye: strictly natural, no unsolicited ad (A5)
   if (intent === Intent.GOODBYE || state === ConversationState.GOODBYE) {
-    return 'مرسی عزیزم، منم کار برام پیش اومد باید برم. مراقب خودت باش 🌸';
+    return 'مرسی عزیزم منم کار برام پیش اومد باید برم مراقب خودت باش 🌸';
   }
 
   if (intent === Intent.REJECTION || state === ConversationState.REJECTED || state === ConversationState.LOW_INTEREST) {
-    return 'کاملاً درکت میکنم عزیزم، مشکلی نیست! چیکارا میکنی دیگه؟ 🌸';
+    return 'کاملاً درکت می‌کنم مشکلی نیست روزت چطور گذشت 🌸';
   }
 
   if (intent === Intent.VPN_REQUEST || state === ConversationState.PRODUCT_INTEREST) {
-    return 'آره من خودم یه سرور اختصاصی خیلی پرسرعت و بدون قطعی استفاده می‌کنم که روی تمام نتها جوابه 🌸';
+    return 'آره من خودم یه سرور اختصاصی خیلی پرسرعت بدون قطعی استفاده می‌کنم 🌸';
   }
 
   if (intent === Intent.PRICE_REQUEST || state === ConversationState.PRICE_DISCUSSION) {
-    return 'تعرفه‌هاش خیلی مناسبه، پلن‌های ماهانه نامحدود و پرسرعت داره که تست هم می‌تونی بگیری 🌸';
+    return 'تعرفه‌هاش خیلی مناسبه پلن‌های ماهانه پرسرعت داره تست هم می‌تونی بگیری 🌸';
   }
 
   if (intent === Intent.TRIAL_REQUEST || state === ConversationState.TRIAL_DISCUSSION) {
-    return 'آره حتماً، اکانت تست رایگان داره که اول کیفیتش رو چک کنی بعد تصمیم بگیری 🌸';
+    return 'آره حتماً اکانت تست رایگان داره اول چک کن بعد تصمیم بگیر 🌸';
   }
 
   if (intent === Intent.SUPPORT_REQUEST || intent === Intent.PURCHASE_INTENT || state === ConversationState.SUPPORT_HANDOFF) {
     if (supportIdAvailable) {
-      return 'می‌تونی به پشتیبانی nova_vpn10 پیام بدی تا برات فعالش کنن و راهنماییت کنن 🌸';
+      return 'می‌تونی به پشتیبانی nova_vpn10 پیام بدی برات فعال کنن 🌸';
     }
-    return 'می‌تونی به پشتیبانی پیام بدی تا برات فعالش کنن و راهنماییت کنن 🌸';
+    return 'می‌تونی به پشتیبانی پیام بدی برات فعال کنن 🌸';
   }
 
   if (intent === Intent.RELEVANT_NEED || state === ConversationState.NEED_DETECTED) {
-    return 'وای آره واقعاً اوضاع نت این روزا خیلی اذیت میکنه، اینستای منم تا دیروز باز نمیشد 🌸';
+    return 'وای آره واقعاً اوضاع نت این روزا خیلی اذیت می‌کنه 🌸';
   }
 
-  return 'منم خوبم مرسی عزیزم، تو چیکارا میکنی؟ 🌸';
+  return 'منم خوبم مرسی عزیزم بیشتر فیلم می‌بینم و آهنگ گوش می‌دم 🌸';
 }
 
 /**
@@ -255,42 +429,44 @@ export function getAlternativeVariedFallback(
   state: ConversationState,
   intent: Intent,
   recentMessages: string[] = [],
-  supportIdAvailable: boolean = false
+  supportIdAvailable: boolean = false,
+  lastUserMsg?: string
 ): string {
   const candidatesByIntent: Record<string, string[]> = {
     [Intent.GREETING]: [
-      'سلام عزیزم، روزت بخیر باشه 🌸',
-      'سلام چطوری؟ اوضاع چطوره؟ 🌸',
-      'درود بر شما، خوبی؟ چه خبرا؟ 🌸',
+      'سلام عزیزم روزت بخیر باشه 🌸',
+      'سلام چطوری اوضاع چطوره 🌸',
+      'درود بر شما روز خوبی داشته باشی 🌸',
     ],
     [Intent.SMALL_TALK]: [
-      'منم سرگرم کارام بودم پای گوشی، شما چیکار می‌کنی؟ 🌸',
-      'خداروشکر همه چی خوبه، چه خبرا؟ 🌸',
-      'مشغول وبگردی بودم، روزت چطور گذشت؟ 🌸',
+      'سرگرم کارامم پای لپ‌تاپم 🌸',
+      'بیشتر فیلم می‌بینم آهنگ گوش می‌دم 🌸',
+      'مشغول وبگردی و گشتن تو اینستام 🌸',
+      'خداروشکر همه چی خوبه و آرومه 🌸',
     ],
     [Intent.GOODBYE]: [
-      'فعلاً عزیزم، مراقب خودت باش 🌸',
-      'خوشحال شدم از هم‌صحبتیت، روز خوبی داشته باشی 🌸',
-      'خداحافظ عزیزم، به امید دیدار 🌸',
+      'فعلاً عزیزم مراقب خودت باش 🌸',
+      'خوشحال شدم روز خوبی داشته باشی 🌸',
+      'خداحافظ عزیزم به امید دیدار 🌸',
     ],
     [Intent.REJECTION]: [
-      'باشه عزیزم حله! بگذریم، چه خبر دیگه؟ 🌸',
-      'کاملاً اوکیه! راستی از خودت بگو چیکارا میکنی 🌸',
+      'باشه حله بگذریم روزت چطور گذشت 🌸',
+      'کاملاً اوکیه از خودت چه خبرا 🌸',
     ],
     [Intent.PRICE_REQUEST]: [
-      'پلن‌های ماهانه‌ش از هشتاد و پنج هزار تومن شروع میشه و نامحدود هم داره 🌸',
-      'قیمتاش خیلی اقتصادیه، ماهیانه نامحدود داره با گارانتی کامل 🌸',
+      'پلن‌های ماهانه‌ش خیلی مناسبه و نامحدود هم داره 🌸',
+      'قیمتاش خیلی اقتصادیه با گارانتی کامل 🌸',
     ],
   };
 
   const pool = candidatesByIntent[intent] || [
-    'منم خوبم مرسی، روزت چطور میگذره؟ 🌸',
-    'همه چی خوبه خداروشکر، تو چیکارا می‌کنی؟ 🌸',
-    'آره واقعاً، از کار و بارت چه خبر؟ 🌸',
+    'منم خوبم مرسی بیشتر فیلم می‌بینم و آهنگ گوش می‌دم 🌸',
+    'سرگرم کارامم پای لپ‌تاپم 🌸',
+    'مشغول کارهای روزمره‌ام هستم 🌸',
   ];
 
   for (const candidate of pool) {
-    const sim = checkResponseSimilarity(candidate, recentMessages, 0.70);
+    const sim = checkResponseSimilarity(candidate, recentMessages, 0.70, lastUserMsg);
     if (!sim.isDuplicate) {
       return candidate;
     }

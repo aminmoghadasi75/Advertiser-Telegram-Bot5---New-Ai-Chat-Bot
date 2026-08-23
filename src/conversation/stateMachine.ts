@@ -105,10 +105,19 @@ export function transitionConversationState(
         isTerminalState: false,
       };
     }
+    // If user has rejected or stated no interest, guide towards polite farewell and exit
+    if (context.rejectionsCount >= 1 || currentState === ConversationState.REJECTED) {
+      return {
+        newState: ConversationState.GOODBYE,
+        previousState,
+        transitionReason: 'User expressed rejection / lack of interest. Transitioning cleanly to goodbye and exit.',
+        isTerminalState: false,
+      };
+    }
     return {
-      newState: currentState === ConversationState.REJECTED ? ConversationState.REJECTED : ConversationState.LOW_INTEREST,
+      newState: ConversationState.LOW_INTEREST,
       previousState,
-      transitionReason: 'Maintaining state until explicit commercial intent',
+      transitionReason: 'Maintaining low interest state until explicit intent or farewell',
       isTerminalState: false,
     };
   }
@@ -300,11 +309,14 @@ export function transitionConversationState(
     ConversationState.NEED_DETECTED,
   ].includes(currentState);
 
-  if (context.turnCount >= maxTurns && !isCommercialActiveState) {
+  const effectiveTurnLimit = isCommercialActiveState ? Math.max(maxTurns, 35) : maxTurns;
+  const isMessageCeilingReached = (context.botMessageCount || 0) >= (isCommercialActiveState ? 35 : (context.maxBotMessages || 25));
+
+  if ((context.turnCount >= effectiveTurnLimit || isMessageCeilingReached) && !isCommercialActiveState) {
     return {
       newState: ConversationState.GOODBYE,
       previousState,
-      transitionReason: `Maximum conversation turns reached (${context.turnCount}/${maxTurns})`,
+      transitionReason: `Maximum conversation limit reached (${context.turnCount}/${effectiveTurnLimit}, bot msgs: ${context.botMessageCount})`,
       isTerminalState: false,
     };
   }

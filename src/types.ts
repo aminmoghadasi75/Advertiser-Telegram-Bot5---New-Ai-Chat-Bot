@@ -1,3 +1,7 @@
+import type { ProductConfig, ProductPlan } from './config/productConfig';
+
+export type { ProductConfig, ProductPlan };
+
 export interface TelegramCredentials {
   apiId: string;
   apiHash: string;
@@ -387,7 +391,9 @@ export interface AnonymousChatInstructions {
   silenceNudgeText: string; // متن پیگیری مثلاً «هستی؟ 🌸»
   inappropriateKeywords: string[]; // کلیدواژه‌های نامناسب برای خروج فوری
   customIgnoredSystemPhrases?: string[]; // عبارات سیستمی ربات که نباید پیام مخاطب تلقی شوند
-  productPromotion?: AnonymousProductPromotion; // محصول و عکس تبلیغاتی اختصاصی چت ناشناس
+  products?: ProductConfig[]; // کاتالوگ و سوابق تمام محصولات و کمپین‌های تبلیغاتی ربات
+  activeProductId?: string; // شناسه محصول/کمپین فعال جاری برای تبلیغ در چت با ۱ کلیک
+  productPromotion?: AnonymousProductPromotion; // محصول و عکس تبلیغاتی اختصاصی چت ناشناس (همگام با محصول فعال)
 }
 
 export interface AnonymousChatMessage {
@@ -427,6 +433,7 @@ export interface AnonymousChatSession {
   inquiryDetected?: boolean; // آیا مخاطب به تبلیغ علاقه نشان داد یا سوال پرسید؟
   inquirySnippet?: string; // خلاصه سوال یا درخواست هم‌صحبت پس از دیدن تبلیغ
   isSpamBot?: boolean; // هم‌صحبت به عنوان ربات/اسپمر شناخته شد
+  targetMaxBotMessages?: number; // سقف پیام پویا و تصادفی ربات برای این چت (بین ۱۸ تا ۲۵)
   
   // Step 4 Conversation Engine State Tracking:
   conversationContext?: ConversationContext;
@@ -469,6 +476,8 @@ export interface AnonymousChatAutomatorConfig {
   selectedBotId: string;
   bots: AnonymousBotProfile[];
   instructions: AnonymousChatInstructions;
+  products?: ProductConfig[]; // لیست و تاریخچه تمام محصولات و کمپین‌ها
+  activeProductId?: string; // شناسه محصول فعال چت
   loopForever: boolean; // تکرار مداوم و رفتن خودکار به هم‌صحبت بعدی بعد از خروج
   cooldownBetweenChatsSeconds: number; // استراحت کوتاه بین چت‌ها (ثانیه)
   currentRunStartedAt?: string; // زمان آغاز دور جاری اتوماسیون چت

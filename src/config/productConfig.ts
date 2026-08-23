@@ -1,17 +1,26 @@
 /**
- * Decoupled Product Configuration & Knowledge Base
+ * Decoupled Multi-Product & Campaign Configuration & Knowledge Base
  * Isolates product specifications, plans, pricing, and support details from the prompt.
+ * Enables 1-click product switching and multi-campaign management for Anonymous AI Chat.
  */
 
 export interface ProductPlan {
   id: string;
   name: string;
   price: string;
-  priceNumeric: number;
+  priceNumeric?: number;
   duration: string;
   traffic: string;
   deviceLimit: string;
   popular?: boolean;
+  description?: string;
+}
+
+export interface ProductFaqItem {
+  id: string;
+  question: string;
+  answer: string;
+  keywords?: string[];
 }
 
 export interface ProductConfig {
@@ -19,6 +28,7 @@ export interface ProductConfig {
   productName: string;
   productDescription: string;
   tagline: string;
+  category?: 'vpn' | 'fashion' | 'digital' | 'education' | 'services' | 'other' | string;
   features: string[];
   plans: ProductPlan[];
   freeTrial: {
@@ -37,82 +47,83 @@ export interface ProductConfig {
     operatingHours: string;
   };
   bannerImageUrl?: string;
+  faqItems?: ProductFaqItem[];
+  knowledgeBaseText?: string;
+  inappropriateKeywords?: string[];
+  isActive?: boolean;
+  isArchived?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  lastUsedAt?: string;
+  stats?: {
+    totalChatsPromoted?: number;
+    totalInquiries?: number;
+  };
 }
 
-export const DEFAULT_PRODUCT_CONFIG: ProductConfig = {
-  productId: 'nova_vpn',
-  productName: 'فیلترشکن اختصاصی نوا (Nova VPN)',
-  productDescription: 'سرورهای اختصاصی پرسرعت و پایدار بدون قطعی، مناسب تمام اپراتورها (همراه اول، ایرانسل، رایتل و مخابرات)',
-  tagline: 'سرعت بالا، بدون قطعی، پینگ پایین مناسب بازی و استریم',
-  features: [
-    'اتصال فوری با پروتکل‌های ضد فیلتر V2Ray / VMess / VLESS',
-    'پینگ فوق‌العاده پایین مناسب گیمینگ و تماس صوتی/تصویری',
-    'بدون قطعی و بدون افت سرعت در ساعات شلوغی',
-    'پشتیبانی کامل از اندروید، آیفون (iOS)، ویندوز و مک',
-    'پشتیبانی ۲۴ ساعته و تست کیفیت قبل از خرید',
-  ],
-  plans: [
-    {
-      id: 'plan_1m_30g',
-      name: 'پلن یک ماهه ۳۰ گیگ',
-      price: '۸۵ هزار تومان',
-      priceNumeric: 85000,
-      duration: 'یک ماهه',
-      traffic: '۳۰ گیگابایت',
-      deviceLimit: '۲ کاربر همزمان',
-    },
-    {
-      id: 'plan_1m_unlimited',
-      name: 'پلن یک ماهه نامحدود',
-      price: '۱۴۰ هزار تومان',
-      priceNumeric: 140000,
-      duration: 'یک ماهه',
-      traffic: 'نامحدود',
-      deviceLimit: '۲ کاربر همزمان',
-      popular: true,
-    },
-    {
-      id: 'plan_3m_unlimited',
-      name: 'پلن سه ماهه نامحدود اقتصادی',
-      price: '۳۵۰ هزار تومان',
-      priceNumeric: 350000,
-      duration: 'سه ماهه',
-      traffic: 'نامحدود',
-      deviceLimit: '۳ کاربر همزمان',
-    },
-  ],
+export const BLANK_PRODUCT_CONFIG: ProductConfig = {
+  productId: '',
+  productName: '',
+  productDescription: '',
+  tagline: '',
+  category: 'other',
+  isActive: true,
+  isArchived: false,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  features: [],
+  plans: [],
   freeTrial: {
-    available: true,
+    available: false,
     durationHours: 24,
-    description: 'اکانت تست رایگان یک روزه برای اطمینان از سرعت و کیفیت اتصال',
+    description: '',
   },
   refundPolicy: {
-    available: true,
+    available: false,
     guaranteeHours: 48,
-    description: '۴۸ ساعت ضمانت بازگشت وجه در صورت عدم رضایت یا قطعی',
+    description: '',
   },
   support: {
-    handle: 'nova_vpn10',
-    link: 'https://t.me/nova_vpn10',
+    handle: '',
+    link: '',
     operatingHours: '۲۴ ساعته',
   },
-  bannerImageUrl: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&q=80',
+  bannerImageUrl: '',
+  faqItems: [],
+  knowledgeBaseText: '',
+  stats: {
+    totalChatsPromoted: 0,
+    totalInquiries: 0,
+  },
 };
+
+export const DEFAULT_PRODUCT_CONFIG: ProductConfig = BLANK_PRODUCT_CONFIG;
+
+export const DEFAULT_PRODUCTS_CATALOG: ProductConfig[] = [];
 
 /**
  * Builds formatted product context string for injection into prompts or decision engines.
  * Restricts Support ID exposure when supportIdAvailable is false (<120 seconds).
  */
 export function formatProductPromptContext(
-  config: ProductConfig = DEFAULT_PRODUCT_CONFIG,
+  config?: ProductConfig,
   supportIdAvailable: boolean = false
 ): string {
+  if (!config || !config.productName || !config.productName.trim()) {
+    return '';
+  }
+
   const lines: string[] = [];
 
-  lines.push(`[اطلاعات ساختاریافته محصول]:`);
+  lines.push(`[اطلاعات ساختاریافته محصول / کمپین فعال جاری]:`);
   lines.push(`- نام محصول: ${config.productName}`);
-  lines.push(`- خلاصه: ${config.productDescription}`);
-  
+  if (config.tagline) {
+    lines.push(`- شعار/مزیت اصلی: ${config.tagline}`);
+  }
+  if (config.productDescription) {
+    lines.push(`- خلاصه توضیحات: ${config.productDescription}`);
+  }
+
   if (config.features && config.features.length > 0) {
     lines.push(`- مزایا و ویژگی‌ها:`);
     config.features.forEach((feat) => lines.push(`  • ${feat}`));
@@ -121,22 +132,40 @@ export function formatProductPromptContext(
   if (config.plans && config.plans.length > 0) {
     lines.push(`- پلن‌ها و تعرفه‌ها:`);
     config.plans.forEach((p) => {
-      lines.push(`  • ${p.name}: ${p.price} (${p.duration}، ${p.traffic}، ${p.deviceLimit})`);
+      const parts = [p.name, p.price];
+      if (p.duration) parts.push(p.duration);
+      if (p.traffic) parts.push(p.traffic);
+      if (p.deviceLimit) parts.push(p.deviceLimit);
+      lines.push(`  • ${parts.join(' - ')}`);
     });
   }
 
-  if (config.freeTrial.available) {
-    lines.push(`- تست رایگان: ${config.freeTrial.description}`);
+  if (config.freeTrial?.available && config.freeTrial.description) {
+    lines.push(`- تست رایگان / آفر اولیه: ${config.freeTrial.description}`);
   }
 
-  if (config.refundPolicy.available) {
-    lines.push(`- گارانتی: ${config.refundPolicy.description}`);
+  if (config.refundPolicy?.available && config.refundPolicy.description) {
+    lines.push(`- گارانتی و ضمانت: ${config.refundPolicy.description}`);
   }
 
-  if (supportIdAvailable) {
-    lines.push(`- آیدی پشتیبانی: ${config.support.handle} (اکیداً بدون علامت @)`);
-  } else {
-    lines.push(`- آیدی پشتیبانی: [قفل زمانی: مکالمه زیر ۱۲۰ ثانیه است - هنوز مجاز به ارسال آیدی پشتیبانی نیستید]`);
+  if (config.faqItems && config.faqItems.length > 0) {
+    lines.push(`- سوالات متداول پاسخ داده شده (FAQ):`);
+    config.faqItems.forEach((faq, i) => {
+      lines.push(`  ${i + 1}. سوال: ${faq.question} -> پاسخ: ${faq.answer}`);
+    });
+  }
+
+  if (config.knowledgeBaseText && config.knowledgeBaseText.trim()) {
+    lines.push(`- پایگاه دانش تکمیلی: ${config.knowledgeBaseText.trim()}`);
+  }
+
+  const cleanHandle = (config.support?.handle || '').replace(/^@/, '').trim();
+  if (cleanHandle) {
+    if (supportIdAvailable) {
+      lines.push(`- آیدی پشتیبانی تلگرام: ${cleanHandle} (اکیداً بدون علامت @)`);
+    } else {
+      lines.push(`- آیدی پشتیبانی: [قفل زمانی: مکالمه زیر ۱۲۰ ثانیه است - هنوز مجاز به ارسال آیدی پشتیبانی نیستید]`);
+    }
   }
 
   return lines.join('\n');

@@ -237,15 +237,33 @@ export function evaluatePromotionPolicy(
   if (isCtaInCooldown) {
     reasonCodes.push('CTA_COOLDOWN_ACTIVE');
     return {
-      allowedLevel: context.leadScore >= 25 ? PromotionLevel.SOFT_MENTION : PromotionLevel.NO_PROMOTION,
+      allowedLevel: context.leadScore >= 20 ? PromotionLevel.SOFT_MENTION : PromotionLevel.NO_PROMOTION,
       canSendDirectOffer: false,
-      canSendSoftMention: context.leadScore >= 25,
+      canSendSoftMention: context.leadScore >= 20,
       canSendBannerPhoto: false,
       isPromotionLocked: false,
       isExplicitOverride: false,
       isSuppressed: true,
       reasonCodes,
       reason: `CTA cooldown active (${turnsSinceLastCTA}/${MIN_CTA_TURN_GAP} turns since last CTA).`,
+    };
+  }
+
+  // Natural Funnel Progression:
+  // After initial greeting/rapport (turnCount >= 2 or botMessageCount >= 2), if product hasn't been mentioned yet,
+  // allow honest, soft introduction of VPN subscription
+  if ((context.turnCount >= 2 || (context.botMessageCount || 0) >= 2) && !context.productMentioned && !context.promotionLock) {
+    reasonCodes.push('HONEST_MARKETER_INTRO_PHASE');
+    return {
+      allowedLevel: PromotionLevel.SOFT_MENTION,
+      canSendDirectOffer: false,
+      canSendSoftMention: true,
+      canSendBannerPhoto: false,
+      isPromotionLocked: false,
+      isExplicitOverride: false,
+      isSuppressed: false,
+      reasonCodes,
+      reason: 'Initial rapport established. Permitting honest, casual introduction of VPN subscription.',
     };
   }
 
@@ -265,7 +283,7 @@ export function evaluatePromotionPolicy(
     };
   }
 
-  if (context.leadScore >= 25) {
+  if (context.leadScore >= 20 || context.turnCount >= 2) {
     reasonCodes.push('WARM_LEAD_SCORE');
     return {
       allowedLevel: PromotionLevel.SOFT_MENTION,

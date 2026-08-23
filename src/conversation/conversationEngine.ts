@@ -170,7 +170,20 @@ export function processConversationTurn(
       currentIntent === Intent.PRICE_REQUEST ||
       stateTransition.newState === ConversationState.SUPPORT_HANDOFF);
 
-  const maxLimit = currentContext.maxBotMessages || MAX_BOT_MESSAGES_LIMIT;
+  const isCommercialActive = [
+    ConversationState.PRODUCT_INTRODUCTION,
+    ConversationState.PRODUCT_INTEREST,
+    ConversationState.PRICE_DISCUSSION,
+    ConversationState.TRIAL_DISCUSSION,
+    ConversationState.SUPPORT_HANDOFF,
+    ConversationState.OBJECTION_HANDLING,
+    ConversationState.NEED_DETECTED,
+  ].includes(stateTransition.newState);
+
+  const maxLimit = (isCommercialActive || scoreUpdate.newScore >= 35)
+    ? (currentContext.maxBotMessages ? Math.max(currentContext.maxBotMessages, 35) : 35)
+    : (currentContext.maxBotMessages || MAX_BOT_MESSAGES_LIMIT);
+
   const messageLimitReached = (currentContext.botMessageCount || 0) >= maxLimit;
 
   let finalState = stateTransition.newState;
@@ -259,7 +272,7 @@ export function buildPromptDirective(
   lines.push(`• Detected Intent: ${context.intent} (Confidence: ${Math.round(intentResult.confidence * 100)}%)`);
   lines.push(`• Lead Score: ${context.leadScore}/100 (${context.leadScore >= 56 ? 'HOT' : context.leadScore >= 26 ? 'WARM' : 'COLD'})`);
   lines.push(`• Promotion Policy: ${promotionDecision.allowedLevel} (Locked: ${context.promotionLock ? 'YES' : 'NO'})`);
-  lines.push(`• Bot Message Count: ${context.botMessageCount}/${context.maxBotMessages || 18}`);
+  lines.push(`• Bot Message Count: ${context.botMessageCount}/${context.maxBotMessages || 25}`);
   lines.push(`• Conversation Duration: ${context.elapsedSeconds}s (Support ID Access: ${context.supportIdAvailable ? 'ALLOWED' : 'GATED (<120s)'})`);
 
   if (promotionDecision.isExplicitOverride) {
@@ -267,13 +280,13 @@ export function buildPromptDirective(
   }
 
   if (context.promotionLock) {
-    lines.push(`⛔ PROMOTION LOCKED: The user previously rejected. DO NOT mention VPN, sales, or channels. Speak purely as a friendly human.`);
+    lines.push(`⛔ PROMOTION LOCKED (USER NOT INTERESTED / REJECTED): User has no interest or declined. DO NOT mention VPN, prices, sales, or channels. Speak purely as a friendly human and transition smoothly towards a warm goodbye without pitching.`);
   } else if (promotionDecision.allowedLevel === PromotionLevel.NO_PROMOTION) {
-    lines.push(`💬 MODE: CASUAL RAPPORT ONLY. Do not sell or pitch yet.`);
+    lines.push(`💬 MODE: CASUAL RAPPORT ONLY. Answer any questions naturally in short bubbles (max 7 words). Do not sell or pitch yet.`);
   } else if (promotionDecision.allowedLevel === PromotionLevel.SOFT_MENTION) {
-    lines.push(`🌱 MODE: SOFT BRIDGE. You may casually mention that you use a fast private config/VPN without sounding like a salesperson.`);
+    lines.push(`🌱 MODE: HONEST MARKETER INTRO. First answer user questions naturally. Then honestly and casually mention that you have a fast private VPN subscription / provide VPN support, and politely ask if they need or want help with a good VPN (e.g. «راستی من خودم اشتراک وی‌پی‌ان دارم، اگه فیلترشکن خوب می‌خوای بگو راهنماییت کنم 🌸»).`);
   } else if (promotionDecision.allowedLevel === PromotionLevel.DIRECT_OFFER) {
-    lines.push(`🎯 MODE: DIRECT OFFER. Answer questions with product details, pricing, test config offer, and support link.`);
+    lines.push(`🎯 MODE: ACTIVE MARKETER & GUIDE. The user is interested! Guide them with details, pricing, test connection, and support contact. Keep sentences punchy (max 7 words per bubble).`);
     if (context.supportIdAvailable) {
       const handle = (productConfig.support.handle || promotionConfig?.contactHandleOrLink || 'nova_vpn10').replace(/^@/, '');
       lines.push(`• Support Handle: ${handle} (strictly without @)`);
@@ -290,9 +303,18 @@ export function buildPromptDirective(
     });
   }
 
-  // A5: Exit behavior based on user context
+  if (context.recentBotMessages && context.recentBotMessages.length > 0) {
+    lines.push(`• Anti-Repetition Rule: Previous bot messages in this chat: [${context.recentBotMessages.slice(-4).map(m => `"${m}"`).join(' | ')}]. Never repeat identical questions or phrase structures!`);
+  }
+
+  // 18+ Messages Winding Down Directive
+  if ((context.botMessageCount || 0) >= 18) {
+    lines.push(`⏳ WINDING DOWN (18+ Messages): You have reached 18+ messages. Naturally let the user know you will have to leave soon (e.g. «راستی منم کم‌کم باید برم») and smoothly guide the conversation towards a natural goodbye. If the user is not buying/inquiring about VPN, do NOT force any ad or support handle on exit!`);
+  }
+
+  // Exit behavior based on user context
   if (context.state === ConversationState.GOODBYE || context.intent === Intent.GOODBYE) {
-    lines.push(`👋 FAREWELL: The user is leaving. Give a short, natural, warm goodbye. Do NOT force an advertisement on exit unless they explicitly asked.`);
+    lines.push(`👋 FAREWELL: The user is leaving. Give a short, natural, warm goodbye. Do NOT force an advertisement or support handle on exit unless they explicitly asked.`);
   }
 
   lines.push(`========================================================`);

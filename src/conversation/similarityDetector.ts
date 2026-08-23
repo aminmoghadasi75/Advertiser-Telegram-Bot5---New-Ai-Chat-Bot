@@ -11,6 +11,10 @@ export interface SimilarityCheckResult {
   matchedMessage?: string;
   matchedIndex?: number;
   reason?: string;
+  isRepeatedQuestion?: boolean;
+  repeatedQuestionCategory?: string;
+  isMirroringLoop?: boolean;
+  suggestedCorrection?: string;
 }
 
 /**
@@ -88,17 +92,157 @@ export function calculateCompositeSimilarity(textA: string, textB: string): numb
 }
 
 /**
- * Checks whether candidate text is too similar to any recent bot message.
+ * Known repetitive Persian conversation question patterns and categories
+ */
+const QUESTION_PATTERNS: Array<{
+  category: string;
+  regex: RegExp;
+  naturalReplies: string[];
+}> = [
+  {
+    category: 'activity',
+    regex: /(?:تو\s+)?(?:داری\s+)?(?:چیکار|چیکارا)\s+(?:می\s*کنی|میکنی|داری)|(?:وقتت|روزت)\s*(?:رو|ت)?\s*(?:چطور|چگونه)\s*(?:می\s*گذرونی|میگذرونی|میگذره)|(?:مشغول|سرگرم)\s+(?:چی|چه کاری)\s+هستی/i,
+    naturalReplies: [
+      'بیشتر فیلم می‌بینم و آهنگ گوش می‌دم 🌸',
+      'سرگرم کارامم توی اینستاگرام می‌چرخم 🌸',
+      'پای لپ‌تاپم کارامو انجام می‌دم 🌸',
+      'مشغول کار و وبگردی بودم 🌸',
+    ],
+  },
+  {
+    category: 'greeting_status',
+    regex: /(?:چه\s*خبر|چخبر|چه\s*خبرها|چه\s*خبرایی)|(?:اوضاع\s*چطوره|احوالت\s*چطوره|خوبی\s*\?|چطوری\s*\?)/i,
+    naturalReplies: [
+      'سلامتی همه چی آرومه، شکر 🌸',
+      'خداروشکر همه چی خوبه 🌸',
+      'منم شکر خوبم، روزمرگی می‌گذره 🌸',
+    ],
+  },
+  {
+    category: 'asl_demographics',
+    regex: /(?:اصل\s*میدی|اصل\s*بده|asl|چند\s*سالته|سنت\s*چقدره|اهل\s*کجایی|کجایی\s*هستی|کجا\s*زندگی\s*میکنی)/i,
+    naturalReplies: [
+      'سارا ۲۶ تهرانم 🌸',
+      '۲۶ سالمه از تهران 🌸',
+    ],
+  },
+  {
+    category: 'job_study',
+    regex: /(?:شغلت\s*چیه|کارت\s*چیه|شاغلی|دانشجویی|رشته‌ت\s*چیه)/i,
+    naturalReplies: [
+      'کار آنلاین و فریلنسری انجام می‌دم 🌸',
+      'مشغول کارهای طراحی و آنلاینم 🌸',
+    ],
+  },
+];
+
+/**
+ * Extracts any recognized question categories present in the given message
+ */
+export function extractQuestionCategories(text: string): string[] {
+  if (!text) return [];
+  const found: string[] = [];
+  for (const q of QUESTION_PATTERNS) {
+    if (q.regex.test(text)) {
+      found.push(q.category);
+    }
+  }
+  return found;
+}
+
+/**
+ * Detects if a candidate response repeats a question previously asked by the bot,
+ * or if it reflects the user's question directly back (mirroring loop).
+ */
+export function detectQuestionRepetition(
+  candidate: string,
+  recentBotMessages: string[] = [],
+  lastUserMsg?: string
+): { isRepeatedQuestion: boolean; isMirroringLoop: boolean; category?: string; suggestedCorrection?: string } {
+  if (!candidate) return { isRepeatedQuestion: false, isMirroringLoop: false };
+
+  const candidateCategories = extractQuestionCategories(candidate);
+  if (candidateCategories.length === 0) {
+    return { isRepeatedQuestion: false, isMirroringLoop: false };
+  }
+
+  // 1. Check for Mirroring Loop: User asked "چیکار میکنی کلا؟" and bot replied with "تو چیکار میکنی"
+  if (lastUserMsg) {
+    const userCategories = extractQuestionCategories(lastUserMsg);
+    for (const cat of candidateCategories) {
+      if (userCategories.includes(cat)) {
+        // Candidate is mirroring back the same question the user just asked!
+        const patternObj = QUESTION_PATTERNS.find((p) => p.category === cat);
+        const randomReply = patternObj
+          ? patternObj.naturalReplies[Math.floor(Math.random() * patternObj.naturalReplies.length)]
+          : 'بیشتر فیلم می‌بینم و با گوشی سرگرمم 🌸';
+
+        return {
+          isRepeatedQuestion: true,
+          isMirroringLoop: true,
+          category: cat,
+          suggestedCorrection: randomReply,
+        };
+      }
+    }
+  }
+
+  // 2. Check if the bot has already asked this question category in its previous messages
+  for (const cat of candidateCategories) {
+    const wasAlreadyAskedByBot = recentBotMessages.some((msg) => {
+      const msgCategories = extractQuestionCategories(msg);
+      return msgCategories.includes(cat);
+    });
+
+    if (wasAlreadyAskedByBot) {
+      const patternObj = QUESTION_PATTERNS.find((p) => p.category === cat);
+      const randomReply = patternObj
+        ? patternObj.naturalReplies[Math.floor(Math.random() * patternObj.naturalReplies.length)]
+        : 'منم سرگرم کارامم، روزت چطور گذشت 🌸';
+
+      return {
+        isRepeatedQuestion: true,
+        isMirroringLoop: false,
+        category: cat,
+        suggestedCorrection: randomReply,
+      };
+    }
+  }
+
+  return { isRepeatedQuestion: false, isMirroringLoop: false };
+}
+
+/**
+ * Checks whether candidate text is too similar to any recent bot message or repeats questions.
  * @param candidate Candidate bot message text
  * @param recentBotMessages Array of recently sent bot messages in current session
  * @param threshold Similarity threshold (default: 0.70)
+ * @param lastUserMsg Optional most recent message sent by user
  */
 export function checkResponseSimilarity(
   candidate: string,
   recentBotMessages: string[] = [],
-  threshold: number = 0.70
+  threshold: number = 0.70,
+  lastUserMsg?: string
 ): SimilarityCheckResult {
   const normCandidate = normalizePersianText(candidate);
+
+  // 1. Check for Question Category Repetition & Mirroring
+  const qRepetition = detectQuestionRepetition(candidate, recentBotMessages, lastUserMsg);
+  if (qRepetition.isRepeatedQuestion) {
+    return {
+      isDuplicate: true,
+      maxSimilarity: 0.95,
+      reason: qRepetition.isMirroringLoop
+        ? `Mirroring loop: Bot reflected the exact question (${qRepetition.category}) back instead of answering`
+        : `Repeated question (${qRepetition.category}) already asked previously by bot in this conversation`,
+      isRepeatedQuestion: true,
+      repeatedQuestionCategory: qRepetition.category,
+      isMirroringLoop: qRepetition.isMirroringLoop,
+      suggestedCorrection: qRepetition.suggestedCorrection,
+    };
+  }
+
   if (!normCandidate || recentBotMessages.length === 0) {
     return { isDuplicate: false, maxSimilarity: 0 };
   }

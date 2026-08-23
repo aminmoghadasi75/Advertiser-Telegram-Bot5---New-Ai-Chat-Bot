@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AnonymousChatInstructions, AnonymousProductPromotion, SavedAiPrompt } from '../../types';
+import { ProductConfig, DEFAULT_PRODUCTS_CATALOG } from '../../config/productConfig';
+import { AnonymousCampaignsManager } from './AnonymousCampaignsManager';
 import {
   Sparkles,
   Bot,
@@ -89,8 +91,13 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
   );
 
   // Only synchronize from props if the user does NOT have active unsaved edits (isDirty = false)
+  // and when instructions are actively updated externally (e.g. on initial mount or full restore)
   useEffect(() => {
     const incomingJson = JSON.stringify(instructions);
+    if (incomingJson === JSON.stringify(localInstructions) || incomingJson === lastSavedJsonRef.current) {
+      lastSavedJsonRef.current = incomingJson;
+      return;
+    }
     if (!isDirty && incomingJson !== lastSavedJsonRef.current) {
       lastSavedJsonRef.current = incomingJson;
       setLocalInstructions(instructions);
@@ -98,7 +105,7 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
       setRawInappropriateKeywords((instructions.inappropriateKeywords || []).join(' - '));
       setRawSpamBotKeywords((instructions.spamBotKeywords || []).join(' - '));
     }
-  }, [instructions, isDirty]);
+  }, [instructions, isDirty, localInstructions]);
 
   const updateField = <K extends keyof AnonymousChatInstructions>(
     field: K,
@@ -139,8 +146,9 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await onSaveInstructions(localInstructions);
-      lastSavedJsonRef.current = JSON.stringify(localInstructions);
+      const snapshot = { ...localInstructions };
+      lastSavedJsonRef.current = JSON.stringify(snapshot);
+      await onSaveInstructions(snapshot);
       setIsDirty(false);
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 2500);
@@ -162,7 +170,7 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
 
   const savedPrompts = localInstructions.savedPrompts || [];
 
-  const handleSaveCurrentAsNewPrompt = () => {
+  const handleSaveCurrentAsNewPrompt = async () => {
     const textToSave = (localInstructions.systemPrompt || '').trim();
     if (!textToSave) {
       alert('متن دستورالعمل در کادر خالی است. لطفاً ابتدا متن دستور را بنویسید.');
@@ -177,43 +185,91 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
       updatedAt: new Date().toISOString(),
     };
     const updatedList = [newSaved, ...savedPrompts];
-    updateField('savedPrompts', updatedList);
+    const snapshot: AnonymousChatInstructions = {
+      ...localInstructions,
+      savedPrompts: updatedList,
+    };
+    setLocalInstructions(snapshot);
     setLoadedPromptId(newSaved.id);
     setNewPromptTitle('');
     setShowSavePromptBox(false);
-    setPromptFeedback(`دستور «${finalTitle}» با موفقیت در لیست ذخیره شد ✓`);
+    setPromptFeedback(`دستور «${finalTitle}» با موفقیت ذخیره و ثبت شد ✓`);
     setTimeout(() => setPromptFeedback(null), 3000);
+
+    try {
+      lastSavedJsonRef.current = JSON.stringify(snapshot);
+      await onSaveInstructions(snapshot);
+      setIsDirty(false);
+    } catch (e) {
+      console.error('Error saving prompt to backend:', e);
+    }
   };
 
-  const handleLoadSavedPrompt = (saved: SavedAiPrompt) => {
-    updateField('systemPrompt', saved.prompt);
+  const handleLoadSavedPrompt = async (saved: SavedAiPrompt) => {
+    const snapshot: AnonymousChatInstructions = {
+      ...localInstructions,
+      systemPrompt: saved.prompt,
+    };
+    setLocalInstructions(snapshot);
     setLoadedPromptId(saved.id);
-    setPromptFeedback(`دستور «${saved.title}» روی کادر فعال شد ✓`);
+    setPromptFeedback(`دستور «${saved.title}» روی کادر فعال و ذخیره شد ✓`);
     setTimeout(() => setPromptFeedback(null), 3000);
+
+    try {
+      lastSavedJsonRef.current = JSON.stringify(snapshot);
+      await onSaveInstructions(snapshot);
+      setIsDirty(false);
+    } catch (e) {
+      console.error('Error applying saved prompt:', e);
+    }
   };
 
-  const handleUpdateSavedPrompt = (savedId: string) => {
+  const handleUpdateSavedPrompt = async (savedId: string) => {
     const textToSave = (localInstructions.systemPrompt || '').trim();
     const updatedList = savedPrompts.map((p) =>
       p.id === savedId
         ? { ...p, prompt: textToSave, updatedAt: new Date().toISOString() }
         : p
     );
-    updateField('savedPrompts', updatedList);
+    const snapshot: AnonymousChatInstructions = {
+      ...localInstructions,
+      savedPrompts: updatedList,
+    };
+    setLocalInstructions(snapshot);
     setLoadedPromptId(savedId);
-    setPromptFeedback('دستورالعمل ذخیره‌شده با متن فعلی کادر به‌روزرسانی شد ✓');
+    setPromptFeedback('دستورالعمل ذخیره‌شده با متن فعلی کادر به روزرسانی و ذخیره شد ✓');
     setTimeout(() => setPromptFeedback(null), 3000);
+
+    try {
+      lastSavedJsonRef.current = JSON.stringify(snapshot);
+      await onSaveInstructions(snapshot);
+      setIsDirty(false);
+    } catch (e) {
+      console.error('Error updating saved prompt:', e);
+    }
   };
 
-  const handleDeleteSavedPrompt = (savedId: string, title: string) => {
+  const handleDeleteSavedPrompt = async (savedId: string, title: string) => {
     if (!window.confirm(`آیا از حذف دستورالعمل «${title}» از لیست اطمینان دارید؟`)) return;
     const updatedList = savedPrompts.filter((p) => p.id !== savedId);
-    updateField('savedPrompts', updatedList);
+    const snapshot: AnonymousChatInstructions = {
+      ...localInstructions,
+      savedPrompts: updatedList,
+    };
+    setLocalInstructions(snapshot);
     if (loadedPromptId === savedId) {
       setLoadedPromptId(null);
     }
     setPromptFeedback('دستورالعمل حذف شد.');
     setTimeout(() => setPromptFeedback(null), 2500);
+
+    try {
+      lastSavedJsonRef.current = JSON.stringify(snapshot);
+      await onSaveInstructions(snapshot);
+      setIsDirty(false);
+    } catch (e) {
+      console.error('Error deleting saved prompt:', e);
+    }
   };
 
   const handleStartRename = (saved: SavedAiPrompt) => {
@@ -221,16 +277,28 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
     setEditingTitleText(saved.title);
   };
 
-  const handleSaveRename = (savedId: string) => {
+  const handleSaveRename = async (savedId: string) => {
     if (!editingTitleText.trim()) return;
     const updatedList = savedPrompts.map((p) =>
       p.id === savedId
         ? { ...p, title: editingTitleText.trim(), updatedAt: new Date().toISOString() }
         : p
     );
-    updateField('savedPrompts', updatedList);
+    const snapshot: AnonymousChatInstructions = {
+      ...localInstructions,
+      savedPrompts: updatedList,
+    };
+    setLocalInstructions(snapshot);
     setEditingPromptId(null);
     setEditingTitleText('');
+
+    try {
+      lastSavedJsonRef.current = JSON.stringify(snapshot);
+      await onSaveInstructions(snapshot);
+      setIsDirty(false);
+    } catch (e) {
+      console.error('Error saving prompt rename:', e);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -343,480 +411,263 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
       </div>
 
       {/* ========================================================================= */}
-      {/* 1. DEDICATED ANONYMOUS CHAT PRODUCT & PHOTO PROMOTION SECTION */}
+      {/* 1. DEDICATED ANONYMOUS CHAT MULTI-CAMPAIGN & PRODUCT MANAGER */}
       {/* ========================================================================= */}
-      <div className="bg-gradient-to-br from-violet-950/40 via-slate-950/80 to-fuchsia-950/30 p-5 rounded-2xl border border-violet-800/40 shadow-xl space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-fuchsia-500/20 to-violet-500/20 border border-fuchsia-500/30 text-fuchsia-300 flex items-center justify-center shadow-md">
-              <ShoppingBag className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-sm text-white">عکس و توضیحات محصول تبلیغاتی چت ناشناس</h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] bg-violet-500/20 text-violet-300 border border-violet-500/30">
-                  مستقل از تبلیغات گروه‌ها
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-300 mt-0.5">
-                ربات در زمان چت با فرد ناشناس، از این تصویر و متن تبلیغاتی برای معرفی یا ارسال آفر استفاده می‌کند.
-              </p>
-            </div>
-          </div>
+      <div className="space-y-4">
+        <AnonymousCampaignsManager
+          products={localInstructions.products || []}
+          activeProductId={
+            localInstructions.activeProductId ||
+            (localInstructions.products && localInstructions.products[0]?.productId) ||
+            ''
+          }
+          onSelectActiveProduct={(productId) => {
+            setIsDirty(true);
+            setLocalInstructions((prev) => {
+              const currentList = prev.products || [];
+              const updated = currentList.map((p) => ({
+                ...p,
+                isActive: p.productId === productId,
+              }));
+              const active = updated.find((p) => p.productId === productId) || null;
 
-          {/* Master Enable/Disable Toggle for Product Promo */}
-          <label className="relative inline-flex items-center cursor-pointer gap-2.5 self-start sm:self-auto bg-slate-900/90 px-3.5 py-1.5 rounded-xl border border-slate-800">
-            <span className="text-xs font-semibold text-slate-200">
-              {promo.enabled ? 'تبلیغ محصول فعال است' : 'تبلیغ محصول خاموش'}
-            </span>
-            <input
-              type="checkbox"
-              checked={promo.enabled}
-              onChange={(e) => updatePromoField('enabled', e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-fuchsia-600"></div>
-          </label>
-        </div>
+              return {
+                ...prev,
+                products: updated,
+                activeProductId: productId,
+                productPromotion: {
+                  ...(prev.productPromotion || {
+                    enabled: false,
+                    sendMode: 'send_photo_with_caption_before_exit',
+                    sendAtMessageNumber: 3,
+                  }),
+                  enabled: active ? (prev.productPromotion?.enabled ?? true) : false,
+                  productName: active?.productName || '',
+                  productDescription: active?.productDescription || '',
+                  imageUrl: active?.bannerImageUrl || '',
+                  contactHandleOrLink: active?.support?.handle || '',
+                  knowledgeBaseText: active?.knowledgeBaseText || '',
+                  faqItems: (active?.faqItems || []).map((f) => ({
+                    id: f.id || `faq_${Date.now()}`,
+                    question: f.question,
+                    answer: f.answer,
+                    keywords: f.keywords || [],
+                  })),
+                },
+              };
+            });
+          }}
+          onUpdateProducts={(updatedList) => {
+            setIsDirty(true);
+            setLocalInstructions((prev) => {
+              let activeId = prev.activeProductId;
+              if (!updatedList.some((p) => p.productId === activeId)) {
+                activeId = updatedList.find((p) => p.isActive)?.productId || updatedList[0]?.productId || '';
+              }
+              const syncedList = updatedList.map((p) => ({
+                ...p,
+                isActive: Boolean(p.productId === activeId),
+              }));
+              const active = syncedList.find((p) => p.productId === activeId) || null;
 
-        {promo.enabled ? (
-          <div className="space-y-5">
-            {/* Product Image Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800/80">
-              {/* Image Preview Box */}
-              <div className="lg:col-span-1 flex flex-col items-center justify-center p-3 bg-slate-950/80 rounded-xl border border-slate-800 relative group min-h-[160px]">
-                {promo.imageUrl ? (
-                  <div className="relative w-full h-full flex flex-col items-center justify-center">
-                    <img
-                      src={promo.imageUrl}
-                      alt="عکس محصول تبلیغاتی"
-                      referrerPolicy="no-referrer"
-                      className="max-h-36 max-w-full rounded-lg object-contain border border-slate-800 shadow-md"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => updatePromoField('imageUrl', '')}
-                      className="absolute top-1 left-1 p-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800/50 shadow transition-all"
-                      title="حذف عکس"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-[10px] text-emerald-400 mt-2 font-medium">✓ عکس محصول تنظیم شد</span>
-                  </div>
-                ) : (
-                  <div className="text-center p-4 space-y-2 text-slate-500">
-                    <ImageIcon className="w-10 h-10 mx-auto text-slate-600" />
-                    <p className="text-xs">عکسی انتخاب نشده است</p>
-                    <p className="text-[10px] text-slate-600">لینک عکس را وارد کنید یا فایل آپلود نمایید</p>
-                  </div>
-                )}
-              </div>
+              return {
+                ...prev,
+                products: syncedList,
+                activeProductId: activeId,
+                productPromotion: {
+                  ...(prev.productPromotion || {
+                    enabled: false,
+                    sendMode: 'send_photo_with_caption_before_exit',
+                    sendAtMessageNumber: 3,
+                  }),
+                  enabled: active ? (prev.productPromotion?.enabled ?? true) : false,
+                  productName: active?.productName || '',
+                  productDescription: active?.productDescription || '',
+                  imageUrl: active?.bannerImageUrl || '',
+                  contactHandleOrLink: active?.support?.handle || '',
+                  knowledgeBaseText: active?.knowledgeBaseText || '',
+                  faqItems: (active?.faqItems || []).map((f) => ({
+                    id: f.id || `faq_${Date.now()}`,
+                    question: f.question,
+                    answer: f.answer,
+                    keywords: f.keywords || [],
+                  })),
+                },
+              };
+            });
+          }}
+          onSave={handleSave}
+          isSaving={isSaving}
+          savedSuccess={savedSuccess}
+        />
 
-              {/* Image Inputs & Upload */}
-              <div className="lg:col-span-2 space-y-3">
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 mb-1.5">
-                    <ImageIcon className="w-3.5 h-3.5 text-violet-400" />
-                    آدرس تصویر یا بنر محصول (Image URL):
-                  </label>
-                  <input
-                    type="url"
-                    value={promo.imageUrl || ''}
-                    onChange={(e) => updatePromoField('imageUrl', e.target.value)}
-                    placeholder="https://example.com/banner.jpg"
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-violet-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none font-mono text-left"
-                    dir="ltr"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 flex-wrap pt-1">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileUpload}
-                    accept="image/*"
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-3.5 py-2 rounded-xl bg-violet-950/60 hover:bg-violet-900 border border-violet-700/50 text-violet-200 text-xs font-semibold flex items-center gap-1.5 transition-all"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>آپلود تصویر از حافظه دستگاه</span>
-                  </button>
-
-                  <span className="text-[11px] text-slate-400">
-                    (پشتیبانی از فرمت‌های JPG, PNG و WebP)
-                  </span>
-                </div>
-              </div>
+        {/* Delivery Strategy & 2-Minute Guard Panel */}
+        <div className="bg-slate-950/70 p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800">
+            <div className="flex items-center gap-2">
+              <Send className="w-4 h-4 text-emerald-400" />
+              <h4 className="font-bold text-xs text-white">
+                نحوه و استراتژی ارسال کمپین فعال در چت ناشناس:
+              </h4>
             </div>
 
-            {/* Product Details Form */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Product Name */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <Tag className="w-3.5 h-3.5 text-fuchsia-400" />
-                  نام / عنوان محصول یا سرویس:
-                </label>
-                <input
-                  type="text"
-                  value={promo.productName || ''}
-                  onChange={(e) => updatePromoField('productName', e.target.value)}
-                  placeholder="مثال: فیلترشکن اختصاصی پرسرعت V2Ray یا کتونی نایک..."
-                  className="w-full bg-slate-900 border border-slate-800 focus:border-fuchsia-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none font-sans"
-                />
-              </div>
-
-              {/* Contact Handle or Link */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <LinkIcon className="w-3.5 h-3.5 text-sky-400" />
-                    آیدی پشتیبانی تلگرام (بدون کاراکتر @):
-                  </span>
-                  <span className="text-[10px] text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
-                    ارسال فقط بعد از ۲ دقیقه
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  value={promo.contactHandleOrLink || ''}
-                  onChange={(e) => updatePromoField('contactHandleOrLink', e.target.value.replace('@', ''))}
-                  placeholder="nova_vpn10"
-                  className="w-full bg-slate-900 border border-slate-800 focus:border-sky-500 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none font-mono text-left"
-                  dir="ltr"
-                />
-              </div>
-            </div>
-
-            {/* 2-Minute Strict Rule Banner Notice */}
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-200 leading-relaxed space-y-1">
-              <div className="font-bold flex items-center gap-1.5 text-amber-300">
-                <span>⏱️ قانون حیاتی ارسال عکس، اعداد و آیدی (محدودیت ۲ دقیقه):</span>
-              </div>
-              <p className="text-[11px] opacity-90">
-                در مکالمات <strong>زیر ۲ دقیقه</strong>، ارسال هرگونه عکس، بنر، اعداد (به حروف فارسی تبدیل می‌شود)، کلمات انگلیسی و آیدی پشتیبانی اکیداً ممنوع و مسدود است. آیدی پشتیبانی دقیقاً به صورت <strong>nova_vpn10</strong> (بدون @) و عکس محصول <strong>صرفاً پس از گذشت ۲ دقیقه مکالمه واقعی</strong> توسط ربات هوشمند ارسال خواهد شد.
-              </p>
-            </div>
-
-            {/* Product Description / Pitch Text */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-amber-400" />
-                  متن توضیحات، آفر، مزایا یا کپشن محصول برای کاربر ناشناس:
-                </span>
-                <span className="text-[11px] text-slate-400">توضیحات جذاب و کوتاه</span>
-              </label>
-              <textarea
-                rows={3}
-                value={promo.productDescription || ''}
-                onChange={(e) => updatePromoField('productDescription', e.target.value)}
-                placeholder="راستی یه وی‌پی‌ان عالی دارم بدون قطعی برای اینستا و یوتیوب، تست رایگان هم داره 🚀"
-                className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500 rounded-xl p-3 text-xs text-white placeholder:text-slate-600 focus:outline-none leading-relaxed font-sans"
+            {/* Enable/Disable Toggle */}
+            <label className="relative inline-flex items-center cursor-pointer gap-2 bg-slate-900 px-3 py-1 rounded-xl border border-slate-800 self-start sm:self-auto">
+              <span className="text-xs font-semibold text-slate-300">
+                {promo.enabled !== false ? 'تبلیغات در چت فعال است' : 'تبلیغات موقتاً خاموش'}
+              </span>
+              <input
+                type="checkbox"
+                checked={promo.enabled !== false}
+                onChange={(e) => updatePromoField('enabled', e.target.checked)}
+                className="sr-only peer"
               />
-            </div>
+              <div className="w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-fuchsia-600"></div>
+            </label>
+          </div>
 
-            {/* Sending Strategy in Anonymous Chat */}
-            <div className="space-y-3 pt-2 border-t border-slate-800/80">
-              <label className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Send className="w-3.5 h-3.5 text-emerald-400" />
-                استراتژی ارسال عکس و توضیحات در چت ناشناس:
-              </label>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* Option 1: Send Photo + Caption on Final Message */}
-                <div
-                  onClick={() => updatePromoField('sendMode', 'send_photo_with_caption_before_exit')}
-                  className={`p-3.5 rounded-xl border cursor-pointer transition-all space-y-1.5 ${
-                    promo.sendMode === 'send_photo_with_caption_before_exit'
-                      ? 'bg-fuchsia-950/40 border-fuchsia-500 ring-1 ring-fuchsia-500/50 text-white'
-                      : 'bg-slate-900/70 border-slate-800 text-slate-300 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs flex items-center gap-1">
-                      <span>📸 ارسال در آخرین پیام قبل از خروج</span>
-                      <span className="text-[9px] bg-fuchsia-500/20 text-fuchsia-300 px-1.5 py-0.5 rounded-full">
-                        پیشنهادی 🚀
-                      </span>
-                    </span>
-                    <input
-                      type="radio"
-                      name="sendMode"
-                      checked={promo.sendMode === 'send_photo_with_caption_before_exit'}
-                      onChange={() => updatePromoField('sendMode', 'send_photo_with_caption_before_exit')}
-                      className="accent-fuchsia-500"
-                    />
-                  </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    چند پیام اول صمیمی چت می‌کند و در پیام پایانی، عکس بنر به همراه متن توضیحات فرستاده شده و سپس ربات چت را قطع می‌کند.
-                  </p>
-                </div>
-
-                {/* Option 2: AI Natural conversational pitch */}
-                <div
-                  onClick={() => updatePromoField('sendMode', 'ai_natural_mention')}
-                  className={`p-3.5 rounded-xl border cursor-pointer transition-all space-y-1.5 ${
-                    promo.sendMode === 'ai_natural_mention'
-                      ? 'bg-fuchsia-950/40 border-fuchsia-500 ring-1 ring-fuchsia-500/50 text-white'
-                      : 'bg-slate-900/70 border-slate-800 text-slate-300 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs flex items-center gap-1">
-                      <span>🧠 معرفی هوشمند و پویا توسط AI</span>
-                      <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded-full">
-                        هوشمند ⚡
-                      </span>
-                    </span>
-                    <input
-                      type="radio"
-                      name="sendMode"
-                      checked={promo.sendMode === 'ai_natural_mention'}
-                      onChange={() => updatePromoField('sendMode', 'ai_natural_mention')}
-                      className="accent-fuchsia-500"
-                    />
-                  </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    هوش مصنوعی مکالمه را تحلیل کرده و در هر زمان از چت که احساس کند موقعیت مناسب است، متن و توضیحات را به صورت خودمانی و طبیعی به مخاطب پیشنهاد می‌دهد.
-                  </p>
-                </div>
-
-                {/* Option 3: Send at specific message number */}
-                <div
-                  onClick={() => updatePromoField('sendMode', 'send_custom_card_at_step')}
-                  className={`p-3.5 rounded-xl border cursor-pointer transition-all space-y-1.5 ${
-                    promo.sendMode === 'send_custom_card_at_step'
-                      ? 'bg-fuchsia-950/40 border-fuchsia-500 ring-1 ring-fuchsia-500/50 text-white'
-                      : 'bg-slate-900/70 border-slate-800 text-slate-300 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs">🔢 ارسال در پیام شماره مشخص</span>
-                    <input
-                      type="radio"
-                      name="sendMode"
-                      checked={promo.sendMode === 'send_custom_card_at_step'}
-                      onChange={() => updatePromoField('sendMode', 'send_custom_card_at_step')}
-                      className="accent-fuchsia-500"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="text-[11px] text-slate-400">در پیام شماره:</span>
-                    <input
-                      type="number"
-                      value={promo.sendAtMessageNumber ?? 2}
-                      onChange={(e) => updatePromoField('sendAtMessageNumber', Math.max(1, Number(e.target.value) || 1))}
-                      min={1}
-                      max={15}
-                      className="w-12 bg-slate-950 border border-slate-800 rounded px-1 text-center text-xs font-bold text-white focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Special options when AI Smart Mention is active */}
-              {promo.sendMode === 'ai_natural_mention' && (
-                <div className="p-3.5 bg-fuchsia-950/20 border border-fuchsia-800/40 rounded-xl space-y-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-fuchsia-400" />
-                      <span className="font-bold text-xs text-white">تنظیمات هوشمندی AI در انتخاب زمان ارسال:</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer gap-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
-                      <span className="text-[11px] font-semibold text-slate-300">
-                        {promo.aiSendBannerWithPitch !== false ? 'ارسال عکس بنر فعال' : 'فقط متن خودمانی'}
-                      </span>
-                      <input
-                        type="checkbox"
-                        checked={promo.aiSendBannerWithPitch !== false}
-                        onChange={(e) => updatePromoField('aiSendBannerWithPitch', e.target.checked)}
-                        className="sr-only peer"
-                      />
-                      <div className="w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-fuchsia-600"></div>
-                    </label>
-                  </div>
-                  <p className="text-[11px] text-fuchsia-200/90 leading-relaxed">
-                    💡 <strong>نحوه عملکرد:</strong> هوش مصنوعی مکالمه کاربر را بررسی می‌کند. اگر مخاطب درباره نیازها، وضعیت نت، علایق یا اصل صحبت کند، یا پس از چند پیام چت صمیمی، هوش مصنوعی در هر لحظه‌ای که حس کند بهترین زمان است، متن و توضیحات تبلیغ را می‌فرستد و در صورت فعال بودن گزینه بالا، عکس بنر نیز همزمان ارسال می‌شود.
-                  </p>
-                </div>
-              )}
-
-              {/* 2-Minute Photo Delay Rule & Exit Guarantee Banner */}
-              <div className="space-y-2">
-                <div className="p-3 bg-amber-950/30 border border-amber-600/40 rounded-xl flex items-start gap-2.5 text-xs text-amber-200">
-                  <Clock className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                  <div className="space-y-1 leading-relaxed">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <span className="font-bold text-white">قانون محدودیت زمانی ۲ دقیقه برای ارسال عکس به ناشناس:</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">
-                        حداقل ۲ دقیقه (۱۲۰ ثانیه)
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-amber-200/90">
-                      طبق سازوکار ربات‌های چت ناشناس، ارسال عکس زودتر از ۲ دقیقه از شروع مکالمه برای مخاطب ناشناس قابل مشاهده نیست. ربات به طور خودکار این زمان را محاسبه کرده و تا قبل از ۲ دقیقه متن کامل را ارسال می‌کند و پس از گذشت ۲ دقیقه عکس بنر را می‌فرستد.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-3 bg-violet-950/30 border border-violet-700/40 rounded-xl flex items-start gap-2.5 text-xs text-violet-200">
-                  <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                  <div className="space-y-1 leading-relaxed">
-                    <span className="font-bold text-white">تضمین ارسال عکس و متن تبلیغ قبل از هرگونه خروج زودهنگام:</span>
-                    <p className="text-[11px] text-violet-300">
-                      در تمامی شرایط خروج (اتمام سقف پیام‌ها، قطع زودهنگام توسط مخاطب، اعلام خداحافظی یا اتمام زمان)، ربات تضمین می‌کند که بنر و متن تبلیغاتی قبل از آغاز توالی دکمه‌های خروج به مخاطب تحویل داده شود (مگر اینکه در حین مکالمه قبلاً ارسال شده باشد).
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 2: Product FAQ & Knowledge Base (پایگاه دانش سوالات متداول و پاسخ‌های هوشمند) */}
-            <div className="p-4 bg-slate-900/80 border border-fuchsia-500/40 rounded-2xl space-y-4">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <HelpCircle className="w-4 h-4 text-fuchsia-400" />
-                    <div>
-                      <h5 className="font-bold text-xs text-white">پایگاه دانش سوالات متداول و پاسخ‌های محصول (Product FAQ & Knowledge Base)</h5>
-                      <p className="text-[11px] text-slate-400">
-                        پاسخ‌دهی دقیق و هوشمندانه به سوالات مخاطبان درباره قیمت، تست رایگان، سرعت، تخفیف، آی‌پی ثابت و روش پرداخت
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Free Text Knowledge Base Area */}
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
-                    <span>توضیحات تکمیلی، پلن‌های قیمتی و گارانتی محصول:</span>
-                    <span className="text-[10px] text-slate-500">برای درک عمیق‌تر مدل هوش مصنوعی</span>
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={promo.knowledgeBaseText || ''}
-                    onChange={(e) => updatePromoField('knowledgeBaseText', e.target.value)}
-                    placeholder="مثال: اکانت یک‌ماهه ۵۰ تومن، سه‌ماهه ۱۲۰ تومن. سرورها پرسرعت آلمان و فنلاند با آی‌پی ثابت مخصوص ترید و اینستاگرام. دارای تست رایگان ۲ ساعته..."
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-fuchsia-500 rounded-xl p-3 text-xs text-white placeholder:text-slate-600 focus:outline-none leading-relaxed font-sans"
-                  />
-                </div>
-
-                {/* FAQ Structured Items List */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-200">
-                      پرسش‌ها و پاسخ‌های کلیدی ({promo.faqItems?.length || 0} مورد):
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const curList = [...(promo.faqItems || [])];
-                        curList.push({
-                          id: 'faq_' + Date.now(),
-                          question: '',
-                          answer: '',
-                          keywords: [],
-                        });
-                        updatePromoField('faqItems', curList);
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-fuchsia-950/60 hover:bg-fuchsia-900 border border-fuchsia-600/40 text-fuchsia-300 text-[11px] font-semibold flex items-center gap-1 transition-all"
-                    >
-                      <span>+ افزودن پرسش و پاسخ جدید</span>
-                    </button>
-                  </div>
-
-                  <div className="space-y-2 max-h-60 overflow-y-auto pr-0.5">
-                    {(promo.faqItems && promo.faqItems.length > 0 ? promo.faqItems : []).map((faq, fIdx) => (
-                      <div key={faq.id || fIdx} className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-fuchsia-400 font-bold w-5 text-center font-mono">Q{fIdx + 1}</span>
-                          <input
-                            type="text"
-                            value={faq.question}
-                            onChange={(e) => {
-                              const cur = [...(promo.faqItems || [])];
-                              cur[fIdx] = { ...cur[fIdx], question: e.target.value };
-                              updatePromoField('faqItems', cur);
-                            }}
-                            placeholder="سوال مخاطب (مثلاً: تست رایگان داری؟ یا قیمتش چنده؟)"
-                            className="flex-1 bg-slate-900 border border-slate-800 focus:border-fuchsia-500 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const cur = [...(promo.faqItems || [])];
-                              cur.splice(fIdx, 1);
-                              updatePromoField('faqItems', cur);
-                            }}
-                            className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
-                            title="حذف این پرسش"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-
-                        <div className="flex items-start gap-2">
-                          <span className="text-[10px] text-emerald-400 font-bold w-5 text-center font-mono mt-2">A{fIdx + 1}</span>
-                          <textarea
-                            rows={2}
-                            value={faq.answer}
-                            onChange={(e) => {
-                              const cur = [...(promo.faqItems || [])];
-                              cur[fIdx] = { ...cur[fIdx], answer: e.target.value };
-                              updatePromoField('faqItems', cur);
-                            }}
-                            placeholder="پاسخ صمیمی و خودمانی (مثلاً: آره عزیزم تست ۲ ساعته رایگان داریم، به آیدی پیام بدی برات می‌فرسته)"
-                            className="flex-1 bg-slate-900 border border-slate-800 focus:border-emerald-500 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none leading-relaxed"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-            {/* Dedicated Save Button for Product Promotion */}
-            <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between flex-wrap gap-3 bg-slate-950/40 p-3 rounded-xl">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span className="text-[11px] text-slate-300">
-                  اطلاعات محصول (تصویر، عنوان، آیدی و توضیحات) مستقیماً روی سرور ذخیره می‌شود.
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Option 1: Send Photo + Caption on Final Message */}
+            <div
+              onClick={() => updatePromoField('sendMode', 'send_photo_with_caption_before_exit')}
+              className={`p-3.5 rounded-xl border cursor-pointer transition-all space-y-1.5 ${
+                promo.sendMode === 'send_photo_with_caption_before_exit'
+                  ? 'bg-fuchsia-950/40 border-fuchsia-500 ring-1 ring-fuchsia-500/50 text-white'
+                  : 'bg-slate-900/70 border-slate-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs flex items-center gap-1">
+                  <span>📸 ارسال در آخرین پیام قبل از خروج</span>
+                  <span className="text-[9px] bg-fuchsia-500/20 text-fuchsia-300 px-1.5 py-0.5 rounded-full">
+                    پیشنهادی 🚀
+                  </span>
                 </span>
+                <input
+                  type="radio"
+                  name="sendMode"
+                  checked={promo.sendMode === 'send_photo_with_caption_before_exit'}
+                  onChange={() => updatePromoField('sendMode', 'send_photo_with_caption_before_exit')}
+                  className="accent-fuchsia-500"
+                />
               </div>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={isSaving}
-                className={`px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md ${
-                  savedSuccess
-                    ? 'bg-emerald-600 shadow-emerald-950/50'
-                    : isDirty
-                    ? 'bg-fuchsia-600 hover:bg-fuchsia-500 shadow-fuchsia-950/50 ring-2 ring-fuchsia-400/50'
-                    : 'bg-violet-600 hover:bg-violet-500 shadow-violet-950/50'
-                }`}
-              >
-                {savedSuccess ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-emerald-200" />
-                    <span>اطلاعات محصول ذخیره شد ✓</span>
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-3.5 h-3.5" />
-                    <span>{isSaving ? 'در حال ذخیره‌سازی...' : 'ذخیره عکس و مشخصات محصول'}</span>
-                  </>
-                )}
-              </button>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                چند پیام اول صمیمی چت می‌کند و در پیام پایانی، عکس بنر به همراه متن توضیحات فرستاده شده و سپس ربات چت را قطع می‌کند.
+              </p>
+            </div>
+
+            {/* Option 2: AI Natural conversational pitch */}
+            <div
+              onClick={() => updatePromoField('sendMode', 'ai_natural_mention')}
+              className={`p-3.5 rounded-xl border cursor-pointer transition-all space-y-1.5 ${
+                promo.sendMode === 'ai_natural_mention'
+                  ? 'bg-fuchsia-950/40 border-fuchsia-500 ring-1 ring-fuchsia-500/50 text-white'
+                  : 'bg-slate-900/70 border-slate-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs flex items-center gap-1">
+                  <span>🧠 معرفی هوشمند و پویا توسط AI</span>
+                  <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded-full">
+                    هوشمند ⚡
+                  </span>
+                </span>
+                <input
+                  type="radio"
+                  name="sendMode"
+                  checked={promo.sendMode === 'ai_natural_mention'}
+                  onChange={() => updatePromoField('sendMode', 'ai_natural_mention')}
+                  className="accent-fuchsia-500"
+                />
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                هوش مصنوعی مکالمه را تحلیل کرده و در هر زمان از چت که احساس کند موقعیت مناسب است، متن و توضیحات را به صورت خودمانی و طبیعی به مخاطب پیشنهاد می‌دهد.
+              </p>
+            </div>
+
+            {/* Option 3: Send at specific message number */}
+            <div
+              onClick={() => updatePromoField('sendMode', 'send_custom_card_at_step')}
+              className={`p-3.5 rounded-xl border cursor-pointer transition-all space-y-1.5 ${
+                promo.sendMode === 'send_custom_card_at_step'
+                  ? 'bg-fuchsia-950/40 border-fuchsia-500 ring-1 ring-fuchsia-500/50 text-white'
+                  : 'bg-slate-900/70 border-slate-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs">🔢 ارسال در پیام شماره مشخص</span>
+                <input
+                  type="radio"
+                  name="sendMode"
+                  checked={promo.sendMode === 'send_custom_card_at_step'}
+                  onChange={() => updatePromoField('sendMode', 'send_custom_card_at_step')}
+                  className="accent-fuchsia-500"
+                />
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-[11px] text-slate-400">در پیام شماره:</span>
+                <input
+                  type="number"
+                  value={promo.sendAtMessageNumber ?? 2}
+                  onChange={(e) => updatePromoField('sendAtMessageNumber', Math.max(1, Number(e.target.value) || 1))}
+                  min={1}
+                  max={15}
+                  className="w-12 bg-slate-950 border border-slate-800 rounded px-1 text-center text-xs font-bold text-white focus:outline-none"
+                />
+              </div>
             </div>
           </div>
-        ) : (
-          <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-800/80 text-center text-xs text-slate-400">
-            معرفی محصول اختصاصی چت ناشناس در حال حاضر غیرفعال است. با روشن کردن کلید بالا، می‌توانید عکس و توضیحات محصول را وارد کنید.
+
+          {/* Special options when AI Smart Mention is active */}
+          {promo.sendMode === 'ai_natural_mention' && (
+            <div className="p-3.5 bg-fuchsia-950/20 border border-fuchsia-800/40 rounded-xl space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-fuchsia-400" />
+                  <span className="font-bold text-xs text-white">تنظیمات هوشمندی AI در انتخاب زمان ارسال:</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer gap-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
+                  <span className="text-[11px] font-semibold text-slate-300">
+                    {promo.aiSendBannerWithPitch !== false ? 'ارسال عکس بنر فعال' : 'فقط متن خودمانی'}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={promo.aiSendBannerWithPitch !== false}
+                    onChange={(e) => updatePromoField('aiSendBannerWithPitch', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-fuchsia-600"></div>
+                </label>
+              </div>
+              <p className="text-[11px] text-fuchsia-200/90 leading-relaxed">
+                💡 <strong>نحوه عملکرد:</strong> هوش مصنوعی مکالمه کاربر را بررسی می‌کند. اگر مخاطب درباره نیازها، وضعیت نت، علایق یا اصل صحبت کند، یا پس از چند پیام چت صمیمی، هوش مصنوعی در هر لحظه‌ای که حس کند بهترین زمان است، متن و توضیحات تبلیغ را می‌فرستد و در صورت فعال بودن گزینه بالا، عکس بنر نیز همزمان ارسال می‌شود.
+              </p>
+            </div>
+          )}
+
+          {/* 2-Minute Photo Delay Rule & Exit Guarantee Banner */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className="p-3 bg-amber-950/30 border border-amber-600/40 rounded-xl flex items-start gap-2.5 text-xs text-amber-200">
+              <Clock className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="space-y-1 leading-relaxed">
+                <span className="font-bold text-white block">محدودیت ۲ دقیقه ارسال عکس و آیدی:</span>
+                <p className="text-[11px] text-amber-200/90">
+                  ارسال عکس، آیدی و ارقام قبل از ۲ دقیقه مسدود بوده و فقط پس از ۱۲۰ ثانیه چت فعال ارسال می‌شود.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-violet-950/30 border border-violet-700/40 rounded-xl flex items-start gap-2.5 text-xs text-violet-200">
+              <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+              <div className="space-y-1 leading-relaxed">
+                <span className="font-bold text-white block">تضمین تحویل قبل از خروج:</span>
+                <p className="text-[11px] text-violet-300">
+                  در هر حالت خروج از چت، بنر و متن کمپین فعال قبل از قطع مکالمه به مخاطب تحویل داده می‌شود.
+                </p>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* ========================================================================= */}
@@ -1487,6 +1338,19 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
             </p>
           </div>
         )}
+
+        {/* Info Banner on Decoupled Product Prompts */}
+        <div className="p-3 bg-violet-950/30 border border-violet-700/40 rounded-xl flex items-start gap-2 text-xs text-violet-200">
+          <Sparkles className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" />
+          <div className="space-y-1 leading-relaxed">
+            <span className="font-bold text-white block">
+              💡 سیستم کمپین و هوش مصنوعی پویا (بدون نیاز به نوشتن مشخصات محصول در این بخش):
+            </span>
+            <p className="text-[11px] text-violet-300">
+              مشخصات، نام، پلن‌های قیمت، آیدی پشتیبانی و سوالات متداول به طور کاملاً خودکار و هوشمند از <strong>کمپین فعال انتخابی در بالای صفحه</strong> در مکالمه تزریق می‌شود. نیازی به ذکر مشخصات محصول در این دستورالعمل نیست؛ در اینجا صرفاً شخصیت، سناریو و لحن صمیمی بات را تنظیم کنید و هر زمان که خواستید محصول را با ۱ کلیک در بخش بالا عوض کنید.
+            </p>
+          </div>
+        </div>
 
         {/* The Textarea */}
         <div className="space-y-1.5">

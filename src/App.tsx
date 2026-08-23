@@ -411,6 +411,13 @@ export default function App() {
       const data = await res.json();
       throw new Error(data.error || 'خطا در به‌روزرسانی تنظیمات چت ناشناس');
     }
+    const data = await res.json();
+    if (data.automator) {
+      setAppState((prev) => ({
+        ...prev,
+        anonymousAutomator: data.automator,
+      }));
+    }
     await fetchState();
   };
 
