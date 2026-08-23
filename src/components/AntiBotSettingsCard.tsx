@@ -20,8 +20,8 @@ export const AntiBotSettingsCard: React.FC<AntiBotSettingsCardProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Auto-save whenever settings change
+  const triggerAutoSave = async (overrides?: Partial<AntiBotSettings>) => {
     setIsSaving(true);
     try {
       await onSaveAntiBotSettings({
@@ -31,14 +31,20 @@ export const AntiBotSettingsCard: React.FC<AntiBotSettingsCardProps> = ({
         contactsToInviteCount,
         sendGreetingFirst,
         greetingMessage,
+        ...overrides,
       });
       setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 2500);
+      setTimeout(() => setSavedSuccess(false), 2000);
     } catch (err) {
       console.error(err);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await triggerAutoSave();
   };
 
   return (
@@ -81,7 +87,11 @@ export const AntiBotSettingsCard: React.FC<AntiBotSettingsCardProps> = ({
             <input
               type="checkbox"
               checked={sendGreetingFirst}
-              onChange={(e) => setSendGreetingFirst(e.target.checked)}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setSendGreetingFirst(checked);
+                triggerAutoSave({ sendGreetingFirst: checked });
+              }}
               className="w-5 h-5 rounded bg-slate-900 border-slate-700 text-purple-500 focus:ring-purple-500 accent-purple-500 cursor-pointer flex-shrink-0"
             />
           </div>
@@ -95,6 +105,7 @@ export const AntiBotSettingsCard: React.FC<AntiBotSettingsCardProps> = ({
                 type="text"
                 value={greetingMessage}
                 onChange={(e) => setGreetingMessage(e.target.value)}
+                onBlur={() => triggerAutoSave()}
                 placeholder="سلام بچه ها"
                 className="w-48 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1 text-right text-xs text-white focus:outline-none focus:border-purple-500"
               />
@@ -120,7 +131,11 @@ export const AntiBotSettingsCard: React.FC<AntiBotSettingsCardProps> = ({
           <input
             type="checkbox"
             checked={autoClickCaptcha}
-            onChange={(e) => setAutoClickCaptcha(e.target.checked)}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setAutoClickCaptcha(checked);
+              triggerAutoSave({ autoClickCaptcha: checked });
+            }}
             className="w-5 h-5 rounded bg-slate-900 border-slate-700 text-purple-500 focus:ring-purple-500 accent-purple-500 cursor-pointer flex-shrink-0"
           />
         </div>
@@ -143,7 +158,11 @@ export const AntiBotSettingsCard: React.FC<AntiBotSettingsCardProps> = ({
           <input
             type="checkbox"
             checked={autoForceJoinChannels}
-            onChange={(e) => setAutoForceJoinChannels(e.target.checked)}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setAutoForceJoinChannels(checked);
+              triggerAutoSave({ autoForceJoinChannels: checked });
+            }}
             className="w-5 h-5 rounded bg-slate-900 border-slate-700 text-purple-500 focus:ring-purple-500 accent-purple-500 cursor-pointer flex-shrink-0"
           />
         </div>
@@ -167,7 +186,11 @@ export const AntiBotSettingsCard: React.FC<AntiBotSettingsCardProps> = ({
             <input
               type="checkbox"
               checked={autoInviteContacts}
-              onChange={(e) => setAutoInviteContacts(e.target.checked)}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setAutoInviteContacts(checked);
+                triggerAutoSave({ autoInviteContacts: checked });
+              }}
               className="w-5 h-5 rounded bg-slate-900 border-slate-700 text-purple-500 focus:ring-purple-500 accent-purple-500 cursor-pointer flex-shrink-0"
             />
           </div>
@@ -184,6 +207,7 @@ export const AntiBotSettingsCard: React.FC<AntiBotSettingsCardProps> = ({
                   max={10}
                   value={contactsToInviteCount}
                   onChange={(e) => setContactsToInviteCount(parseInt(e.target.value) || 3)}
+                  onBlur={() => triggerAutoSave()}
                   className="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-center font-mono text-xs text-white focus:outline-none focus:border-purple-500"
                 />
                 <span className="text-xs text-slate-400">نفر</span>

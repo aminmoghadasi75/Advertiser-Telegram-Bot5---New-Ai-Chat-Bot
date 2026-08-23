@@ -6028,7 +6028,7 @@ async function clickBotInlineButton(
       const res = await clickInlineCandidate(client, botEntity, bestInline, session);
       if (res.success) return res;
     }
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 50));
   }
   return { success: false };
 }
@@ -6110,9 +6110,11 @@ async function executeBotButtonStep(
     await new Promise((r) => setTimeout(r, 1000));
   }
 
-  // Delay before executing click
-  const delaySec = step.delaySeconds !== undefined ? step.delaySeconds : 1.0;
-  await new Promise((r) => setTimeout(r, Math.max(300, delaySec * 1000)));
+  // Delay before executing click (instant execution if delaySeconds is 0)
+  const delaySec = step.delaySeconds || 0;
+  if (delaySec > 0) {
+    await new Promise((r) => setTimeout(r, delaySec * 1000));
+  }
   if (anonEngineAbort) return;
 
   const locName =
@@ -6211,7 +6213,7 @@ async function executeBotButtonStep(
       }
     }
 
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 50));
   }
 
   // Fallbacks after scan timeout:
@@ -6238,7 +6240,7 @@ async function executeBotButtonStep(
 
   // Auto-confirm popup after button click if enabled
   if (step.autoConfirmPopup || botProfile?.autoDismissPopups) {
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 50));
     await autoDismissBotPopups(client, botEntity, session, botProfile?.popupOkKeywords);
   }
 
@@ -6300,7 +6302,7 @@ async function ensureChatDisconnected(
         inlineConfirmed = true;
       }
       stepIndex++;
-      await new Promise((r) => setTimeout(r, Math.max(500, (exitStep.delaySeconds || 1) * 1000)));
+      await new Promise((r) => setTimeout(r, Math.max(20, (exitStep.delaySeconds || 0) * 1000)));
     }
   }
 
@@ -6330,7 +6332,7 @@ async function ensureChatDisconnected(
       try {
         await client.sendMessage(botEntity, { message: cmd });
       } catch {}
-      await new Promise((r) => setTimeout(r, 1200));
+      await new Promise((r) => setTimeout(r, 100));
 
       const clickedNow = await findAndClickInlineConfirmation();
       if (clickedNow) {
@@ -6348,7 +6350,7 @@ async function ensureChatDisconnected(
     selectedBot.popupOkKeywords
   );
 
-  await new Promise((r) => setTimeout(r, 600));
+  await new Promise((r) => setTimeout(r, 50));
 
   // Step 4: Verify disconnection and handle rating prompts / return to main menu
   try {
@@ -6711,7 +6713,7 @@ async function executeExitAndNextPartner(
   // Always perform disconnection sequence according to exitSteps to reset menu/state cleanly
   await ensureChatDisconnected(client, botEntity, selectedBot, session);
 
-  await new Promise((r) => setTimeout(r, 1000));
+  await new Promise((r) => setTimeout(r, 50));
 }
 
 // ============================================================================
@@ -6898,7 +6900,7 @@ async function runAnonymousChatWorker() {
           lastClickedHex
         );
         if (resHex) lastClickedHex = resHex;
-        await new Promise((r) => setTimeout(r, Math.max(800, (step.delaySeconds || 1) * 1000)));
+        await new Promise((r) => setTimeout(r, Math.max(50, (step.delaySeconds || 0) * 1000)));
       }
 
       // Check messages received *during* this session (only id > sessionBaselineMsgId)
@@ -7593,7 +7595,7 @@ async function runAnonymousChatWorker() {
           break;
         }
 
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, 150));
       }
 
       // Archive session to history
@@ -7616,13 +7618,15 @@ async function runAnonymousChatWorker() {
       // Cooldown before next chat cycle
       const isLoopEnabled = automator.loopForever !== false;
       if (isLoopEnabled && appState.anonymousAutomator?.isActive && !anonEngineAbort) {
-        const cooldown = (automator.cooldownBetweenChatsSeconds || 4) * 1000;
+        const cooldown = (automator.cooldownBetweenChatsSeconds ?? 0) * 1000;
         console.log(`⏳ Cooldown ${cooldown / 1000}s before next anonymous chat cycle...`);
-        if (activeAnonChatSession) {
+        if (activeAnonChatSession && cooldown > 0) {
           activeAnonChatSession.statusMessage = `استراحت به مدت ${cooldown / 1000} ثانیه قبل از ورود به چت ناشناس بعدی...`;
           saveData();
         }
-        await new Promise((r) => setTimeout(r, cooldown));
+        if (cooldown > 0) {
+          await new Promise((r) => setTimeout(r, cooldown));
+        }
       } else {
         break;
       }

@@ -492,6 +492,7 @@ export const AnonymousBotsCard: React.FC<AnonymousBotsCardProps> = ({
 
         {activeTab === 'instructions' && (
           <AnonymousAiInstructionsTab
+            key={config?.selectedBotId || 'default_bot'}
             instructions={instructions}
             onSaveInstructions={async (newInstructions) => {
               await onUpdateConfig({

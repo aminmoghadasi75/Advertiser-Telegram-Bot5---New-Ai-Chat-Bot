@@ -69,7 +69,9 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const systemPromptTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const lastSavedJsonRef = useRef<string>(JSON.stringify(instructions));
+  const lastSentSystemPromptRef = useRef<string | null>(null);
 
   // State for user-defined saved prompts management
   const [showSavePromptBox, setShowSavePromptBox] = useState(false);
@@ -90,22 +92,68 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
     (instructions.spamBotKeywords || []).join(' - ')
   );
 
-  // Only synchronize from props if the user does NOT have active unsaved edits (isDirty = false)
-  // and when instructions are actively updated externally (e.g. on initial mount or full restore)
+  // Synchronize from parent props ONLY when parent changes externally (e.g. bot switch or initial load),
+  // protecting local state from stale parent props during in-flight saves.
   useEffect(() => {
-    const incomingJson = JSON.stringify(instructions);
-    if (incomingJson === JSON.stringify(localInstructions) || incomingJson === lastSavedJsonRef.current) {
-      lastSavedJsonRef.current = incomingJson;
-      return;
+    if (isDirty) return;
+
+    const parentPrompt = instructions.systemPrompt || '';
+
+    // If lastSentSystemPromptRef is set, we recently saved a prompt to backend.
+    if (lastSentSystemPromptRef.current !== null) {
+      if (parentPrompt === lastSentSystemPromptRef.current) {
+        // Backend caught up to our last saved prompt
+        lastSentSystemPromptRef.current = null;
+      } else {
+        // Parent is still returning stale prompt before backend catches up, do not revert local state
+        return;
+      }
     }
-    if (!isDirty && incomingJson !== lastSavedJsonRef.current) {
-      lastSavedJsonRef.current = incomingJson;
-      setLocalInstructions(instructions);
-      setRawIgnoredPhrases((instructions.customIgnoredSystemPhrases || []).join(' - '));
-      setRawInappropriateKeywords((instructions.inappropriateKeywords || []).join(' - '));
-      setRawSpamBotKeywords((instructions.spamBotKeywords || []).join(' - '));
-    }
-  }, [instructions, isDirty, localInstructions]);
+
+    setLocalInstructions((prev) => {
+      const parentSaved = Array.isArray(instructions.savedPrompts) ? instructions.savedPrompts : [];
+      const currentSaved = Array.isArray(prev.savedPrompts) ? prev.savedPrompts : [];
+
+      const promptMatches = (prev.systemPrompt || '') === parentPrompt;
+      const savedMatches = JSON.stringify(currentSaved) === JSON.stringify(parentSaved);
+
+      if (promptMatches && (savedMatches || parentSaved.length === 0)) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        ...instructions,
+        savedPrompts: parentSaved.length > 0 ? parentSaved : currentSaved,
+      };
+    });
+    setRawIgnoredPhrases((instructions.customIgnoredSystemPhrases || []).join(' - '));
+    setRawInappropriateKeywords((instructions.inappropriateKeywords || []).join(' - '));
+    setRawSpamBotKeywords((instructions.spamBotKeywords || []).join(' - '));
+  }, [instructions, isDirty]);
+
+  // Live Auto-Save Effect (Debounced 600ms)
+  useEffect(() => {
+    if (!isDirty) return;
+    const timer = setTimeout(async () => {
+      try {
+        setIsSaving(true);
+        const snapshot = { ...localInstructions };
+        lastSavedJsonRef.current = JSON.stringify(snapshot);
+        lastSentSystemPromptRef.current = snapshot.systemPrompt || '';
+        await onSaveInstructions(snapshot);
+        setIsDirty(false);
+        setSavedSuccess(true);
+        setTimeout(() => setSavedSuccess(false), 2000);
+      } catch (e) {
+        console.error('Auto-save error:', e);
+      } finally {
+        setIsSaving(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [localInstructions, isDirty, onSaveInstructions]);
 
   const updateField = <K extends keyof AnonymousChatInstructions>(
     field: K,
@@ -148,6 +196,7 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
     try {
       const snapshot = { ...localInstructions };
       lastSavedJsonRef.current = JSON.stringify(snapshot);
+      lastSentSystemPromptRef.current = snapshot.systemPrompt || '';
       await onSaveInstructions(snapshot);
       setIsDirty(false);
       setSavedSuccess(true);
@@ -165,10 +214,61 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
     setRawIgnoredPhrases((instructions.customIgnoredSystemPhrases || []).join(' - '));
     setRawInappropriateKeywords((instructions.inappropriateKeywords || []).join(' - '));
     lastSavedJsonRef.current = JSON.stringify(instructions);
+    lastSentSystemPromptRef.current = null;
     setIsDirty(false);
   };
 
   const savedPrompts = localInstructions.savedPrompts || [];
+
+  const handleSeedDefaultPrompts = async () => {
+    const defaultSample1: SavedAiPrompt = {
+      id: `prompt_sample_1`,
+      title: 'سناریوی صمیمی و خودمانی (سارا ۲۶ ساله)',
+      prompt: `شما یک دختر ۲۶ ساله ایرانی به نام سارا اهل تهران هستید که در یک بات چت ناشناس تلگرام در حال صحبت با یک فرد ناشناس هستید.
+
+دستورالعمل‌ها:
+۱. طول هر پیام یا جمله حتماً و همیشه بسیار کوتاه (حداکثر ۳ الی ۷ کلمه) باشد.
+۲. از علائم نگارشی مثل نقطه در انتهای پیام (.)، علامت تعجب (!)، ویرگول (،) و گیومه اکیداً خودداری کنید تا حس ربات ندهد.
+۳. در پاسخ به اصل بگویید «سارا ۲۶ تهران شما چی؟» (سن ۲۶ به صورت عدد باشد و هرگز حروف ننویسید).
+۴. حافظه و جلوگیری از تکرار: پیام‌های قبلی چت را در نظر بگیرید و هرگز سوالی را که قبلاً پرسیده‌اید تکرار نکنید.
+۵. لحن کاملاً خودمانی، صمیمی و روان دخترانه باشد و هرگز نگویید ربات هستید.
+۶. پیشوند «سارا:» یا علامت نقل‌قول در پاسخ نگذارید و فقط خود پیام را ارسال کنید.`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const defaultSample2: SavedAiPrompt = {
+      id: `prompt_sample_2`,
+      title: 'سناریوی مشاور و فروشنده هوشمند',
+      prompt: `شما یک مشاور صمیمی، محترم و خاکی هستید که در چت ناشناس با مخاطبان گفتگوی دوستانه می‌کنید.
+
+دستورالعمل‌ها:
+۱. با لحنی گرم، صمیمی و ساده چت کنید و از جملات طولانی خودداری کنید (حداکثر ۱ تا ۲ جمله در هر پاسخ).
+۲. ابتدا با مخاطب احوال‌پرسی گرم کرده و حس صمیمیت ایجاد کنید.
+۳. در طول گفتگو به شکل طبیعی و دوستانه صحبت کنید بدون اینکه تبلیغاتی یا رباتی به نظر برسید.
+۴. پیام‌های کوتاه ارسال کنید و سوالات تکراری نپرسید.`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const newSavedList = [defaultSample1, defaultSample2];
+    const snapshot: AnonymousChatInstructions = {
+      ...localInstructions,
+      savedPrompts: newSavedList,
+    };
+    setIsDirty(false);
+    setLocalInstructions(snapshot);
+    setPromptFeedback('۲ دستورالعمل نمونه با موفقیت ایجاد و ذخیره شدند ✓');
+    setTimeout(() => setPromptFeedback(null), 3000);
+
+    try {
+      lastSavedJsonRef.current = JSON.stringify(snapshot);
+      lastSentSystemPromptRef.current = snapshot.systemPrompt || '';
+      await onSaveInstructions(snapshot);
+    } catch (e) {
+      console.error('Error seeding default prompts:', e);
+    }
+  };
 
   const handleSaveCurrentAsNewPrompt = async () => {
     const textToSave = (localInstructions.systemPrompt || '').trim();
@@ -189,6 +289,7 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
       ...localInstructions,
       savedPrompts: updatedList,
     };
+    setIsDirty(false);
     setLocalInstructions(snapshot);
     setLoadedPromptId(newSaved.id);
     setNewPromptTitle('');
@@ -198,8 +299,8 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
 
     try {
       lastSavedJsonRef.current = JSON.stringify(snapshot);
+      lastSentSystemPromptRef.current = snapshot.systemPrompt || '';
       await onSaveInstructions(snapshot);
-      setIsDirty(false);
     } catch (e) {
       console.error('Error saving prompt to backend:', e);
     }
@@ -210,15 +311,22 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
       ...localInstructions,
       systemPrompt: saved.prompt,
     };
+    setIsDirty(false);
     setLocalInstructions(snapshot);
     setLoadedPromptId(saved.id);
-    setPromptFeedback(`دستور «${saved.title}» روی کادر فعال و ذخیره شد ✓`);
-    setTimeout(() => setPromptFeedback(null), 3000);
+    setPromptFeedback(`دستور «${saved.title}» روی کادر فعال و اعمال شد ✓`);
+    setTimeout(() => setPromptFeedback(null), 3500);
+
+    // Smooth scroll & focus textarea
+    if (systemPromptTextareaRef.current) {
+      systemPromptTextareaRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      systemPromptTextareaRef.current.focus();
+    }
 
     try {
       lastSavedJsonRef.current = JSON.stringify(snapshot);
+      lastSentSystemPromptRef.current = snapshot.systemPrompt || '';
       await onSaveInstructions(snapshot);
-      setIsDirty(false);
     } catch (e) {
       console.error('Error applying saved prompt:', e);
     }
@@ -235,6 +343,7 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
       ...localInstructions,
       savedPrompts: updatedList,
     };
+    setIsDirty(false);
     setLocalInstructions(snapshot);
     setLoadedPromptId(savedId);
     setPromptFeedback('دستورالعمل ذخیره‌شده با متن فعلی کادر به روزرسانی و ذخیره شد ✓');
@@ -242,8 +351,8 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
 
     try {
       lastSavedJsonRef.current = JSON.stringify(snapshot);
+      lastSentSystemPromptRef.current = snapshot.systemPrompt || '';
       await onSaveInstructions(snapshot);
-      setIsDirty(false);
     } catch (e) {
       console.error('Error updating saved prompt:', e);
     }
@@ -256,6 +365,7 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
       ...localInstructions,
       savedPrompts: updatedList,
     };
+    setIsDirty(false);
     setLocalInstructions(snapshot);
     if (loadedPromptId === savedId) {
       setLoadedPromptId(null);
@@ -265,8 +375,8 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
 
     try {
       lastSavedJsonRef.current = JSON.stringify(snapshot);
+      lastSentSystemPromptRef.current = snapshot.systemPrompt || '';
       await onSaveInstructions(snapshot);
-      setIsDirty(false);
     } catch (e) {
       console.error('Error deleting saved prompt:', e);
     }
@@ -1353,8 +1463,8 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
         </div>
 
         {/* The Textarea */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <span className="text-xs font-semibold text-slate-300">
               متن دستورالعمل فعال برای هوش مصنوعی (System Prompt):
             </span>
@@ -1362,12 +1472,43 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
               {(localInstructions.systemPrompt || '').length} کاراکتر
             </span>
           </div>
+
+          {/* Quick Dropdown Selector for Saved Prompts */}
+          {savedPrompts.length > 0 && (
+            <div className="flex items-center justify-between gap-2 p-2.5 bg-slate-900 border border-fuchsia-900/50 rounded-xl shadow-sm">
+              <div className="flex items-center gap-2 min-w-0">
+                <FolderHeart className="w-4 h-4 text-fuchsia-400 flex-shrink-0" />
+                <span className="text-xs font-bold text-slate-200 truncate">
+                  انتخاب سریع دستورالعمل:
+                </span>
+              </div>
+              <select
+                value={savedPrompts.find((p) => p.prompt.trim() === (localInstructions.systemPrompt || '').trim())?.id || ''}
+                onChange={(e) => {
+                  const selected = savedPrompts.find((p) => p.id === e.target.value);
+                  if (selected) {
+                    handleLoadSavedPrompt(selected);
+                  }
+                }}
+                className="bg-slate-950 border border-fuchsia-500/50 hover:border-fuchsia-400 focus:border-fuchsia-500 rounded-lg px-3 py-1.5 text-xs text-fuchsia-200 font-medium focus:outline-none cursor-pointer transition-colors max-w-[240px] sm:max-w-xs"
+              >
+                <option value="" disabled>-- انتخاب دستورالعمل ذخیره‌شده --</option>
+                {savedPrompts.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.title} {(localInstructions.systemPrompt || '').trim() === p.prompt.trim() ? '✓ (فعال روی کادر)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <textarea
+            ref={systemPromptTextareaRef}
             rows={8}
             value={localInstructions.systemPrompt || ''}
             onChange={(e) => updateField('systemPrompt', e.target.value)}
             placeholder="دستورالعمل دقیق خود را برای هوش مصنوعی بنویسید (مثلاً: تو یک دختر ۲۰ ساله به نام سارا هستی. با لحن صمیمی و کوتاه ۱ یا ۲ جمله‌ای چت کن...)"
-            className="w-full bg-slate-900 border border-slate-800 focus:border-fuchsia-500 rounded-xl p-4 text-xs text-white placeholder:text-slate-600 focus:outline-none leading-relaxed font-sans"
+            className="w-full bg-slate-900 border border-slate-800 focus:border-fuchsia-500 rounded-xl p-4 text-xs text-white placeholder:text-slate-600 focus:outline-none leading-relaxed font-sans shadow-inner"
           />
         </div>
 
@@ -1381,20 +1522,30 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
               </h5>
             </div>
             {savedPrompts.length > 0 && (
-              <span className="text-[11px] text-slate-400">
-                برای فعال‌سازی هر دستور روی دکمه «اعمال روی کادر» بزنید.
+              <span className="text-[11px] text-fuchsia-300 font-medium">
+                ⚡ با کلیک روی هر کارت یا دکمه «اعمال روی کادر»، دستورالعمل ۱ کلیکه روی کادر فعال می‌شود.
               </span>
             )}
           </div>
 
           {savedPrompts.length === 0 ? (
-            <div className="p-4 bg-slate-900/40 rounded-xl border border-dashed border-slate-800 text-center space-y-1.5">
-              <p className="text-xs font-semibold text-slate-300">
-                هنوز هیچ دستورالعمل اختصاصی ذخیره نشده است.
-              </p>
-              <p className="text-[11px] text-slate-500">
-                متن مورد نظر خود را در کادر بالا بنویسید و دکمه «+ ذخیره متن جاری به عنوان دستور جدید» را بزنید تا در اینجا ثبت شود و بتوانید به راحتی بین دستورات قبلی خود سوئیچ کنید.
-              </p>
+            <div className="p-4 bg-slate-900/40 rounded-xl border border-dashed border-slate-800 text-center space-y-3">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-slate-300">
+                  هنوز هیچ دستورالعمل اختصاصی ذخیره نشده است.
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  می‌توانید متن کادر بالا را ذخیره کنید یا روی دکمه زیر بزنید تا ۲ دستورالعمل نمونه آماده اضافه شوند.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleSeedDefaultPrompts}
+                className="px-4 py-2 rounded-xl bg-fuchsia-950/70 hover:bg-fuchsia-900 border border-fuchsia-600/50 text-fuchsia-200 text-xs font-bold inline-flex items-center gap-2 transition-all shadow"
+              >
+                <Sparkles className="w-4 h-4 text-fuchsia-400" />
+                <span>+ ایجاد ۲ دستورالعمل نمونه آماده</span>
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1405,16 +1556,24 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
                 return (
                   <div
                     key={sp.id}
-                    className={`p-3.5 rounded-xl border transition-all space-y-2 flex flex-col justify-between ${
+                    onClick={() => {
+                      if (!isEditing) {
+                        handleLoadSavedPrompt(sp);
+                      }
+                    }}
+                    className={`p-3.5 rounded-xl border transition-all space-y-2 flex flex-col justify-between cursor-pointer group ${
                       isActive
-                        ? 'bg-fuchsia-950/40 border-fuchsia-500 ring-1 ring-fuchsia-500/50 shadow-lg shadow-fuchsia-950/30'
-                        : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
+                        ? 'bg-fuchsia-950/40 border-fuchsia-500 ring-2 ring-fuchsia-500/60 shadow-lg shadow-fuchsia-950/40'
+                        : 'bg-slate-900/80 border-slate-800 hover:border-fuchsia-500/50 hover:bg-slate-900'
                     }`}
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2">
                         {isEditing ? (
-                          <div className="flex items-center gap-1.5 flex-1">
+                          <div
+                            className="flex items-center gap-1.5 flex-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <input
                               type="text"
                               value={editingTitleText}
@@ -1428,7 +1587,10 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
                             />
                             <button
                               type="button"
-                              onClick={() => handleSaveRename(sp.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSaveRename(sp.id);
+                              }}
                               className="p-1 rounded bg-emerald-600 text-white text-[10px]"
                               title="تایید نام"
                             >
@@ -1436,7 +1598,10 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
                             </button>
                             <button
                               type="button"
-                              onClick={() => setEditingPromptId(null)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingPromptId(null);
+                              }}
                               className="p-1 rounded bg-slate-800 text-slate-400 text-[10px]"
                               title="انصراف"
                             >
@@ -1445,12 +1610,15 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <span className="font-bold text-xs text-white truncate">
+                            <span className="font-bold text-xs text-white truncate group-hover:text-fuchsia-200 transition-colors">
                               {sp.title}
                             </span>
                             <button
                               type="button"
-                              onClick={() => handleStartRename(sp)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStartRename(sp);
+                              }}
                               className="text-slate-500 hover:text-slate-300 p-0.5 transition-colors"
                               title="ویرایش نام"
                             >
@@ -1460,7 +1628,7 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
                         )}
 
                         {isActive && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold flex items-center gap-1">
                             <Check className="w-3 h-3" />
                             فعال در کادر
                           </span>
@@ -1478,21 +1646,27 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
-                          onClick={() => handleLoadSavedPrompt(sp)}
-                          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLoadSavedPrompt(sp);
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm ${
                             isActive
-                              ? 'bg-fuchsia-600/30 text-fuchsia-300 border border-fuchsia-500/50'
-                              : 'bg-fuchsia-600 hover:bg-fuchsia-500 text-white shadow-sm'
+                              ? 'bg-emerald-600 text-white border border-emerald-400/50'
+                              : 'bg-fuchsia-600 hover:bg-fuchsia-500 text-white'
                           }`}
                         >
                           <Zap className="w-3.5 h-3.5" />
-                          <span>{isActive ? 'در حال استفاده' : 'اعمال روی کادر'}</span>
+                          <span>{isActive ? '✓ فعال روی کادر (در حال استفاده)' : 'اعمال روی کادر'}</span>
                         </button>
 
                         {!isActive && (
                           <button
                             type="button"
-                            onClick={() => handleUpdateSavedPrompt(sp.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUpdateSavedPrompt(sp.id);
+                            }}
                             className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium flex items-center gap-1 transition-all"
                             title="متن این دستور را با متن فعلی کادر جایگزین کن"
                           >
@@ -1504,7 +1678,10 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
 
                       <button
                         type="button"
-                        onClick={() => handleDeleteSavedPrompt(sp.id, sp.title)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteSavedPrompt(sp.id, sp.title);
+                        }}
                         className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 rounded-lg transition-colors"
                         title="حذف این دستورالعمل"
                       >
