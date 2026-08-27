@@ -64,10 +64,10 @@ export function transitionConversationState(
   // 2. Rejection Dominance
   if (intent === Intent.REJECTION) {
     return {
-      newState: ConversationState.REJECTED,
+      newState: ConversationState.GOODBYE,
       previousState,
-      transitionReason: 'User expressed explicit rejection of promotion/bot',
-      isTerminalState: false,
+      transitionReason: 'User expressed explicit rejection / no need for VPN. Transitioning directly to goodbye & clean exit.',
+      isTerminalState: true,
     };
   }
 

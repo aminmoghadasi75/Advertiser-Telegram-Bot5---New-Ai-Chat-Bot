@@ -66,24 +66,27 @@ export function cleanCodeArtifactsAndPunctuation(rawText: string): string {
   if (!rawText) return '';
   let cleaned = rawText;
 
-  // 1. Remove markdown code blocks and inline code formatting
+  // 1. Strip internal system prompt tags and control tokens in all formats
+  cleaned = cleaned.replace(/\[?(?:SEND_PROMO_CARD|PROMO_TRIGGER|PROMO_CARD|SEND PROMO CARD|SEND_PROMO|SEND PROMO|PROMO|ارسال_تبلیغ|ارسال بنر|کپشن عکس|کپشن:)\]?/gi, '');
+
+  // 2. Remove markdown code blocks and inline code formatting
   cleaned = cleaned.replace(/```[\s\S]*?```/g, '');
   cleaned = cleaned.replace(/`([^`]+)`/g, '$1');
 
-  // 2. Remove comments and syntax artifacts (e.g. /* ... */, // ..., / "). * ", etc.)
+  // 3. Remove comments and syntax artifacts (e.g. /* ... */, // ..., / "). * ", etc.)
   cleaned = cleaned.replace(/\/\*[\s\S]*?\*\//g, '');
   cleaned = cleaned.replace(/(?:\/{2,}|\/\*+|\*+\/|[\\\/]\s*["')\]]+\s*(?:\.\s*\*?\s*")?).*/g, '');
   cleaned = cleaned.replace(/[\/\\*#_~`^<>{}[\]|•]+/g, ' ');
 
-  // 3. Remove stray quote and paren artifacts in middle of text
+  // 4. Remove stray quote and paren artifacts in middle of text
   cleaned = cleaned.replace(/["'«»“”\(\)]\s*[\.\*\/\\\-]+\s*["'«»“”\(\)]/g, ' ');
   cleaned = cleaned.replace(/["'«»“”]/g, '');
 
-  // 4. Remove leading/trailing symbols, quotes, brackets, slashes, colons
+  // 5. Remove leading/trailing symbols, quotes, brackets, slashes, colons
   cleaned = cleaned.replace(/^["'«»“”(.)\/\\:;؛،,\s\-–—]+/, '');
   cleaned = cleaned.replace(/["'«»“”(.)\/\\:;؛،,\s\-–—]+$/, '');
 
-  // 5. Clean unnatural punctuation for Telegram chat:
+  // 6. Clean unnatural punctuation for Telegram chat:
   // - Remove multiple exclamation marks
   cleaned = cleaned.replace(/!+/g, '');
   // - Clean redundant question marks (leave at most one ؟)
@@ -94,7 +97,7 @@ export function cleanCodeArtifactsAndPunctuation(rawText: string): string {
   cleaned = cleaned.replace(/\.+$/g, '');
   cleaned = cleaned.replace(/\.+/g, ' ');
 
-  // 6. Normalize age: Convert written Persian words for age 26 (e.g. "بیست و شش") to natural digits "۲۶"
+  // 7. Normalize age: Convert written Persian words for age 26 (e.g. "بیست و شش") to natural digits "۲۶"
   cleaned = cleaned
     .replace(/بیست\s+و\s+شش/g, '۲۶')
     .replace(/بیست\s+و\s+شیش/g, '۲۶')
@@ -104,13 +107,19 @@ export function cleanCodeArtifactsAndPunctuation(rawText: string): string {
     .replace(/بیست\s+ساله/g, '۲۶ ساله')
     .replace(/بیست\s+سالمه/g, '۲۶ سالمه');
 
-  // 7. Clean multi-spaces and redundant whitespace
+  // 8. Remove over-familiar / overly affectionate words (عزیزم, گلم, فدات شم, etc.)
+  cleaned = cleaned
+    .replace(/(?:^|\s)(?:عزیزم|عزیز دلم|گلم|فدات شم|قربونت برم|قربونت بشم)(?:[،,!\s]|$)/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // 9. Clean multi-spaces and redundant whitespace
   cleaned = cleaned.replace(/[ \t]+/g, ' ').trim();
 
-  // 8. Repair truncated verbs/prefixes
+  // 10. Repair truncated verbs/prefixes
   cleaned = repairIncompleteSentences(cleaned);
 
-  // 9. Final trim of trailing punctuation
+  // 11. Final trim of trailing punctuation
   cleaned = cleaned.replace(/[\.\:،,!;؛\-–—]+$/g, '').trim();
 
   return cleaned;
@@ -118,8 +127,9 @@ export function cleanCodeArtifactsAndPunctuation(rawText: string): string {
 
 /**
  * Splits text into natural, ultra-short Telegram chat bubbles.
- * Rule: NO single bubble may exceed 7 words. If a sentence is longer,
- * it is broken down into small, conversational chunks (3-7 words each).
+ * Rule: Preserves complete thoughts and Persian compound verbs (e.g. موفق باشی, خسته نباشی).
+ * Does not split short cohesive sentences (<= 9 words).
+ * Merges orphan dangling words back to adjacent bubbles.
  * All unnecessary punctuation (trailing periods, colons, quotes) is stripped.
  */
 export function splitIntoNaturalBubbles(text: string, maxChunks: number = 6): string[] {
@@ -135,28 +145,32 @@ export function splitIntoNaturalBubbles(text: string, maxChunks: number = 6): st
 
   const rawBubbles: string[] = [];
 
+  // Common Persian compound verb suffixes that should never start an orphaned bubble
+  const compoundAuxiliaries = /^(باشی|باشید|باشیم|باشه|باش|کنی|کنید|کنیم|کنه|کن|بدی|بدید|بدیم|بده|بگی|بگید|بگیم|بگه|بری|برید|بریم|بره|برم|بشی|بشید|بشیم|بشه|بشم|شدی|شدید|شدیم|شده|شدم|کردی|کردید|کردیم|کرده|کردم|هستی|هستید|هستیم|هستند|هست|بودم|بودی|بود|آمد|اومد|میرم|میری|میره|می‌رم|می‌ری|می‌ره|می‌کنم|می‌کنی|می‌کنه|عزیزم|گلم|جان|فدات|قربانت|داداش)$/i;
+
   for (const part of initialParts) {
     const words = part.split(/\s+/).filter(Boolean);
-    if (words.length <= 7) {
+    // If cohesive sentence is short (up to 9 words), keep it as a single natural bubble
+    if (words.length <= 9) {
       rawBubbles.push(part);
       continue;
     }
 
-    // Split long sentence into sub-chunks of at most 7 words
+    // Split long sentence into sub-chunks at natural linguistic clauses
     let currentWords: string[] = [];
     for (let i = 0; i < words.length; i++) {
       const w = words[i];
       currentWords.push(w);
 
       const remaining = words.length - (i + 1);
-      // Check if we should break:
-      // a) We hit 7 words
-      // b) Or we have 4-6 words and next word is a natural conjunction/connector (و, که, چون, ولی, اما, بعد, راستی, آخه)
-      //    and the remaining words are at least 2 words
       const nextWord = words[i + 1] || '';
+      const isNextAuxiliary = compoundAuxiliaries.test(nextWord);
       const isNaturalBreakWord = /^(و|که|چون|ولی|اما|بعد|راستی|آخه|تا|اگه|اگر|چرا|واسه|شما)$/i.test(nextWord);
-      const shouldBreakOnConjunction = currentWords.length >= 4 && isNaturalBreakWord && remaining >= 2;
-      const shouldBreakOnMaxWords = currentWords.length >= 7;
+
+      // Only break if we have enough words (>= 5), the next word is a conjunction (and not an auxiliary verb),
+      // and there are at least 3 words remaining to prevent tiny fragments
+      const shouldBreakOnConjunction = currentWords.length >= 5 && isNaturalBreakWord && !isNextAuxiliary && remaining >= 3;
+      const shouldBreakOnMaxWords = currentWords.length >= 8 && !isNextAuxiliary && remaining >= 3;
 
       if ((shouldBreakOnMaxWords || shouldBreakOnConjunction) && remaining > 0) {
         rawBubbles.push(currentWords.join(' '));
@@ -164,19 +178,34 @@ export function splitIntoNaturalBubbles(text: string, maxChunks: number = 6): st
       }
     }
     if (currentWords.length > 0) {
-      rawBubbles.push(currentWords.join(' '));
+      if (rawBubbles.length > 0 && (currentWords.length <= 2 || compoundAuxiliaries.test(currentWords[0]))) {
+        // Merge short dangling tail into previous bubble
+        rawBubbles[rawBubbles.length - 1] += ' ' + currentWords.join(' ');
+      } else {
+        rawBubbles.push(currentWords.join(' '));
+      }
     }
   }
 
-  // 2. Clean, repair and format each bubble
-  const finalBubbles: string[] = [];
+  // 2. Clean, repair, and consolidate bubbles
+  const processedBubbles: string[] = [];
   for (let b of rawBubbles) {
     let cleanedB = repairIncompleteSentences(b);
     cleanedB = cleanedB.replace(/[\.\:،,!;؛\-–—]+$/g, '').trim();
-    if (cleanedB.length >= 2) {
-      finalBubbles.push(cleanedB);
+    if (!cleanedB) continue;
+
+    const bWords = cleanedB.split(/\s+/).filter(Boolean);
+    // If a bubble is too small (<= 2 words or starts with auxiliary), merge with previous
+    if (processedBubbles.length > 0 && (bWords.length <= 2 || compoundAuxiliaries.test(bWords[0]))) {
+      processedBubbles[processedBubbles.length - 1] += ' ' + cleanedB;
+    } else {
+      processedBubbles.push(cleanedB);
     }
   }
+
+  const finalBubbles = processedBubbles
+    .map((b) => repairIncompleteSentences(b).replace(/[\.\:،,!;؛\-–—]+$/g, '').trim())
+    .filter((b) => b.length >= 2);
 
   const effectiveMax = Math.max(1, Math.min(maxChunks, 8));
   return finalBubbles.length > 0 ? finalBubbles.slice(0, effectiveMax) : [clean];
@@ -389,11 +418,11 @@ export function getSafeFallbackText(
 ): string {
   // Exit / Goodbye: strictly natural, no unsolicited ad (A5)
   if (intent === Intent.GOODBYE || state === ConversationState.GOODBYE) {
-    return 'مرسی عزیزم منم کار برام پیش اومد باید برم مراقب خودت باش 🌸';
+    return 'مرسی منم کار برام پیش اومد باید برم مراقب خودت باش 🌸';
   }
 
   if (intent === Intent.REJECTION || state === ConversationState.REJECTED || state === ConversationState.LOW_INTEREST) {
-    return 'کاملاً درکت می‌کنم مشکلی نیست روزت چطور گذشت 🌸';
+    return 'باشه حله، مراقب خودت باش فعلا 🌸';
   }
 
   if (intent === Intent.VPN_REQUEST || state === ConversationState.PRODUCT_INTEREST) {
@@ -419,7 +448,7 @@ export function getSafeFallbackText(
     return 'وای آره واقعاً اوضاع نت این روزا خیلی اذیت می‌کنه 🌸';
   }
 
-  return 'منم خوبم مرسی عزیزم بیشتر فیلم می‌بینم و آهنگ گوش می‌دم 🌸';
+  return 'منم خوبم مرسی بیشتر فیلم می‌بینم و آهنگ گوش می‌دم 🌸';
 }
 
 /**
@@ -434,24 +463,24 @@ export function getAlternativeVariedFallback(
 ): string {
   const candidatesByIntent: Record<string, string[]> = {
     [Intent.GREETING]: [
-      'سلام عزیزم روزت بخیر باشه 🌸',
+      'سلام روزت بخیر باشه 🌸',
       'سلام چطوری اوضاع چطوره 🌸',
-      'درود بر شما روز خوبی داشته باشی 🌸',
+      'درود روز خوبی داشته باشی 🌸',
     ],
     [Intent.SMALL_TALK]: [
       'سرگرم کارامم پای لپ‌تاپم 🌸',
       'بیشتر فیلم می‌بینم آهنگ گوش می‌دم 🌸',
-      'مشغول وبگردی و گشتن تو اینستام 🌸',
+      'مشغول وبگردی و کارهای آنلاینم 🌸',
       'خداروشکر همه چی خوبه و آرومه 🌸',
     ],
     [Intent.GOODBYE]: [
-      'فعلاً عزیزم مراقب خودت باش 🌸',
+      'فعلاً مراقب خودت باش 🌸',
       'خوشحال شدم روز خوبی داشته باشی 🌸',
-      'خداحافظ عزیزم به امید دیدار 🌸',
+      'خداحافظ به امید دیدار 🌸',
     ],
     [Intent.REJECTION]: [
-      'باشه حله بگذریم روزت چطور گذشت 🌸',
-      'کاملاً اوکیه از خودت چه خبرا 🌸',
+      'باشه حله مراقب خودت باش فعلا 🌸',
+      'اوکی موفق باشی فعلا 🌸',
     ],
     [Intent.PRICE_REQUEST]: [
       'پلن‌های ماهانه‌ش خیلی مناسبه و نامحدود هم داره 🌸',

@@ -279,8 +279,10 @@ export function buildPromptDirective(
     lines.push(`⚡ EXPLICIT OVERRIDE ACTIVE: User asked for product/VPN directly. Answer immediately without stalling.`);
   }
 
-  if (context.promotionLock) {
-    lines.push(`⛔ PROMOTION LOCKED (USER NOT INTERESTED / REJECTED): User has no interest or declined. DO NOT mention VPN, prices, sales, or channels. Speak purely as a friendly human and transition smoothly towards a warm goodbye without pitching.`);
+  if (context.intent === Intent.REJECTION || (context.state === ConversationState.GOODBYE && context.promotionLock)) {
+    lines.push(`⛔ USER DECLINED / NO NEED DETECTED: User indicated they do not need VPN or services. Immediately output a single, ultra-short polite goodbye (3 to 6 words max, e.g. «باشه حله، مراقب خودت باش فعلا 🌸» or «اوکی موفق باشی فعلا 🌸»). Do NOT ask any new questions or drag the conversation, so the system can exit cleanly.`);
+  } else if (context.promotionLock) {
+    lines.push(`⛔ PROMOTION LOCKED: User has no interest. DO NOT mention VPN, prices, sales, or channels. Speak purely as a friendly human in ultra-short sentences without pitching.`);
   } else if (promotionDecision.allowedLevel === PromotionLevel.NO_PROMOTION) {
     lines.push(`💬 MODE: CASUAL RAPPORT ONLY. Answer any questions naturally in short bubbles (max 7 words). Do not sell or pitch yet.`);
   } else if (promotionDecision.allowedLevel === PromotionLevel.SOFT_MENTION) {

@@ -127,6 +127,14 @@ const QUESTION_PATTERNS: Array<{
     ],
   },
   {
+    category: 'vpn_internet_inquiry',
+    regex: /(?:وی\s*پی\s*ان|فیلترشکن|vpn|اینترنت|نت|پروکسی).*(?:خوب\s*کار\s*میکنه|وصله|داری|سرعت|چطوره|مشکل)/i,
+    naturalReplies: [
+      'منم کارامو انجام می‌دادم 🌸',
+      'سلامتی همه چی خوبه 🌸',
+    ],
+  },
+  {
     category: 'job_study',
     regex: /(?:شغلت\s*چیه|کارت\s*چیه|شاغلی|دانشجویی|رشته‌ت\s*چیه)/i,
     naturalReplies: [

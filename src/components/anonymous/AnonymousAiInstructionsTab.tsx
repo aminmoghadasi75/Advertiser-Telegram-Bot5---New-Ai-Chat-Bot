@@ -46,18 +46,18 @@ const PRESET_GREETINGS = [
   'سلام چطوری؟',
   'سلام روزت بخیر 🌸',
   'سلام، خوبی؟ چه خبر؟',
-  'سلام عزیزم چطوری؟',
+  'سلام چطوری؟ 🌸',
   'سلام اصل میدی آشنا شیم؟',
   'سلااام چطوری؟ چیکارا می‌کنی؟',
 ];
 
 const PRESET_FAREWELLS = [
-  'خب عزیزم من کار برام پیش اومد باید برم، مراقب خودت باش 🌸',
-  'فعلا گلم، من یه کاری برام پیش اومد باید برم 🌹',
+  'خب من کار برام پیش اومد باید برم، مراقب خودت باش 🌸',
+  'فعلا من یه کاری برام پیش اومد باید برم 🌹',
   'خوشحال شدم از هم‌کلامی، فعلا خداحافظ 👋',
   'من کار فوری برام پیش اومد باید برم، روزت بخیر ✨',
-  'قربونت من برم دیگه، مواظب خودت باش 💫',
-  'فعلا بای عزیزم 👋',
+  'من دیگه باید برم، مواظب خودت باش 💫',
+  'فعلا خدانگهدار 👋',
 ];
 
 export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProps> = ({
@@ -1152,9 +1152,9 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
                 </label>
                 <input
                   type="text"
-                  value={localInstructions.preExitFarewellText ?? 'خب عزیزم من کار برام پیش اومد باید برم، مراقب خودت باش 🌸'}
+                  value={localInstructions.preExitFarewellText ?? 'خب من کار برام پیش اومد باید برم، مراقب خودت باش 🌸'}
                   onChange={(e) => updateField('preExitFarewellText', e.target.value)}
-                  placeholder="خب عزیزم من کار برام پیش اومد باید برم، مراقب خودت باش 🌸"
+                  placeholder="خب من کار برام پیش اومد باید برم، مراقب خودت باش 🌸"
                   className="w-full bg-slate-900 border border-slate-800 focus:border-rose-500 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none"
                 />
               </div>
@@ -1175,8 +1175,8 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
                   {(localInstructions.preExitFarewells && localInstructions.preExitFarewells.length > 0
                     ? localInstructions.preExitFarewells
                     : [
-                        'خب عزیزم من کار برام پیش اومد باید برم، مراقب خودت باش 🌸',
-                        'فعلا گلم، من یه کاری برام پیش اومد باید برم 🌹',
+                        'خب من کار برام پیش اومد باید برم، مراقب خودت باش 🌸',
+                        'فعلا من یه کاری برام پیش اومد باید برم 🌹',
                         'خوشحال شدم از هم‌کلامی، فعلا خداحافظ 👋',
                         'من کار فوری برام پیش اومد باید برم، روزت بخیر ✨',
                       ]
@@ -1196,8 +1196,8 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
                             ...(localInstructions.preExitFarewells && localInstructions.preExitFarewells.length > 0
                               ? localInstructions.preExitFarewells
                               : [
-                                  'خب عزیزم من کار برام پیش اومد باید برم، مراقب خودت باش 🌸',
-                                  'فعلا گلم، من یه کاری برام پیش اومد باید برم 🌹',
+                                  'خب من کار برام پیش اومد باید برم، مراقب خودت باش 🌸',
+                                  'فعلا من یه کاری برام پیش اومد باید برم 🌹',
                                   'خوشحال شدم از هم‌کلامی، فعلا خداحافظ 👋',
                                   'من کار فوری برام پیش اومد باید برم، روزت بخیر ✨',
                                 ]),
@@ -1215,8 +1215,8 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
                             ...(localInstructions.preExitFarewells && localInstructions.preExitFarewells.length > 0
                               ? localInstructions.preExitFarewells
                               : [
-                                  'خب عزیزم من کار برام پیش اومد باید برم، مراقب خودت باش 🌸',
-                                  'فعلا گلم، من یه کاری برام پیش اومد باید برم 🌹',
+                                  'خب من کار برام پیش اومد باید برم، مراقب خودت باش 🌸',
+                                  'فعلا من یه کاری برام پیش اومد باید برم 🌹',
                                   'خوشحال شدم از هم‌کلامی، فعلا خداحافظ 👋',
                                   'من کار فوری برام پیش اومد باید برم، روزت بخیر ✨',
                                 ]),
@@ -1243,13 +1243,13 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
                       ...(localInstructions.preExitFarewells && localInstructions.preExitFarewells.length > 0
                         ? localInstructions.preExitFarewells
                         : [
-                            'خب عزیزم من کار برام پیش اومد باید برم، مراقب خودت باش 🌸',
-                            'فعلا گلم، من یه کاری برام پیش اومد باید برم 🌹',
+                            'خب من کار برام پیش اومد باید برم، مراقب خودت باش 🌸',
+                            'فعلا من یه کاری برام پیش اومد باید برم 🌹',
                             'خوشحال شدم از هم‌کلامی، فعلا خداحافظ 👋',
                             'من کار فوری برام پیش اومد باید برم، روزت بخیر ✨',
                           ]),
                     ];
-                    currentList.push('فعلا گلم، مراقب خودت باش 🌸');
+                    currentList.push('فعلا مراقب خودت باش 🌸');
                     updateField('preExitFarewells', currentList);
                   }}
                   className="px-3 py-1.5 rounded-lg bg-rose-950/50 hover:bg-rose-900/60 border border-rose-700/40 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-all"
@@ -1326,8 +1326,8 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
                   <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
                   <span className="font-medium truncate">
                     {(localInstructions.farewellMode || 'single') === 'single'
-                      ? (localInstructions.preExitFarewellText ?? 'خب عزیزم من کار برام پیش اومد باید برم، مراقب خودت باش 🌸')
-                      : ((localInstructions.preExitFarewells && localInstructions.preExitFarewells[0]) || 'خب عزیزم من کار برام پیش اومد باید برم، مراقب خودت باش 🌸')}
+                      ? (localInstructions.preExitFarewellText ?? 'خب من کار برام پیش اومد باید برم، مراقب خودت باش 🌸')
+                      : ((localInstructions.preExitFarewells && localInstructions.preExitFarewells[0]) || 'خب من کار برام پیش اومد باید برم، مراقب خودت باش 🌸')}
                   </span>
                 </div>
               </div>
