@@ -127,10 +127,8 @@ export function evaluatePromotionPolicy(
 
   // 5. EXPLICIT USER INTENT OVERRIDE RULE
   if (isExplicitProductIntent) {
-    const isPhotoAllowed =
-      context.elapsedSeconds >= (promotionConfig.minPhotoDelaySeconds ?? MIN_NATURAL_PHOTO_DELAY_SECONDS) ||
-      currentIntent === Intent.PURCHASE_INTENT ||
-      currentIntent === Intent.SUPPORT_REQUEST;
+    const minPhotoDelay = promotionConfig.minPhotoDelaySeconds ?? MIN_NATURAL_PHOTO_DELAY_SECONDS;
+    const isPhotoAllowed = context.elapsedSeconds >= minPhotoDelay;
 
     const turnsSinceLastCTA = context.turnCount - context.lastCTATurn;
     const isCtaInCooldown = context.lastCTATurn > 0 && turnsSinceLastCTA < MIN_CTA_TURN_GAP;
@@ -172,7 +170,7 @@ export function evaluatePromotionPolicy(
       isExplicitOverride: true,
       isSuppressed: false,
       reasonCodes,
-      reason: `Explicit user intent detected (${currentIntent}). Time delays and locks bypassed per override policy.`,
+      reason: `Explicit user intent detected (${currentIntent}). Product knowledge active. Photo allowed only if >= 120s (${isPhotoAllowed ? 'YES' : 'NO'}).`,
     };
   }
 

@@ -553,8 +553,13 @@ export interface AnonymousPromptTestRun {
     totalPartnerMessagesReceived: number;
     totalAiRepliesSent: number;
     averageTurnsPerPartner: number;
+    totalPromoSent?: number;
+    totalInquiriesAfterPromo?: number;
+    totalSpamBotsSkipped?: number;
+    conversionRatePercent?: number;
   };
   conversationsByPartner: AnonymousPartnerConversation[];
+  sessions?: AnonymousChatSession[];
 }
 
 export interface IntentDetectionResult {

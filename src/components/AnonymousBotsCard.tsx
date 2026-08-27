@@ -155,24 +155,25 @@ export const AnonymousBotsCard: React.FC<AnonymousBotsCardProps> = ({
   const activeProdId = rawInstructions?.activeProductId || config?.activeProductId || configProducts[0]?.productId || '';
 
   const instructions: AnonymousChatInstructions = {
-    systemPrompt: `شما یک دختر ۲۶ ساله ایرانی به نام سارا اهل تهران هستید که در یک بات چت ناشناس تلگرام در حال صحبت با یک فرد ناشناس هستید.
+    systemPrompt: `شما یک دختر ۲۶ ساله ایرانی به نام ملودی اهل تهران هستید که در یک بات چت ناشناس تلگرام در حال صحبت با یک فرد ناشناس هستید.
 
 دستورالعمل‌ها:
-۱. طول هر پیام یا جمله حتماً و همیشه بسیار کوتاه (حداکثر ۳ الی ۷ کلمه) باشد.
-۲. از علائم نگارشی مثل نقطه در انتهای پیام (.)، علامت تعجب (!)، ویرگول (،) و گیومه اکیداً خودداری کنید تا حس ربات ندهد.
-۳. در پاسخ به اصل بگویید «سارا ۲۶ تهران شما چی؟» (سن ۲۶ به صورت عدد باشد و هرگز حروف ننویسید).
-۴. حافظه و جلوگیری از تکرار: پیام‌های قبلی چت را در نظر بگیرید و هرگز سوالی را که قبلاً پرسیده‌اید (مثل چیکار می‌کنی، چه خبر) تکرار نکنید. اگر کاربر پرسید چیکار می‌کنی درباره کارهای خودتان پاسخ دهید.
+۱. طول هر پیام یا پاسخ کوتاه، روان و طبیعی (۱ الی ۲ جمله کامل، حدود ۴ الی ۱۲ کلمه) باشد.
+۲. از علائم نگارشی کتابی مثل نقطه در انتهای پیام (.)، علامت تعجب (!)، ویرگول‌های متعدد (،) و گیومه اکیداً خودداری کنید تا حس ربات ندهد.
+۳. در پاسخ به اصل بگویید «ملودی ۲۶ تهران شما چی؟» (سن ۲۶ به صورت عدد باشد و هرگز حروف ننویسید).
+۴. حافظه و جلوگیری از تکرار: پیام‌های قبلی چت را در نظر بگیرید و هرگز سوالی را که قبلاً پرسیده‌اید تکرار نکنید. اگر کاربر پرسید چیکار می‌کنی درباره کارهای خودتان پاسخ دهید.
 ۵. لحن کاملاً خودمانی، صمیمی و روان دخترانه باشد و هرگز نگویید ربات هستید.
-۶. پیشوند «سارا:» یا علامت نقل‌قول در پاسخ نگذارید و فقط خود پیام را ارسال کنید.`,
+۶. آیدی پشتیبانی را همیشه بدون علامت @ و با فرمت nova_vpn10 بنویسید.
+۷. پیشوند «ملودی:» یا علامت نقل‌قول در پاسخ نگذارید و فقط خود پیام را ارسال کنید.`,
     maxMessagesPerChat: 4,
     initiateGreetingOnConnect: true,
-    initialGreetingText: 'سلام خوبی؟ 🌸',
-    initialGreetings: ['سلام خوبی؟ 🌸', 'سلام چطوری؟', 'سلام روزت بخیر 🌸', 'سلام، خوبی؟ چه خبر؟'],
+    initialGreetingText: 'سلام خوبی؟',
+    initialGreetings: ['سلام خوبی؟', 'سلام چطوری؟', 'سلام روزت بخیر', 'سلام خوبی چه خبر؟'],
     greetingMode: 'single',
     greetingDelaySeconds: 0.8,
     enablePreExitFarewell: true,
-    preExitFarewellText: 'من دیگه باید برم، مراقب خودت باش 🌸👋',
-    preExitFarewells: ['من دیگه باید برم، مراقب خودت باش 🌸👋', 'فعلا من میرم، خوشحال شدم از آشناییت 👋🌸'],
+    preExitFarewellText: 'من دیگه باید برم مراقب خودت باش',
+    preExitFarewells: ['من دیگه باید برم مراقب خودت باش', 'فعلا من میرم خوشحال شدم از آشناییت'],
     farewellMode: 'single',
     farewellDelaySeconds: 1.0,
     sendPromoBeforeExitAlways: true,
@@ -180,7 +181,7 @@ export const AnonymousBotsCard: React.FC<AnonymousBotsCardProps> = ({
     messageAggregationDelaySeconds: 1.5,
     silenceTimeoutSeconds: 30,
     enableSilenceNudge: true,
-    silenceNudgeText: 'هستی؟ 🌸',
+    silenceNudgeText: 'هستی؟',
     inappropriateKeywords: ['بلاک', 'اسپم', 'کس نگو', 'فحش', 'گمشو', 'کص', 'کیر', 'جنده', 'سکس', 'سیکتیر'],
     customIgnoredSystemPhrases: [],
     ...(rawInstructions || {}),
@@ -520,7 +521,13 @@ export const AnonymousBotsCard: React.FC<AnonymousBotsCardProps> = ({
         )}
 
         {activeTab === 'analytics' && (
-          <AnonymousAnalyticsTab config={config} history={history} />
+          <AnonymousAnalyticsTab
+            config={config}
+            history={history}
+            activeSession={activeSession}
+            currentTestRun={currentTestRun}
+            previousTestRuns={previousTestRuns}
+          />
         )}
 
         {activeTab === 'evaluation' && <AnonymousEvaluationTab />}

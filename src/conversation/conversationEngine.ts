@@ -275,23 +275,33 @@ export function buildPromptDirective(
   lines.push(`• Bot Message Count: ${context.botMessageCount}/${context.maxBotMessages || 25}`);
   lines.push(`• Conversation Duration: ${context.elapsedSeconds}s (Support ID Access: ${context.supportIdAvailable ? 'ALLOWED' : 'GATED (<120s)'})`);
 
-  if (promotionDecision.isExplicitOverride) {
-    lines.push(`⚡ EXPLICIT OVERRIDE ACTIVE: User asked for product/VPN directly. Answer immediately without stalling.`);
+  if (promotionDecision.isExplicitOverride || promotionDecision.allowedLevel === PromotionLevel.DIRECT_OFFER || promotionDecision.allowedLevel === PromotionLevel.SOFT_MENTION) {
+    if (!context.supportIdAvailable) {
+      lines.push(`⚡ PRODUCT INQUIRY & < 120s PLATFORM RESTRICTION: The user is interested or asking about the product. The Telegram anonymous bot STRICTLY blocks photos and handles before 2 minutes (120s).`);
+      lines.push(`• DIRECTIVE: Answer the user's questions clearly and accurately using the Product Specs & FAQ (plans, prices, speed, protocols, test account availability).`);
+      lines.push(`• WARM-UP & CONVERSATION EXTENSION: Keep the conversation active naturally until the 2-minute mark (e.g. ask what device they use: Android/iOS/Windows, what network/operator they have: Irancell/MCI/Wifi, or what they use it for: Insta/YouTube/Trading).`);
+      lines.push(`• SUPPORT ID & PHOTO: STRICTLY DO NOT output any handle or photo yet because Telegram will drop it!`);
+    } else {
+      const handle = (productConfig.support.handle || promotionConfig?.contactHandleOrLink || 'nova_vpn10').replace(/^@/, '');
+      lines.push(`✅ 2-MINUTE THRESHOLD REACHED (>= 120s): Platform restrictions lifted.`);
+      lines.push(`• Support Handle: ${handle} (strictly without @ and with underscore)`);
+      lines.push(`• Offer the support handle and invite them to connect for the free test account or setup.`);
+    }
   }
 
   if (context.intent === Intent.REJECTION || (context.state === ConversationState.GOODBYE && context.promotionLock)) {
-    lines.push(`⛔ USER DECLINED / NO NEED DETECTED: User indicated they do not need VPN or services. Immediately output a single, ultra-short polite goodbye (3 to 6 words max, e.g. «باشه حله، مراقب خودت باش فعلا 🌸» or «اوکی موفق باشی فعلا 🌸»). Do NOT ask any new questions or drag the conversation, so the system can exit cleanly.`);
+    lines.push(`⛔ USER DECLINED / NO NEED DETECTED: User indicated they do not need VPN or services. Immediately output a single, ultra-short polite goodbye (3 to 6 words max, e.g. «باشه حله مراقب خودت باش فعلا» or «اوکی موفق باشی فعلا»). Do NOT ask any new questions or drag the conversation, so the system can exit cleanly.`);
   } else if (context.promotionLock) {
     lines.push(`⛔ PROMOTION LOCKED: User has no interest. DO NOT mention VPN, prices, sales, or channels. Speak purely as a friendly human in ultra-short sentences without pitching.`);
   } else if (promotionDecision.allowedLevel === PromotionLevel.NO_PROMOTION) {
     lines.push(`💬 MODE: CASUAL RAPPORT ONLY. Answer any questions naturally in short bubbles (max 7 words). Do not sell or pitch yet.`);
   } else if (promotionDecision.allowedLevel === PromotionLevel.SOFT_MENTION) {
-    lines.push(`🌱 MODE: HONEST MARKETER INTRO. First answer user questions naturally. Then honestly and casually mention that you have a fast private VPN subscription / provide VPN support, and politely ask if they need or want help with a good VPN (e.g. «راستی من خودم اشتراک وی‌پی‌ان دارم، اگه فیلترشکن خوب می‌خوای بگو راهنماییت کنم 🌸»).`);
+    lines.push(`🌱 MODE: HONEST MARKETER INTRO. First answer user questions naturally. Then honestly and casually mention that you have a fast private VPN subscription / provide VPN support, and politely ask if they need or want help with a good VPN (e.g. «راستی من خودم اشتراک وی‌پی‌ان دارم، اگه فیلترشکن خوب می‌خوای بگو راهنماییت کنم»).`);
   } else if (promotionDecision.allowedLevel === PromotionLevel.DIRECT_OFFER) {
-    lines.push(`🎯 MODE: ACTIVE MARKETER & GUIDE. The user is interested! Guide them with details, pricing, test connection, and support contact. Keep sentences punchy (max 7 words per bubble).`);
+    lines.push(`🎯 MODE: ACTIVE MARKETER & GUIDE. The user is interested! Guide them with details, pricing, test connection, and support contact.`);
     if (context.supportIdAvailable) {
       const handle = (productConfig.support.handle || promotionConfig?.contactHandleOrLink || 'nova_vpn10').replace(/^@/, '');
-      lines.push(`• Support Handle: ${handle} (strictly without @)`);
+      lines.push(`• Support Handle: ${handle} (strictly without @ and with underscore)`);
     } else {
       lines.push(`• Support Handle: [LOCKED: conversation duration < 120s - DO NOT provide handle yet]`);
     }

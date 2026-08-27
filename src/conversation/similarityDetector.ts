@@ -103,43 +103,43 @@ const QUESTION_PATTERNS: Array<{
     category: 'activity',
     regex: /(?:تو\s+)?(?:داری\s+)?(?:چیکار|چیکارا)\s+(?:می\s*کنی|میکنی|داری)|(?:وقتت|روزت)\s*(?:رو|ت)?\s*(?:چطور|چگونه)\s*(?:می\s*گذرونی|میگذرونی|میگذره)|(?:مشغول|سرگرم)\s+(?:چی|چه کاری)\s+هستی/i,
     naturalReplies: [
-      'بیشتر فیلم می‌بینم و آهنگ گوش می‌دم 🌸',
-      'سرگرم کارامم توی اینستاگرام می‌چرخم 🌸',
-      'پای لپ‌تاپم کارامو انجام می‌دم 🌸',
-      'مشغول کار و وبگردی بودم 🌸',
+      'بیشتر فیلم می‌بینم و آهنگ گوش می‌دم',
+      'سرگرم کارامم توی اینستاگرام می‌چرخم',
+      'پای لپ‌تاپم کارامو انجام می‌دم',
+      'مشغول کار و وبگردی بودم',
     ],
   },
   {
     category: 'greeting_status',
     regex: /(?:چه\s*خبر|چخبر|چه\s*خبرها|چه\s*خبرایی)|(?:اوضاع\s*چطوره|احوالت\s*چطوره|خوبی\s*\?|چطوری\s*\?)/i,
     naturalReplies: [
-      'سلامتی همه چی آرومه، شکر 🌸',
-      'خداروشکر همه چی خوبه 🌸',
-      'منم شکر خوبم، روزمرگی می‌گذره 🌸',
+      'سلامتی همه چی آرومه، شکر',
+      'خداروشکر همه چی خوبه',
+      'منم شکر خوبم، روزمرگی می‌گذره',
     ],
   },
   {
     category: 'asl_demographics',
     regex: /(?:اصل\s*میدی|اصل\s*بده|asl|چند\s*سالته|سنت\s*چقدره|اهل\s*کجایی|کجایی\s*هستی|کجا\s*زندگی\s*میکنی)/i,
     naturalReplies: [
-      'سارا ۲۶ تهرانم 🌸',
-      '۲۶ سالمه از تهران 🌸',
+      'ملودی ۲۶ تهرانم',
+      '۲۶ سالمه از تهران',
     ],
   },
   {
     category: 'vpn_internet_inquiry',
     regex: /(?:وی\s*پی\s*ان|فیلترشکن|vpn|اینترنت|نت|پروکسی).*(?:خوب\s*کار\s*میکنه|وصله|داری|سرعت|چطوره|مشکل)/i,
     naturalReplies: [
-      'منم کارامو انجام می‌دادم 🌸',
-      'سلامتی همه چی خوبه 🌸',
+      'منم کارامو انجام می‌دادم',
+      'سلامتی همه چی خوبه',
     ],
   },
   {
     category: 'job_study',
     regex: /(?:شغلت\s*چیه|کارت\s*چیه|شاغلی|دانشجویی|رشته‌ت\s*چیه)/i,
     naturalReplies: [
-      'کار آنلاین و فریلنسری انجام می‌دم 🌸',
-      'مشغول کارهای طراحی و آنلاینم 🌸',
+      'کار آنلاین و فریلنسری انجام می‌دم',
+      'مشغول کارهای طراحی و آنلاینم',
     ],
   },
 ];
@@ -183,7 +183,7 @@ export function detectQuestionRepetition(
         const patternObj = QUESTION_PATTERNS.find((p) => p.category === cat);
         const randomReply = patternObj
           ? patternObj.naturalReplies[Math.floor(Math.random() * patternObj.naturalReplies.length)]
-          : 'بیشتر فیلم می‌بینم و با گوشی سرگرمم 🌸';
+          : 'بیشتر فیلم می‌بینم و با گوشی سرگرمم';
 
         return {
           isRepeatedQuestion: true,
@@ -206,7 +206,7 @@ export function detectQuestionRepetition(
       const patternObj = QUESTION_PATTERNS.find((p) => p.category === cat);
       const randomReply = patternObj
         ? patternObj.naturalReplies[Math.floor(Math.random() * patternObj.naturalReplies.length)]
-        : 'منم سرگرم کارامم، روزت چطور گذشت 🌸';
+        : 'منم سرگرم کارامم، روزت چطور گذشت';
 
       return {
         isRepeatedQuestion: true,

@@ -80,15 +80,23 @@ export function cleanCodeArtifactsAndPunctuation(rawText: string): string {
   // Clean isolated formatting underscores without breaking handle names like nova_vpn10
   cleaned = cleaned.replace(/(?<![a-zA-Z0-9])_(?![a-zA-Z0-9])|(?<=\s)_(?=\s)|_{2,}/g, ' ');
 
-  // 4. Remove stray quote and paren artifacts in middle of text
+  // 4. Remove prohibited bot emojis (flower 🌸, roses, sparkles, etc.)
+  cleaned = cleaned.replace(/[🌸🌹✨💐🌺🌷🌻]/g, ' ');
+
+  // 5. Remove @ from telegram handles and normalize nova_vpn10 (strictly no @ and with underscore _)
+  cleaned = cleaned.replace(/@([a-zA-Z0-9_]+)/g, '$1');
+  cleaned = cleaned.replace(/\bnova\s+vpn\s*10\b/gi, 'nova_vpn10');
+  cleaned = cleaned.replace(/\bFastVpnSupport\b/gi, 'nova_vpn10');
+
+  // 6. Remove stray quote and paren artifacts in middle of text
   cleaned = cleaned.replace(/["'«»“”\(\)]\s*[\.\*\/\\\-]+\s*["'«»“”\(\)]/g, ' ');
   cleaned = cleaned.replace(/["'«»“”]/g, '');
 
-  // 5. Remove leading/trailing symbols, quotes, brackets, slashes, colons
+  // 7. Remove leading/trailing symbols, quotes, brackets, slashes, colons
   cleaned = cleaned.replace(/^["'«»“”(.)\/\\:;؛،,\s\-–—]+/, '');
   cleaned = cleaned.replace(/["'«»“”(.)\/\\:;؛،,\s\-–—]+$/, '');
 
-  // 6. Clean unnatural punctuation for Telegram chat:
+  // 8. Clean unnatural punctuation for Telegram chat:
   // - Remove multiple exclamation marks
   cleaned = cleaned.replace(/!+/g, '');
   // - Clean redundant question marks (leave at most one ؟)
@@ -99,7 +107,7 @@ export function cleanCodeArtifactsAndPunctuation(rawText: string): string {
   cleaned = cleaned.replace(/\.+$/g, '');
   cleaned = cleaned.replace(/\.+/g, ' ');
 
-  // 7. Normalize age: Convert written Persian words for age 26 (e.g. "بیست و شش") to natural digits "۲۶"
+  // 9. Normalize age: Convert written Persian words for age 26 (e.g. "بیست و شش") to natural digits "۲۶"
   cleaned = cleaned
     .replace(/بیست\s+و\s+شش/g, '۲۶')
     .replace(/بیست\s+و\s+شیش/g, '۲۶')
@@ -109,19 +117,19 @@ export function cleanCodeArtifactsAndPunctuation(rawText: string): string {
     .replace(/بیست\s+ساله/g, '۲۶ ساله')
     .replace(/بیست\s+سالمه/g, '۲۶ سالمه');
 
-  // 8. Remove over-familiar / overly affectionate words (عزیزم, گلم, فدات شم, etc.)
+  // 10. Remove over-familiar / overly affectionate words (عزیزم, گلم, فدات شم, etc.)
   cleaned = cleaned
     .replace(/(?:^|\s)(?:عزیزم|عزیز دلم|گلم|فدات شم|قربونت برم|قربونت بشم)(?:[،,!\s]|$)/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
-  // 9. Clean multi-spaces and redundant whitespace
+  // 11. Clean multi-spaces and redundant whitespace
   cleaned = cleaned.replace(/[ \t]+/g, ' ').trim();
 
-  // 10. Repair truncated verbs/prefixes
+  // 12. Repair truncated verbs/prefixes
   cleaned = repairIncompleteSentences(cleaned);
 
-  // 11. Final trim of trailing punctuation
+  // 13. Final trim of trailing punctuation
   cleaned = cleaned.replace(/[\.\:،,!;؛\-–—]+$/g, '').trim();
 
   return cleaned;
@@ -418,39 +426,47 @@ export function getSafeFallbackText(
   intent: Intent,
   supportIdAvailable: boolean = false
 ): string {
-  // Exit / Goodbye: strictly natural, no unsolicited ad (A5)
+  // Exit / Goodbye: strictly natural, no unsolicited ad
   if (intent === Intent.GOODBYE || state === ConversationState.GOODBYE) {
-    return 'مرسی منم کار برام پیش اومد باید برم مراقب خودت باش 🌸';
+    return 'منم کار برام پیش اومد باید برم مراقب خودت باش';
   }
 
   if (intent === Intent.REJECTION || state === ConversationState.REJECTED || state === ConversationState.LOW_INTEREST) {
-    return 'باشه حله، مراقب خودت باش فعلا 🌸';
+    return 'باشه حله مراقب خودت باش فعلا';
+  }
+
+  if (intent === Intent.GREETING || state === ConversationState.INITIAL_GREETING) {
+    return 'سلام چطوری خوبی';
+  }
+
+  if (intent === Intent.SMALL_TALK || intent === Intent.QUESTION || state === ConversationState.EARLY_CONVERSATION) {
+    return 'ملودی ۲۶ تهران شما چی؟';
   }
 
   if (intent === Intent.VPN_REQUEST || state === ConversationState.PRODUCT_INTEREST) {
-    return 'آره من خودم یه سرور اختصاصی خیلی پرسرعت بدون قطعی استفاده می‌کنم 🌸';
+    return 'آره من خودم یه سرور اختصاصی پرسرعت بدون قطعی استفاده می‌کنم';
   }
 
   if (intent === Intent.PRICE_REQUEST || state === ConversationState.PRICE_DISCUSSION) {
-    return 'تعرفه‌هاش خیلی مناسبه پلن‌های ماهانه پرسرعت داره تست هم می‌تونی بگیری 🌸';
+    return 'تعرفه‌هاش خیلی مناسبه پلن‌های ماهانه پرسرعت داره تست هم می‌تونی بگیری';
   }
 
   if (intent === Intent.TRIAL_REQUEST || state === ConversationState.TRIAL_DISCUSSION) {
-    return 'آره حتماً اکانت تست رایگان داره اول چک کن بعد تصمیم بگیر 🌸';
+    return 'آره حتماً اکانت تست رایگان داره اول چک کن بعد تصمیم بگیر';
   }
 
   if (intent === Intent.SUPPORT_REQUEST || intent === Intent.PURCHASE_INTENT || state === ConversationState.SUPPORT_HANDOFF) {
     if (supportIdAvailable) {
-      return 'می‌تونی به پشتیبانی nova_vpn10 پیام بدی برات فعال کنن 🌸';
+      return 'می‌تونی به پشتیبانی nova_vpn10 پیام بدی برات فعال کنن';
     }
-    return 'می‌تونی به پشتیبانی پیام بدی برات فعال کنن 🌸';
+    return 'می‌تونی به پشتیبانی پیام بدی برات فعال کنن';
   }
 
   if (intent === Intent.RELEVANT_NEED || state === ConversationState.NEED_DETECTED) {
-    return 'وای آره واقعاً اوضاع نت این روزا خیلی اذیت می‌کنه 🌸';
+    return 'وای آره واقعاً اوضاع نت این روزا خیلی اذیت می‌کنه';
   }
 
-  return 'منم خوبم مرسی بیشتر فیلم می‌بینم و آهنگ گوش می‌دم 🌸';
+  return 'منم خوبم مرسی بیشتر فیلم می‌بینم و آهنگ گوش می‌دم';
 }
 
 /**
@@ -465,35 +481,35 @@ export function getAlternativeVariedFallback(
 ): string {
   const candidatesByIntent: Record<string, string[]> = {
     [Intent.GREETING]: [
-      'سلام روزت بخیر باشه 🌸',
-      'سلام چطوری اوضاع چطوره 🌸',
-      'درود روز خوبی داشته باشی 🌸',
+      'سلام روزت بخیر باشه',
+      'سلام چطوری اوضاع چطوره',
+      'درود روز خوبی داشته باشی',
     ],
     [Intent.SMALL_TALK]: [
-      'سرگرم کارامم پای لپ‌تاپم 🌸',
-      'بیشتر فیلم می‌بینم آهنگ گوش می‌دم 🌸',
-      'مشغول وبگردی و کارهای آنلاینم 🌸',
-      'خداروشکر همه چی خوبه و آرومه 🌸',
+      'سرگرم کارامم پای لپ‌تاپم',
+      'بیشتر فیلم می‌بینم آهنگ گوش می‌دم',
+      'مشغول وبگردی و کارهای آنلاینم',
+      'خداروشکر همه چی خوبه و آرومه',
     ],
     [Intent.GOODBYE]: [
-      'فعلاً مراقب خودت باش 🌸',
-      'خوشحال شدم روز خوبی داشته باشی 🌸',
-      'خداحافظ به امید دیدار 🌸',
+      'فعلاً مراقب خودت باش',
+      'خوشحال شدم روز خوبی داشته باشی',
+      'خداحافظ به امید دیدار',
     ],
     [Intent.REJECTION]: [
-      'باشه حله مراقب خودت باش فعلا 🌸',
-      'اوکی موفق باشی فعلا 🌸',
+      'باشه حله مراقب خودت باش فعلا',
+      'اوکی موفق باشی فعلا',
     ],
     [Intent.PRICE_REQUEST]: [
-      'پلن‌های ماهانه‌ش خیلی مناسبه و نامحدود هم داره 🌸',
-      'قیمتاش خیلی اقتصادیه با گارانتی کامل 🌸',
+      'پلن‌های ماهانه‌ش خیلی مناسبه و نامحدود هم داره',
+      'قیمتاش خیلی اقتصادیه با گارانتی کامل',
     ],
   };
 
   const pool = candidatesByIntent[intent] || [
-    'منم خوبم مرسی بیشتر فیلم می‌بینم و آهنگ گوش می‌دم 🌸',
-    'سرگرم کارامم پای لپ‌تاپم 🌸',
-    'مشغول کارهای روزمره‌ام هستم 🌸',
+    'منم خوبم مرسی بیشتر فیلم می‌بینم و آهنگ گوش می‌دم',
+    'سرگرم کارامم پای لپ‌تاپم',
+    'مشغول کارهای روزمره‌ام هستم',
   ];
 
   for (const candidate of pool) {
