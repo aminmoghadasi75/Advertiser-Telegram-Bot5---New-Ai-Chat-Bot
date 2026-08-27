@@ -97,9 +97,80 @@ export const BLANK_PRODUCT_CONFIG: ProductConfig = {
   },
 };
 
-export const DEFAULT_PRODUCT_CONFIG: ProductConfig = BLANK_PRODUCT_CONFIG;
+export const DEFAULT_NOVA_VPN_CONFIG: ProductConfig = {
+  productId: 'prod_nova_vpn',
+  productName: 'نوا وی پی ان (Nova VPN)',
+  productDescription: 'سرویس کانفیگ و فیلترشکن اختصاصی پرسرعت و بدون قطعی با سرورهای قدرتمند، پینگ پایین و تست رایگان',
+  tagline: 'پرسرعت، بدون قطعی و پایدار روی تمامی اپراتورها',
+  category: 'vpn',
+  isActive: true,
+  isArchived: false,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  features: [
+    'بدون قطعی روی همراه اول، ایرانسل، رایتل و مخابرات',
+    'پینگ فوق‌العاده پایین برای وبگردی، اینستاگرام، یوتیوب و ترید',
+    'پشتیبانی اختصاصی و ارائه تست رایگان قبل از خرید',
+  ],
+  plans: [
+    {
+      id: 'plan_1m_single',
+      name: 'پلن یک‌ماهه تک‌کاربره',
+      price: '۷۰ هزار تومان',
+      duration: '۱ ماهه',
+      traffic: 'حجم منصفانه/نامحدود',
+      deviceLimit: '۱ کاربر',
+    },
+    {
+      id: 'plan_1m_double',
+      name: 'پلن یک‌ماهه دوکاربره',
+      price: '۱۲۰ هزار تومان',
+      duration: '۱ ماهه',
+      traffic: 'نامحدود',
+      deviceLimit: '۲ کاربر',
+      popular: true,
+    },
+  ],
+  freeTrial: {
+    available: true,
+    durationHours: 24,
+    description: 'اکانت تست رایگان برای بررسی کیفیت و سرعت قبل از خرید',
+  },
+  refundPolicy: {
+    available: true,
+    guaranteeHours: 48,
+    description: 'ضمانت اتصال و بازگشت وجه در صورت عدم رضایت تا ۴۸ ساعت',
+  },
+  support: {
+    handle: 'nova_vpn10',
+    link: 'https://t.me/nova_vpn10',
+    operatingHours: '۲۴ ساعته',
+  },
+  bannerImageUrl: '',
+  faqItems: [
+    {
+      id: 'faq_1',
+      question: 'روی چه خط‌هایی وصل میشه؟',
+      answer: 'روی همه خط‌ها مثل همراه اول، ایرانسل، رایتل و وای‌فای بدون قطعی وصل می‌شه.',
+      keywords: ['اپراتور', 'همراه اول', 'ایرانسل', 'رایتل', 'وای فای'],
+    },
+    {
+      id: 'faq_2',
+      question: 'تست رایگان هم دارید؟',
+      answer: 'آره حتماً، تست رایگان داریم تا اول وصل بشی و سرعتش رو چک کنی.',
+      keywords: ['تست', 'اکانت تست', 'رایگان', 'امتحان'],
+    },
+  ],
+  knowledgeBaseText: 'پشتیبانی فقط از طریق آیدی nova_vpn10 در تلگرام پاسخگو است. در چت تا قبل از ۲ دقیقه هیچ آیدی ارسال نمی‌شود و بعد از ۲ دقیقه آیدی به صورت nova_vpn10 بدون @ ارسال می‌گردد.',
+  stats: {
+    totalChatsPromoted: 0,
+    totalInquiries: 0,
+  },
+};
 
-export const DEFAULT_PRODUCTS_CATALOG: ProductConfig[] = [];
+export const DEFAULT_PRODUCT_CONFIG: ProductConfig = DEFAULT_NOVA_VPN_CONFIG;
+
+export const DEFAULT_PRODUCTS_CATALOG: ProductConfig[] = [DEFAULT_NOVA_VPN_CONFIG];
 
 /**
  * Builds formatted product context string for injection into prompts or decision engines.

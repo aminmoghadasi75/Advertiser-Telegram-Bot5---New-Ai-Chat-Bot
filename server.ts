@@ -4728,12 +4728,13 @@ ${formatProductPromptContext(activeProduct, updatedCtx.supportIdAvailable)}
           );
 
           let cleanText = validation.sanitizedText;
-          if (isUnder2Min && !stepOutput.promotionDecision.isExplicitOverride) {
+          if (isUnder2Min) {
             cleanText = sanitizeMessageForUnderTwoMinutes(cleanText);
           } else {
             cleanText = sanitizeAnonymousChatMessage(cleanText);
-            cleanText = cleanText.replace(/@nova_vpn10/gi, 'nova_vpn10');
-            cleanText = cleanText.replace(/@FastVpnSupport/gi, 'nova_vpn10');
+            cleanText = cleanText.replace(/@?nova_vpn10/gi, 'nova_vpn10');
+            cleanText = cleanText.replace(/nova vpn10/gi, 'nova_vpn10');
+            cleanText = cleanText.replace(/@?FastVpnSupport/gi, 'nova_vpn10');
           }
 
           const promoTagRegex = /\[?(?:SEND_PROMO_CARD|PROMO_TRIGGER|ارسال_تبلیغ|SEND_PROMO|PROMO_CARD)\]?/gi;
@@ -5415,9 +5416,28 @@ function isDisconnectNotice(
 ): boolean {
   if (!text) return false;
   const rawText = text.trim();
+  const normalized = normalizePersianText(rawText);
+
+  // Regex patterns for HyperGap and other Persian anonymous bots
+  if (
+    /🎌\s*چت شما با/i.test(rawText) ||
+    /چت شما با.*توسط.*قطع شد/i.test(rawText) ||
+    /(?:توسط مخاطب|توسط کاربر|توسط هم‌صحبت|توسط هم صحبت).*(?:قطع شد|بسته شد|ترک شد|پایان یافت)/i.test(rawText) ||
+    /(?:مخاطب|هم‌صحبت|هم صحبت|کاربر مقابل).*(?:چت را ترک کرد|گفتگو را بست|چت را بست|مکالمه را بست|از چت خارج شد)/i.test(rawText)
+  ) {
+    return true;
+  }
+
   const defaultDisconnectPhrases = [
+    '🎌 چت شما با',
+    'چت شما با',
     'توسط مخاطب شما قطع شد',
     'توسط مخاطب قطع شد',
+    'چت توسط مخاطب قطع شد',
+    'مکالمه توسط مخاطب قطع شد',
+    'مکالمه توسط هم‌صحبت قطع شد',
+    'توسط مخاطب شما پایان یافت',
+    'توسط مخاطب پایان یافت',
     'مخاطب گفتگو را بست',
     'مخاطب مکالمه را بست',
     'مخاطب چت را ترک کرد',
@@ -5447,14 +5467,11 @@ function isDisconnectNotice(
     'مکالمه خاتمه یافت',
     'اتصال به هم‌صحبت قطع شد',
     'اتصال چت قطع شد',
-    'چت توسط مخاطب قطع شد',
-    'مکالمه توسط مخاطب قطع شد',
-    'مکالمه توسط هم‌صحبت قطع شد',
   ];
   const allPhrases = Array.from(
     new Set([...(customKeywords || []).filter((k) => k && k.trim() && k.trim().length > 3), ...defaultDisconnectPhrases])
   );
-  return allPhrases.some((p) => isKeywordMatchInText(rawText, p.trim()));
+  return allPhrases.some((p) => rawText.includes(p) || normalized.includes(normalizePersianText(p)) || isKeywordMatchInText(rawText, p.trim()));
 }
 
 // Helper: Check if message is a search queue status from bot (waiting, queue, etc.)
@@ -5487,8 +5504,21 @@ function isSystemOrBotMessage(
   const clean = text.trim();
   const normalized = normalizePersianText(clean);
 
-  // 1. Explicit system warning and announcement messages from bot
+  // 1. Explicit system warning, errors, and announcement messages from bot
   const exactSystemSnippets = [
+    'متوجه نشدم',
+    'متوجه نشدم !',
+    'متوجه نشدم 🤔',
+    'دستور نامعتبر',
+    'دستور ناشناخته',
+    'امکان ارسال حروف انگلیسی اوایل چت وجود ندارد',
+    'امکان ارسال حروف انگلیسی',
+    'برای ارسال کاراکتر انگلیسی از پیام دایرکت استفاده کنید',
+    'خب ، حالا چه کاری برات انجام بدم؟',
+    'خب ، حالا چه کاری برات انجام بدم',
+    'از منوی پایین👇 انتخاب کن',
+    'از منوی پایین انتخاب کن',
+    'به بخش چت با ناشناس خوش اومدی',
     'به هیچ کاربری در ربات اعتماد نکنید',
     'اطلاعات شخصیتان را در اختیارشان قرار ندهید',
     'اطلاعات شخصیتان',
@@ -5544,6 +5574,7 @@ function isSystemOrBotMessage(
     clean.startsWith('🔔 پیام سیستم') ||
     clean.startsWith('🤖 پیام سیستم') ||
     clean.startsWith('⚠️ توجه:') ||
+    clean.startsWith('⚠️ خطا:') ||
     clean.startsWith('🚫 اخطار:') ||
     clean.startsWith('⛔ اخطار:') ||
     clean.startsWith('📢 اطلاعیه:')
@@ -5590,11 +5621,19 @@ function isSystemOrBotMessage(
 function isMainMenuNotice(text: string, customKeywords?: string[]): boolean {
   if (!text) return false;
   const rawText = text.trim();
+  const normalized = normalizePersianText(rawText);
   const menuPhrases = [
     'متوجه نشدم',
+    'متوجه نشدم !',
     'متوجه نشدم 🤔',
     'دستور نامعتبر',
     'دستور ناشناخته',
+    'امکان ارسال حروف انگلیسی اوایل چت وجود ندارد',
+    'امکان ارسال حروف انگلیسی',
+    'خب ، حالا چه کاری برات انجام بدم؟',
+    'خب ، حالا چه کاری برات انجام بدم',
+    'از منوی پایین👇 انتخاب کن',
+    'از منوی پایین انتخاب کن',
     'برای شروع از دکمه',
     'از منوی زیر استفاده',
     'لطفا از دکمه های زیر',
@@ -5608,7 +5647,7 @@ function isMainMenuNotice(text: string, customKeywords?: string[]): boolean {
     'منوی ربات',
   ];
   const allPhrases = Array.from(new Set([...(customKeywords || []).filter((k) => k && k.trim()), ...menuPhrases]));
-  return allPhrases.some((p) => isKeywordMatchInText(rawText, p.trim()));
+  return allPhrases.some((p) => rawText.includes(p) || normalized.includes(normalizePersianText(p)) || isKeywordMatchInText(rawText, p.trim()));
 }
 
 // Helper: Detect if stranger is saying goodbye or expressing clear exit intent
@@ -7004,25 +7043,20 @@ async function runAnonymousChatWorker() {
             // Case 2: Partner Disconnected Notification
             const isDisconnected = isDisconnectNotice(msgText, selectedBot.partnerDisconnectedKeywords);
             if (isDisconnected) {
-              if (isConnectedToPartner) {
-                addLog('info', `[چت ناشناس] مخاطب گفتگو را ترک کرد. خروج و رفتن به فرد بعدی...`);
-                await executeExitAndNextPartner(
-                  client,
-                  botEntity,
-                  selectedBot,
-                  activeAnonChatSession,
-                  'stranger_disconnected',
-                  'مخاطب ناشناس مکالمه را ترک کرد. آماده اتصال به هم‌صحبت بعدی...'
-                );
-                exitTriggered = true;
-                break;
-              } else {
-                isConnectedToPartner = false;
-                continue;
-              }
+              addLog('info', `[چت ناشناس] 🔌 مخاطب گفتگو را ترک کرد. خروج فوری و رفتن به فرد بعدی...`);
+              await executeExitAndNextPartner(
+                client,
+                botEntity,
+                selectedBot,
+                activeAnonChatSession,
+                'stranger_disconnected',
+                'مخاطب ناشناس مکالمه را ترک کرد. آماده اتصال به هم‌صحبت بعدی...'
+              );
+              exitTriggered = true;
+              break;
             }
 
-            // Case 3: Already In Chat Error Notice (Only when NOT connected to partner, e.g. blocked by old ghost session)
+            // Case 3: Already In Chat Error Notice
             if (!isConnectedToPartner && isAlreadyInChatNotice(msgText, selectedBot.alreadyInChatKeywords)) {
               addLog('warning', `[بازیابی خودکار] پیام خطای چت فعال («${msgText.slice(0, 45)}») قبل از اتصال دریافت شد. اجرای خروج برای آزادسازی ربات...`);
               await executeExitAndNextPartner(
@@ -7037,47 +7071,19 @@ async function runAnonymousChatWorker() {
               break;
             }
 
-            // Case 4: Outside of Chat / Main Menu Notice (Only when NOT connected to partner and NOT currently navigating buttons)
-            if (
-              !isConnectedToPartner &&
-              activeAnonChatSession.status !== 'navigating_buttons' &&
-              isMainMenuNotice(msgText, selectedBot.notInChatKeywords)
-            ) {
-              addLog('warning', `[بازیابی خودکار] پیام خارج از چت («${msgText.slice(0, 45)}») شناسایی شد (هنوز در چت با ناشناس نیستیم). شروع مجدد فرآیند ورود...`);
-              isConnectedToPartner = false;
-              activeAnonChatSession.status = 'navigating_buttons';
-              activeAnonChatSession.statusMessage = 'شناسایی وضعیت خارج از چت. در حال اجرای مجدد کلیک‌های ورود به چت...';
-              activeAnonChatSession.transcript.push({
-                id: 'msg_' + Date.now() + '_reenter',
-                sender: 'bot_system',
-                text: `🔄 پیام خارج از چت («${msgText.slice(0, 50)}») دریافت شد. اجرای مجدد مراحل ورود به چت...`,
-                timestamp: new Date().toISOString(),
-              });
-              saveData();
-
-              if (selectedBot.startCommand) {
-                try {
-                  await client.sendMessage(botEntity, { message: selectedBot.startCommand });
-                  await new Promise((r) => setTimeout(r, selectedBot.delayBetweenButtonsMs || 1200));
-                } catch {}
-              }
-
-              let reLastClickedHex: string | undefined = undefined;
-              for (const step of selectedBot.entrySteps || []) {
-                if (anonEngineAbort) break;
-                const resHex = await executeBotButtonStep(
-                  client,
-                  botEntity,
-                  step,
-                  activeAnonChatSession,
-                  selectedBot,
-                  reLastClickedHex
-                );
-                if (resHex) reLastClickedHex = resHex;
-                await new Promise((r) => setTimeout(r, (step.delaySeconds || 1) * 1000));
-              }
-
-              continue;
+            // Case 4: Outside of Chat / Main Menu Notice (Received while idle or active)
+            if (isMainMenuNotice(msgText, selectedBot.notInChatKeywords)) {
+              addLog('warning', `[بازیابی خودکار] پیام منو/خارج از چت («${msgText.slice(0, 45)}») شناسایی شد. خروج و اتصال به هم‌صحبت جدید...`);
+              await executeExitAndNextPartner(
+                client,
+                botEntity,
+                selectedBot,
+                activeAnonChatSession,
+                'stranger_disconnected',
+                'پیام خارج از چت یا منوی اصلی ربات دریافت شد. خروج و اتصال مجدد...'
+              );
+              exitTriggered = true;
+              break;
             }
 
             // Case 5: System Bot Message (Warnings, Coins, Profile View, System Alerts)
@@ -7154,7 +7160,7 @@ async function runAnonymousChatWorker() {
                 // Check if partner disconnected during aggregation
                 const isSubDisconnected = isDisconnectNotice(subText, selectedBot.partnerDisconnectedKeywords);
                 if (isSubDisconnected) {
-                  addLog('info', `[چت ناشناس] مخاطب گفتگو را حین تجمیع پیام‌ها ترک کرد.`);
+                  addLog('info', `[چت ناشناس] 🔌 مخاطب گفتگو را حین تجمیع پیام‌ها ترک کرد. خروج فوری...`);
                   await executeExitAndNextPartner(
                     client,
                     botEntity,
@@ -7162,6 +7168,21 @@ async function runAnonymousChatWorker() {
                     activeAnonChatSession,
                     'stranger_disconnected',
                     'مخاطب ناشناس مکالمه را ترک کرد.'
+                  );
+                  exitTriggered = true;
+                  break;
+                }
+
+                // Check if main menu / outside chat notice during aggregation
+                if (isMainMenuNotice(subText, selectedBot.notInChatKeywords)) {
+                  addLog('warning', `[بازیابی خودکار] پیام منو/خارج از چت («${subText.slice(0, 45)}») حین تجمیع دریافت شد. خروج و اتصال مجدد...`);
+                  await executeExitAndNextPartner(
+                    client,
+                    botEntity,
+                    selectedBot,
+                    activeAnonChatSession,
+                    'stranger_disconnected',
+                    'پیام خارج از چت دریافت شد.'
                   );
                   exitTriggered = true;
                   break;

@@ -76,7 +76,9 @@ export function cleanCodeArtifactsAndPunctuation(rawText: string): string {
   // 3. Remove comments and syntax artifacts (e.g. /* ... */, // ..., / "). * ", etc.)
   cleaned = cleaned.replace(/\/\*[\s\S]*?\*\//g, '');
   cleaned = cleaned.replace(/(?:\/{2,}|\/\*+|\*+\/|[\\\/]\s*["')\]]+\s*(?:\.\s*\*?\s*")?).*/g, '');
-  cleaned = cleaned.replace(/[\/\\*#_~`^<>{}[\]|•]+/g, ' ');
+  cleaned = cleaned.replace(/[\/\\*#~`^<>{}[\]|•]+/g, ' ');
+  // Clean isolated formatting underscores without breaking handle names like nova_vpn10
+  cleaned = cleaned.replace(/(?<![a-zA-Z0-9])_(?![a-zA-Z0-9])|(?<=\s)_(?=\s)|_{2,}/g, ' ');
 
   // 4. Remove stray quote and paren artifacts in middle of text
   cleaned = cleaned.replace(/["'«»“”\(\)]\s*[\.\*\/\\\-]+\s*["'«»“”\(\)]/g, ' ');
