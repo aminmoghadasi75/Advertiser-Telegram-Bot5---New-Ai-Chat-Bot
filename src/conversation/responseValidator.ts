@@ -136,89 +136,37 @@ export function cleanCodeArtifactsAndPunctuation(rawText: string): string {
 }
 
 /**
- * Splits text into natural, ultra-short Telegram chat bubbles.
- * Rule: Preserves complete thoughts and Persian compound verbs (e.g. موفق باشی, خسته نباشی).
- * Does not split short cohesive sentences (<= 9 words).
- * Merges orphan dangling words back to adjacent bubbles.
- * All unnecessary punctuation (trailing periods, colons, quotes) is stripped.
+ * Splits text into natural Telegram chat bubbles.
+ * Rule: Keeps complete sentences and cohesive thoughts intact.
+ * Splits ONLY on natural message boundaries: newlines (\n) or distinct question/exclamation marks.
+ * Never chops single sentences into awkward pieces.
  */
-export function splitIntoNaturalBubbles(text: string, maxChunks: number = 6): string[] {
+export function splitIntoNaturalBubbles(text: string, maxChunks: number = 4): string[] {
   if (!text) return [];
   const clean = cleanCodeArtifactsAndPunctuation(text).trim();
   if (!clean) return [];
 
-  // 1. Initial split by explicit line breaks or question mark delimiters
+  // 1. Split only on explicit line breaks or distinct question/exclamation delimiters
   const initialParts = clean
     .split(/\n+|(?<=[!؟?])\s+/)
     .map((s) => s.trim())
     .filter(Boolean);
 
-  const rawBubbles: string[] = [];
-
-  // Common Persian compound verb suffixes that should never start an orphaned bubble
-  const compoundAuxiliaries = /^(باشی|باشید|باشیم|باشه|باش|کنی|کنید|کنیم|کنه|کن|بدی|بدید|بدیم|بده|بگی|بگید|بگیم|بگه|بری|برید|بریم|بره|برم|بشی|بشید|بشیم|بشه|بشم|شدی|شدید|شدیم|شده|شدم|کردی|کردید|کردیم|کرده|کردم|هستی|هستید|هستیم|هستند|هست|بودم|بودی|بود|آمد|اومد|میرم|میری|میره|می‌رم|می‌ری|می‌ره|می‌کنم|می‌کنی|می‌کنه|عزیزم|گلم|جان|فدات|قربانت|داداش)$/i;
-
-  for (const part of initialParts) {
-    const words = part.split(/\s+/).filter(Boolean);
-    // If cohesive sentence is short (up to 9 words), keep it as a single natural bubble
-    if (words.length <= 9) {
-      rawBubbles.push(part);
-      continue;
-    }
-
-    // Split long sentence into sub-chunks at natural linguistic clauses
-    let currentWords: string[] = [];
-    for (let i = 0; i < words.length; i++) {
-      const w = words[i];
-      currentWords.push(w);
-
-      const remaining = words.length - (i + 1);
-      const nextWord = words[i + 1] || '';
-      const isNextAuxiliary = compoundAuxiliaries.test(nextWord);
-      const isNaturalBreakWord = /^(و|که|چون|ولی|اما|بعد|راستی|آخه|تا|اگه|اگر|چرا|واسه|شما)$/i.test(nextWord);
-
-      // Only break if we have enough words (>= 5), the next word is a conjunction (and not an auxiliary verb),
-      // and there are at least 3 words remaining to prevent tiny fragments
-      const shouldBreakOnConjunction = currentWords.length >= 5 && isNaturalBreakWord && !isNextAuxiliary && remaining >= 3;
-      const shouldBreakOnMaxWords = currentWords.length >= 8 && !isNextAuxiliary && remaining >= 3;
-
-      if ((shouldBreakOnMaxWords || shouldBreakOnConjunction) && remaining > 0) {
-        rawBubbles.push(currentWords.join(' '));
-        currentWords = [];
-      }
-    }
-    if (currentWords.length > 0) {
-      if (rawBubbles.length > 0 && (currentWords.length <= 2 || compoundAuxiliaries.test(currentWords[0]))) {
-        // Merge short dangling tail into previous bubble
-        rawBubbles[rawBubbles.length - 1] += ' ' + currentWords.join(' ');
-      } else {
-        rawBubbles.push(currentWords.join(' '));
-      }
-    }
+  if (initialParts.length === 0) {
+    return [clean];
   }
 
-  // 2. Clean, repair, and consolidate bubbles
   const processedBubbles: string[] = [];
-  for (let b of rawBubbles) {
-    let cleanedB = repairIncompleteSentences(b);
+  for (let part of initialParts) {
+    let cleanedB = repairIncompleteSentences(part);
     cleanedB = cleanedB.replace(/[\.\:،,!;؛\-–—]+$/g, '').trim();
-    if (!cleanedB) continue;
-
-    const bWords = cleanedB.split(/\s+/).filter(Boolean);
-    // If a bubble is too small (<= 2 words or starts with auxiliary), merge with previous
-    if (processedBubbles.length > 0 && (bWords.length <= 2 || compoundAuxiliaries.test(bWords[0]))) {
-      processedBubbles[processedBubbles.length - 1] += ' ' + cleanedB;
-    } else {
+    if (cleanedB.length >= 1) {
       processedBubbles.push(cleanedB);
     }
   }
 
-  const finalBubbles = processedBubbles
-    .map((b) => repairIncompleteSentences(b).replace(/[\.\:،,!;؛\-–—]+$/g, '').trim())
-    .filter((b) => b.length >= 2);
-
-  const effectiveMax = Math.max(1, Math.min(maxChunks, 8));
-  return finalBubbles.length > 0 ? finalBubbles.slice(0, effectiveMax) : [clean];
+  const effectiveMax = Math.max(1, Math.min(maxChunks, 4));
+  return processedBubbles.length > 0 ? processedBubbles.slice(0, effectiveMax) : [clean];
 }
 
 /**

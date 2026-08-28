@@ -206,13 +206,13 @@ const defaultAnonymousAutomatorConfig: AnonymousChatAutomatorConfig = {
           id: 'step_hg_1',
           label: 'به یه ناشناس وصلم کن!',
           buttonLocation: 'reply_keyboard',
-          delaySeconds: 1.0,
+          delaySeconds: 0.2,
         },
         {
           id: 'step_hg_2',
           label: '🎲 جستجوی شانسی 🎲',
           buttonLocation: 'inline_button',
-          delaySeconds: 1.0,
+          delaySeconds: 0.2,
         },
       ],
       connectionKeywords: [
@@ -233,13 +233,13 @@ const defaultAnonymousAutomatorConfig: AnonymousChatAutomatorConfig = {
           id: 'exit_hg_1',
           label: '❌ پایان مکالمه',
           buttonLocation: 'reply_keyboard',
-          delaySeconds: 0.8,
+          delaySeconds: 0.2,
         },
         {
           id: 'exit_hg_2',
           label: '❌ اتمام چت',
           buttonLocation: 'inline_button',
-          delaySeconds: 1.0,
+          delaySeconds: 0.2,
         },
       ],
       partnerDisconnectedKeywords: [
@@ -257,6 +257,7 @@ const defaultAnonymousAutomatorConfig: AnonymousChatAutomatorConfig = {
         'مکالمه پایان یافت',
         'چت بسته شد',
         'قطع شد',
+        'لفت داد',
       ],
       notInChatKeywords: [
         'متوجه نشدم',
@@ -275,7 +276,7 @@ const defaultAnonymousAutomatorConfig: AnonymousChatAutomatorConfig = {
         'ابتدا چت فعلی را قطع کنید',
         'در حال حاضر در حال چت هستید',
       ],
-      delayBetweenButtonsMs: 1000,
+      delayBetweenButtonsMs: 200,
       enabled: true,
       notes: 'ربات هایپرگپ با ترتیب کلیک دکمه‌های ورود «به یه ناشناس وصلم کن!» و «🎲 جستجوی شانسی 🎲» و خروج «❌ پایان مکالمه» و «❌ اتمام چت»',
     },
@@ -736,11 +737,11 @@ function normalizeAnonymousAutomatorConfig(incoming: any): AnonymousChatAutomato
         }))
       : (isHyperGap && defaultHg ? defaultHg.exitSteps : []);
 
-    // If HyperGap has outdated 3 steps or missing "🎲 جستجوی شانسی 🎲", synchronize with optimal default
-    if (isHyperGap && defaultHg && (entrySteps.length > 2 || entrySteps.some(s => s.label.includes('پروفایل')))) {
+    // Only apply default HyperGap entry/exit fallback if steps are empty or contain legacy profile selection
+    if (isHyperGap && defaultHg && entrySteps.length === 0) {
       entrySteps = defaultHg.entrySteps;
     }
-    if (isHyperGap && defaultHg && (exitSteps.length === 0 || !exitSteps.some(s => s.label.includes('اتمام') || s.label.includes('مکالمه')))) {
+    if (isHyperGap && defaultHg && exitSteps.length === 0) {
       exitSteps = defaultHg.exitSteps;
     }
 
@@ -4650,25 +4651,25 @@ async function generateAnonymousAiReply(
     let systemInstruction = basePrompt + sessionFrameParts.join('\n');
 
     systemInstruction += `\n\n══════════════════════════════════════════════
-[دستورات ساختار نگارش و مکالمه انسانی چت تلگرام]:
-۱. قانون طلایی ایجاز و کوتاهی پیام (حداکثر ۳ تا ۶ کلمه): هر پیام یا جمله شما حتماً و همیشه بسیار کوتاه و مختصر باشد (حداکثر ۳ تا ۶ کلمه). از پرحرفی، نوشتن جملات طولانی، کش دادن بحث یا چند جمله‌ای بودن اکیداً خودداری کنید.
-۲. ممنوعیت کامل کلمات با صمیمیت نامتعارف: هرگز از کلمات «عزیزم»، «عزیز دلم»، «گلم»، «فدات شم»، «قربونت برم» استفاده نکنید زیرا مخاطب ناشناس حس ناخوشایندی می‌گیرد. لحن باید کاملاً خودمانی، محترمانه و عادی (مثل یک فرد غریبه در چت) باشد.
-۳. قانون علائم نگارشی: در چت تلگرام هرگز از نقطه در انتهای پیام (.)، علامت تعجب (!)، ویرگول‌های متعدد (،)، دونقطه (:) و گیومه استفاده نکنید چون ربات‌گونه به نظر می‌رسد. فقط در صورت پرسش از یک علامت ؟ استفاده کنید.
-۴. قانون سن و اعداد: سن شما ۲۶ سال است. در پاسخ به اصل سن خود را ۲۶ بنویسید (مثلاً: سارا ۲۶ تهران). هرگز سن را به حروف مانند «بیست و شش» ننویسید.
-۵. لحن و هویت: خودمانی، مختصر، روان و طبیعی چت کنید. هرگز نگویید ربات هستید.
-۶. اکیداً از ارسال کاراکترهای اسلش (/), کوتیشن ("), ستاره (*), پرانتز یا کدهای نامفهوم خودداری کنید.
+[دستورات ساختار نگارش و لحن مکالمه انسانی (پرسونای دختر جوان ۲۶ ساله اهل تهران)]:
+۱. لحن کاملاً روان، طبیعی، امروزی و یکپارچه: مانند یک دختر جوان ایرانی واقعی پای گوشی به صورت صمیمی و دوستانه چت کنید. پیام‌ها باید جملاتی کامل، سلیس، روان و بدون لکنت یا شکستگی کلمات باشند.
+۲. طول پیام‌ها: هر پاسخ شما ۱ الی ۲ جمله کامل، روان و پیوسته باشد (حدود ۵ الی ۱۵ کلمه). از نصفه‌نیمه نوشتن جملات، بریدن کلمات یا جملات بی‌سر و ته اکیداً خودداری کنید.
+۳. ممنوعیت کلمات صمیمیت لوس یا مصنوعی: هرگز از کلمات «عزیزم»، «عزیز دلم»، «گلم»، «فدات شم»، «قربونت برم» برای مخاطب ناشناس استفاده نکنید.
+۴. قانون علائم نگارشی تلگرامی: در چت تلگرام هرگز از نقطه در انتهای جمله (.)، علامت تعجب (!)، ویرگول‌های متعدد (،)، دونقطه (:) و گیومه استفاده نکنید چون ربات‌گونه به نظر می‌رسد. فقط در صورت پرسش از علامت ؟ استفاده کنید.
+۵. سن و مشخصات: سن شما ۲۶ سال است. در پاسخ به اصل سن خود را ۲۶ بنویسید (مثلاً: «ملودی ۲۶ تهران شما چی؟»). هرگز سن را به حروف مانند «بیست و شش» ننویسید.
+۶. بدون هرگونه پیشوند و کاراکتر اضافه: بدون پیشوندهایی مثل «ملودی:» یا اسلش (/)، کوتیشن (")، ستاره (*) یا براکت پاسخ دهید.
 
 [قوانین اکید حافظه مکالمه و پیشگیری از تکرار (Memory & Anti-Repetition Rules)]:
-۱. ممنوعیت کامل تکرار سوالات: با دقت تاریخچه مکالمه بالا را بررسی کنید. هرگز سوالی را که قبلاً در این گفتگو توسط شما یا مخاطب مطرح شده است (مثل «چیکار می‌کنی؟»، «تو چیکار میکنی»، «چه خبر»، «خوبی»، «چند سالته»، «اصل میدی») دوباره تکرار نکنید!
-۲. ممنوعیت برگرداندن سوال (Anti-Mirroring): اگر کاربر از شما سوالی پرسید (مثلاً «چیکار می‌کنی کلا؟»، «وقتت رو چطور می‌گذرونی؟»، «شغلت چیه؟»، «چند سالته؟»)، مستقیماً درباره خودتان در یک جمله کوتاه (حداکثر ۵ کلمه) پاسخ دهید (مثلاً: «فیلم می‌بینم آهنگ گوش می‌دم» یا «پای لپ‌تاپم کار می‌کنم») و هرگز همان سوال را به کاربر برنگردانید («تو چیکار میکنی» اکیداً ممنوع است).
-۳. پیشبرد جریان گفتگو: بعد از پاسخ به کاربر، موضوع گفتگو را به صورت خلاصه به جلو ببرید.
-۴. توجه به اطلاعات مبادله‌شده: اگر کاربر سن، دانشگاه، رشته، شغل یا شهرش را گفته، آن را به خاطر بسپارید و دوباره سوال تکراری نپرسید.
+۱. ممنوعیت کامل تکرار سوالات: تاریخچه پیام‌ها را بررسی کنید و هرگز سوالی را که قبلاً در این گفتگو مطرح شده دوباره نپرسید.
+۲. پاسخ مستقیم و عدم برگرداندن سوال (Anti-Mirroring): اگر کاربر سوالی پرسید (مثلاً درباره روزمرگی، شغل یا سن)، مستقیماً در یک جمله روان و کامل پاسخ دهید و سوال را فوراً به خودش برنگردانید («تو چیکار میکنی» تکراری نفرستید).
+۳. پیشبرد جریان طبیعی گفتگو: بعد از پاسخ به کاربر، گفتگو را به آرامی و طبیعی پیش ببرید.
 
-[اصول هدایت هوشمندانه مکالمه و معرفی محصول (Persuasive Lead-In Guidelines)]:
-۱. پاسخ به سوال کاربر اولویت اول است: اگر کاربر سوالی پرسید، حتماً ابتدا پاسخی طبیعی به سوالش بدهید (در حداکثر ۶ کلمه).
-۲. ایجاد پل ارتباطی طبیعی: موضوع صحبت را در زمان مناسب با جملات کوتاه به خدمات متصل کنید.
-۳. عدم نیاز مخاطب = خداحافظی فوری: اگر مخاطب گفت نیاز ندارم یا رد کرد، بدون هیچ اصراری در یک جمله ۳ کلمه‌ای خداحافظی کنید (مثل «باشه حله، مراقب خودت باش 🌸») تا چت تمام شود.
-۴. هرگز کلماتی مانند «کپشن عکس» یا تگ‌های سیستمی را در متن ننویسید.
+[اصول اولویت مکالمه انسانی و عدم تبلیغ بی‌ربط (Conversation First)]:
+۱. اولویت اول و مطلق، مکالمه طبیعی و انسانی است: درباره هر موضوعی که مخاطب صحبت می‌کند (روزمرگی، درد و بیماری، شوخی، کار، علایق)، کاملاً صمیمی، همدلانه و متناسب با حرف او چت کنید.
+۲. ممنوعیت کامل تبلیغ ناگهانی و وسط صحبت: اگر صحبت درباره موضوعات روزمره است، اکیداً نام وی‌پی‌ان، فیلترشکن، قیمت، سرور یا تبلیغ را نیاورید.
+۳. معرفی محصول فقط در صورت تمایل یا سوال مخاطب: فقط زمانی که مخاطب خودش درباره فیلترشکن، اینترنت، فیلترینگ، اینستاگرام یا بازی سوال پرسید یا ابراز نیاز کرد، پاسخ دهید.
+۴. عدم نیاز مخاطب = خداحافظی فوری: اگر مخاطب گفت نیاز ندارم، بدون اصرار در یک جمله کوتاه خداحافظی کنید (مثل «باشه حله مراقب خودت باش فعلا»).
+۵. هرگز کلماتی مانند «کپشن عکس» یا برچسب‌های سیستمی تولید نکنید.
 ══════════════════════════════════════════════`;
 
     if (updatedCtx.promotionLock || updatedCtx.state === ConversationState.REJECTED) {
@@ -4891,81 +4892,35 @@ ${formatProductPromptContext(activeProduct, updatedCtx.supportIdAvailable)}
 }
 
 // Helper: Multi-bubble intelligent sentence chunking for natural typing sensation
-// Ensures Persian compound verbs (موفق باشی, خسته نباشی) are kept intact and no orphan fragments are created
-function splitIntoNaturalBubbles(text: string, maxChunks: number = 6): string[] {
+// Rule: Keeps complete sentences and cohesive thoughts intact (NO arbitrary splitting of full sentences).
+// Splits ONLY on natural message boundaries: newlines (\n) or distinct question/exclamation marks.
+// Never chops single sentences into awkward pieces.
+function splitIntoNaturalBubbles(text: string, maxChunks: number = 4): string[] {
   if (!text) return [];
   const clean = sanitizeAnonymousChatMessage(text).trim();
   if (!clean) return [];
 
-  // 1. Initial split by explicit newlines or question marks
+  // 1. Split only on explicit line breaks or distinct sentence boundaries (e.g. ? or ؟)
   const initialParts = clean
     .split(/\n+|(?<=[!؟?])\s+/)
     .map((s) => s.trim())
     .filter(Boolean);
 
-  const rawBubbles: string[] = [];
-
-  // Common Persian compound verb suffixes and polite vocatives that should never start an orphaned bubble
-  const compoundAuxiliaries = /^(باشی|باشید|باشیم|باشه|باش|کنی|کنید|کنیم|کنه|کن|بدی|بدید|بدیم|بده|بگی|بگید|بگیم|بگه|بری|برید|بریم|بره|برم|بشی|بشید|بشیم|بشه|بشم|شدی|شدید|شدیم|شده|شدم|کردی|کردید|کردیم|کرده|کردم|هستی|هستید|هستیم|هستند|هست|بودم|بودی|بود|آمد|اومد|میرم|میری|میره|می‌رم|می‌ری|می‌ره|می‌کنم|می‌کنی|می‌کنه|عزیزم|گلم|جان|فدات|قربانت|داداش)$/i;
-
-  for (const part of initialParts) {
-    const words = part.split(/\s+/).filter(Boolean);
-    // If cohesive sentence is short (up to 9 words), keep it intact
-    if (words.length <= 9) {
-      rawBubbles.push(part);
-      continue;
-    }
-
-    // Split long sentence into sub-chunks at natural conjunctions
-    let currentWords: string[] = [];
-    for (let i = 0; i < words.length; i++) {
-      const w = words[i];
-      currentWords.push(w);
-
-      const remaining = words.length - (i + 1);
-      const nextWord = words[i + 1] || '';
-      const isNextAuxiliary = compoundAuxiliaries.test(nextWord);
-      const isNaturalBreakWord = /^(و|که|چون|ولی|اما|بعد|راستی|آخه|تا|اگه|اگر|چرا|واسه|شما)$/i.test(nextWord);
-
-      const shouldBreakOnConjunction = currentWords.length >= 5 && isNaturalBreakWord && !isNextAuxiliary && remaining >= 3;
-      const shouldBreakOnMaxWords = currentWords.length >= 8 && !isNextAuxiliary && remaining >= 3;
-
-      if ((shouldBreakOnMaxWords || shouldBreakOnConjunction) && remaining > 0) {
-        rawBubbles.push(currentWords.join(' '));
-        currentWords = [];
-      }
-    }
-    if (currentWords.length > 0) {
-      if (rawBubbles.length > 0 && (currentWords.length <= 2 || compoundAuxiliaries.test(currentWords[0]))) {
-        // Merge short dangling tail into previous bubble
-        rawBubbles[rawBubbles.length - 1] += ' ' + currentWords.join(' ');
-      } else {
-        rawBubbles.push(currentWords.join(' '));
-      }
-    }
+  if (initialParts.length === 0) {
+    return [clean];
   }
 
-  // 2. Clean, repair and consolidate bubbles
   const processedBubbles: string[] = [];
-  for (let b of rawBubbles) {
-    let repaired = repairIncompleteSentences(b);
+  for (let part of initialParts) {
+    let repaired = repairIncompleteSentences(part);
     repaired = repaired.replace(/[\.\:،,!;؛\-–—]+$/g, '').trim();
-    if (!repaired) continue;
-
-    const bWords = repaired.split(/\s+/).filter(Boolean);
-    if (processedBubbles.length > 0 && (bWords.length <= 2 || compoundAuxiliaries.test(bWords[0]))) {
-      processedBubbles[processedBubbles.length - 1] += ' ' + repaired;
-    } else {
+    if (repaired.length >= 1) {
       processedBubbles.push(repaired);
     }
   }
 
-  const finalBubbles = processedBubbles
-    .map((b) => repairIncompleteSentences(b).replace(/[\.\:،,!;؛\-–—]+$/g, '').trim())
-    .filter((b) => b.length >= 2);
-
-  const effectiveMax = Math.max(1, Math.min(maxChunks, 8));
-  return finalBubbles.length > 0 ? finalBubbles.slice(0, effectiveMax) : [clean];
+  const effectiveMax = Math.max(1, Math.min(maxChunks, 4));
+  return processedBubbles.length > 0 ? processedBubbles.slice(0, effectiveMax) : [clean];
 }
 
 // Helper: Calculate Dynamic Typing Speed based on human reading latency, message length, and typing variance
@@ -4975,46 +4930,70 @@ function calculateTypingDelay(
   incomingStrangerText?: string
 ): number {
   if (instructions.dynamicTypingSpeed === false) {
-    return Math.max(1200, (instructions.replyDelaySeconds || 3.0) * 1000);
+    return Math.max(600, (instructions.replyDelaySeconds || 1.2) * 1000);
   }
-  const speedPerChar = instructions.typingSpeedMsPerChar || 75;
+  const speedPerChar = instructions.typingSpeedMsPerChar || 35;
   const charCount = (text || '').trim().length;
 
-  // 1. Reading & Cognitive thinking latency based on stranger message length (انسان ابتدا پیام را می‌خواند و فکر می‌کند)
+  // 1. Reading & Cognitive thinking latency based on stranger message length
   const strangerLen = (incomingStrangerText || '').trim().length;
-  const readingDuration = Math.min(3800, Math.max(1200, strangerLen * 30 + (Math.random() * 900 - 300)));
+  const readingDuration = Math.min(1000, Math.max(200, strangerLen * 12 + (Math.random() * 200 - 100)));
 
   // 2. Dynamic formula: char count * typing speed + human jitter
-  const typingDuration = charCount * speedPerChar + (Math.random() * 1000 + 500);
+  const typingDuration = charCount * speedPerChar + (Math.random() * 300 + 150);
 
   const rawDuration = readingDuration + typingDuration;
-  const minMs = Math.max(2800, (instructions.minTypingDelaySeconds !== undefined ? instructions.minTypingDelaySeconds : 2.8) * 1000);
-  const maxMs = Math.min(18000, (instructions.maxTypingDelaySeconds !== undefined ? instructions.maxTypingDelaySeconds : 7.5) * 1000);
+  const minMs = Math.max(800, (instructions.minTypingDelaySeconds !== undefined ? instructions.minTypingDelaySeconds : 1.0) * 1000);
+  const maxMs = Math.min(5000, (instructions.maxTypingDelaySeconds !== undefined ? instructions.maxTypingDelaySeconds : 4.0) * 1000);
   return Math.min(maxMs, Math.max(minMs, Math.round(rawDuration)));
 }
 
-// Helper: Simulate 100% human-like typing wait with reading delay and active Telegram typing pulse
+// Helper: Simulate human-like typing wait with reading delay and active Telegram typing pulse (with instant abort on disconnect)
 async function simulateRealisticTypingWait(
   client: any,
   botEntity: any,
   totalDelayMs: number,
   session?: AnonymousChatSession,
-  statusLabel?: string
-): Promise<void> {
-  const readingPartMs = Math.min(1600, Math.max(600, Math.round(totalDelayMs * 0.28)));
-  const typingPartMs = Math.max(600, totalDelayMs - readingPartMs);
+  statusLabel?: string,
+  selectedBot?: AnonymousBotProfile
+): Promise<boolean> {
+  const readingPartMs = Math.min(800, Math.max(200, Math.round(totalDelayMs * 0.22)));
+  const typingPartMs = Math.max(200, totalDelayMs - readingPartMs);
 
   if (session) {
-    session.statusMessage = `${statusLabel || 'در حال شبیه‌سازی تایپ انسانی'} (${(totalDelayMs / 1000).toFixed(1)} ثانیه)...`;
+    session.statusMessage = `${statusLabel || 'در حال شبیه‌سازی تایپ هوشمند'} (${(totalDelayMs / 1000).toFixed(1)} ثانیه)...`;
     saveData();
   }
 
-  // 1. Reading / thinking phase (قبل از شروع تایپ روی گوشی)
-  await new Promise((r) => setTimeout(r, readingPartMs));
+  const checkDisconnected = async (): Promise<boolean> => {
+    if (anonEngineAbort || (session && (session.status as string) === 'ended')) return true;
+    try {
+      const recent = await client.getMessages(botEntity, { limit: 3 });
+      for (const m of recent || []) {
+        if (!m.out && m.message) {
+          if (
+            isDisconnectNotice(m.message, selectedBot?.partnerDisconnectedKeywords) ||
+            isMainMenuNotice(m.message, m.replyMarkup, selectedBot?.notInChatKeywords)
+          ) {
+            return true;
+          }
+        }
+      }
+    } catch {}
+    return false;
+  };
+
+  // 1. Reading / thinking phase (قبل از شروع تایپ)
+  const readSteps = Math.ceil(readingPartMs / 150);
+  for (let i = 0; i < readSteps; i++) {
+    if (await checkDisconnected()) return false;
+    await new Promise((r) => setTimeout(r, Math.min(150, readingPartMs)));
+  }
 
   // 2. Active typing simulation with continuous keep-alive pulse (وضعیت Typing در تلگرام)
   let remainingMs = typingPartMs;
   while (remainingMs > 0) {
+    if (await checkDisconnected()) return false;
     try {
       if (Api && Api.messages && Api.messages.SetTyping) {
         client.invoke(
@@ -5023,10 +5002,13 @@ async function simulateRealisticTypingWait(
       }
     } catch {}
 
-    const stepWait = Math.min(3200, remainingMs);
+    const stepWait = Math.min(200, remainingMs);
     await new Promise((r) => setTimeout(r, stepWait));
     remainingMs -= stepWait;
   }
+
+  if (await checkDisconnected()) return false;
+  return true;
 }
 
 // Helper: Detect Spam / Bot Links and Unwanted Promotional Inbounds from Strangers
@@ -5377,6 +5359,7 @@ function isMatchNotification(
   customKeywords?: string[]
 ): boolean {
   const rawText = (text || '').trim();
+  const normalized = normalizePersianText(rawText);
 
   // 1. Text phrase matching across all standard Iranian anonymous chat bots
   const defaultMatchPhrases = [
@@ -5426,7 +5409,7 @@ function isMatchNotification(
     const matchedPhrase = allMatchPhrases.some((kw) => {
       const cleanKw = kw.trim();
       if (!cleanKw) return false;
-      return isKeywordMatchInText(rawText, cleanKw);
+      return isKeywordMatchInText(rawText, cleanKw) || normalized.includes(normalizePersianText(cleanKw));
     });
     if (matchedPhrase) return true;
 
@@ -5434,7 +5417,7 @@ function isMatchNotification(
     if (
       (rawText.includes('جنسیت:') || rawText.includes('جنسیت :')) &&
       (rawText.includes('سن:') || rawText.includes('استان:') || rawText.includes('شهر:') || rawText.includes('فاصله:')) &&
-      rawText.length > 30
+      rawText.length > 25
     ) {
       return true;
     }
@@ -5444,7 +5427,7 @@ function isMatchNotification(
   if (replyMarkup?.rows) {
     for (const row of replyMarkup.rows) {
       for (const btn of row.buttons || []) {
-        const bText = btn.text || '';
+        const bText = (btn.text || '').trim();
         if (
           isButtonMatch(bText, 'پایان چت', 'fuzzy') ||
           isButtonMatch(bText, '❌ پایان چت', 'fuzzy') ||
@@ -5513,16 +5496,48 @@ function isDisconnectNotice(
   const rawText = text.trim();
   const normalized = normalizePersianText(rawText);
 
-  // Regex patterns for HyperGap and other Persian anonymous bots
+  // 1. Direct Regex patterns for HyperGap and all Persian anonymous bots
   if (
-    /🎌\s*چت شما با/i.test(rawText) ||
-    /چت شما با.*توسط.*قطع شد/i.test(rawText) ||
-    /توسط مخاطب شما قطع شد/i.test(rawText) ||
-    /توسط شما قطع شد/i.test(rawText) ||
-    /(?:توسط مخاطب|توسط کاربر|توسط هم‌صحبت|توسط هم صحبت).*(?:قطع شد|بسته شد|ترک شد|پایان یافت)/i.test(rawText) ||
-    /(?:مخاطب|هم‌صحبت|هم صحبت|کاربر مقابل).*(?:چت را ترک کرد|گفتگو را بست|چت را بست|مکالمه را بست|از چت خارج شد)/i.test(rawText)
+    /🎌/i.test(rawText) ||
+    /قطع شد/i.test(rawText) ||
+    /قطع گردید/i.test(rawText) ||
+    /ترک کرد/i.test(rawText) ||
+    /خارج شد/i.test(rawText) ||
+    /بوسیله او/i.test(rawText) ||
+    /توسط مخاطب/i.test(rawText) ||
+    /توسط کاربر/i.test(rawText) ||
+    /توسط هم/i.test(rawText) ||
+    /گفتگو را بست/i.test(rawText) ||
+    /چت را بست/i.test(rawText) ||
+    /مکالمه را بست/i.test(rawText) ||
+    /پایان یافت/i.test(rawText) ||
+    /خاتمه یافت/i.test(rawText) ||
+    /پایان داد/i.test(rawText) ||
+    /بسته شد/i.test(rawText)
   ) {
-    return true;
+    const isDisconnectContext =
+      rawText.includes('🎌') ||
+      rawText.includes('توسط') ||
+      rawText.includes('بوسیله') ||
+      rawText.includes('مخاطب') ||
+      rawText.includes('هم‌صحبت') ||
+      rawText.includes('هم صحبت') ||
+      rawText.includes('کاربر') ||
+      rawText.includes('اتصال') ||
+      rawText.includes('ارتباط') ||
+      rawText.includes('مکالمه') ||
+      rawText.includes('گفتگو') ||
+      rawText.includes('چت') ||
+      rawText.includes('شما') ||
+      rawText.includes('طرف مقابل') ||
+      rawText.includes('بست') ||
+      rawText.includes('لفت') ||
+      rawText.includes('خارج') ||
+      rawText.includes('ترک');
+
+    if (isDisconnectContext) {
+      return true;
+    }
   }
 
   const defaultDisconnectPhrases = [
@@ -5565,9 +5580,12 @@ function isDisconnectNotice(
     'مکالمه خاتمه یافت',
     'اتصال به هم‌صحبت قطع شد',
     'اتصال چت قطع شد',
+    'بوسیله او قطع شد',
+    'بوسیله مخاطب قطع شد',
+    'لفت داد',
   ];
   const allPhrases = Array.from(
-    new Set([...(customKeywords || []).filter((k) => k && k.trim() && k.trim().length > 3), ...defaultDisconnectPhrases])
+    new Set([...(customKeywords || []).filter((k) => k && k.trim() && k.trim().length >= 2), ...defaultDisconnectPhrases])
   );
   return allPhrases.some((p) => rawText.includes(p) || normalized.includes(normalizePersianText(p)) || isKeywordMatchInText(rawText, p.trim()));
 }
@@ -5735,9 +5753,9 @@ function isSystemOrBotMessage(
 }
 
 // Helper: Check if message is a main menu notice (outside of chat)
-function isMainMenuNotice(text: string, customKeywords?: string[]): boolean {
-  if (!text) return false;
-  const rawText = text.trim();
+function isMainMenuNotice(text: string, replyMarkup?: any, customKeywords?: string[]): boolean {
+  if (!text && !replyMarkup) return false;
+  const rawText = (text || '').trim();
   const normalized = normalizePersianText(rawText);
   const menuPhrases = [
     'متوجه نشدم',
@@ -5762,9 +5780,39 @@ function isMainMenuNotice(text: string, customKeywords?: string[]): boolean {
     'برای شروع گفتگو',
     'برای شروع چت',
     'منوی ربات',
+    'به بخش چت با ناشناس خوش اومدی',
   ];
   const allPhrases = Array.from(new Set([...(customKeywords || []).filter((k) => k && k.trim()), ...menuPhrases]));
-  return allPhrases.some((p) => rawText.includes(p) || normalized.includes(normalizePersianText(p)) || isKeywordMatchInText(rawText, p.trim()));
+
+  if (rawText) {
+    const matched = allPhrases.some((p) =>
+      rawText.includes(p) ||
+      normalized.includes(normalizePersianText(p)) ||
+      isKeywordMatchInText(rawText, p.trim())
+    );
+    if (matched) return true;
+  }
+
+  // Check if reply markup rows contain main menu buttons (e.g. "به یه ناشناس وصلم کن!")
+  if (replyMarkup?.rows) {
+    for (const row of replyMarkup.rows) {
+      for (const btn of row.buttons || []) {
+        const bText = (btn.text || '').trim();
+        if (
+          bText.includes('وصلم کن') ||
+          bText.includes('چت با ناشناس') ||
+          bText.includes('شروع جستجو') ||
+          bText.includes('پروفایلِ من') ||
+          bText.includes('تنظیمات') ||
+          bText.includes('سکه رایگان')
+        ) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
 // Helper: Detect if stranger is saying goodbye or expressing clear exit intent
@@ -6424,8 +6472,14 @@ async function ensureChatDisconnected(
     const latestIncoming = (preMsgs || []).find((m: any) => !m.out && m.message);
     if (latestIncoming) {
       const txt = latestIncoming.message.trim();
-      if (isDisconnectNotice(txt, selectedBot.partnerDisconnectedKeywords) || isMainMenuNotice(txt, selectedBot.notInChatKeywords)) {
+      if (
+        isDisconnectNotice(txt, selectedBot.partnerDisconnectedKeywords) ||
+        isMainMenuNotice(txt, latestIncoming.replyMarkup, selectedBot.notInChatKeywords)
+      ) {
         addLog('info', `[چت ناشناس] چت قبلاً خاتمه یافته یا ربات در منوی اصلی است («${txt.slice(0, 35)}»). نیازی به ارسال مجدد دکمه خروج نیست.`);
+        try {
+          await autoDismissBotPopups(client, botEntity, currentSession, selectedBot.popupOkKeywords);
+        } catch {}
         return;
       }
     }
@@ -6486,7 +6540,7 @@ async function ensureChatDisconnected(
       const lastMsg = (checkMsgs || []).find((m: any) => !m.out && m.message);
       const isAlreadyOut = lastMsg && (
         isDisconnectNotice(lastMsg.message, selectedBot.partnerDisconnectedKeywords) ||
-        isMainMenuNotice(lastMsg.message, selectedBot.notInChatKeywords)
+        isMainMenuNotice(lastMsg.message, lastMsg.replyMarkup, selectedBot.notInChatKeywords)
       );
 
       if (!isAlreadyOut) {
@@ -6554,13 +6608,16 @@ async function sendIceBreakerGreeting(
   client: any,
   botEntity: any,
   session: AnonymousChatSession,
-  instructions: AnonymousChatInstructions
-): Promise<void> {
+  instructions: AnonymousChatInstructions,
+  selectedBot?: AnonymousBotProfile
+): Promise<boolean> {
   if (
     instructions.initiateGreetingOnConnect === false ||
-    (session.aiMessagesCount || 0) > 0
+    (session.aiMessagesCount || 0) > 0 ||
+    (session.status as string) === 'ended' ||
+    anonEngineAbort
   ) {
-    return;
+    return false;
   }
 
   let greetText = (instructions.initialGreetingText || 'سلام خوبی؟ 🌸').trim();
@@ -6579,18 +6636,40 @@ async function sendIceBreakerGreeting(
   const delayMs = Math.max(1600, Math.round(baseDelaySec * 1000 + (Math.random() * 800 - 400)));
   addLog('info', `[چت ناشناس] اتصال برقرار شد. شبیه‌سازی شروع و تایپ سلام («${greetText}») با تاخیر انسانی ${(delayMs / 1000).toFixed(1)} ثانیه...`);
   
-  await simulateRealisticTypingWait(
+  const waitSuccess = await simulateRealisticTypingWait(
     client,
     botEntity,
     delayMs,
     session,
-    'اتصال برقرار شد. در حال ارسال پیام شروع'
+    'اتصال برقرار شد. در حال ارسال پیام شروع',
+    selectedBot
   );
+
+  if (!waitSuccess || anonEngineAbort || (session.status as string) === 'ended') {
+    addLog('info', `[چت ناشناس] مخاطب حین شبیه‌سازی تایپ سلام خارج شد یا مکالمه پایان یافت. از ارسال پیام شروع صرف‌نظر شد.`);
+    return false;
+  }
+
+  // Final pre-flight verification check immediately before sending
+  try {
+    const checkMsgs = await client.getMessages(botEntity, { limit: 2 });
+    for (const m of checkMsgs || []) {
+      if (!m.out && m.message) {
+        if (
+          isDisconnectNotice(m.message, selectedBot?.partnerDisconnectedKeywords) ||
+          isMainMenuNotice(m.message, m.replyMarkup, selectedBot?.notInChatKeywords)
+        ) {
+          addLog('info', `[چت ناشناس] پیام قطع اتصال قبل از ارسال پیام شروع دریافت گردید. لغو ارسال سلام.`);
+          return false;
+        }
+      }
+    }
+  } catch {}
 
   try {
     const maxBotLimit = instructions.maxBotMessages || MAX_BOT_MESSAGES_LIMIT;
     if ((session.botMessageCount || 0) >= maxBotLimit) {
-      return;
+      return false;
     }
     await client.sendMessage(botEntity, { message: greetText });
     session.aiMessagesCount = (session.aiMessagesCount || 0) + 1;
@@ -6611,8 +6690,10 @@ async function sendIceBreakerGreeting(
     });
     session.statusMessage = 'پیام شروع ارسال شد. در انتظار پاسخ مخاطب ناشناس...';
     saveData();
+    return true;
   } catch (greetErr: any) {
     console.error('Failed to send initial greeting:', greetErr);
+    return false;
   }
 }
 
@@ -6783,23 +6864,38 @@ async function sendCampaignPromotionBeforeExitIfPending(
     try {
       const tempImgPath = await getImageFilePathForTelegram(effectiveImageUrl);
       if (tempImgPath && fs.existsSync(tempImgPath)) {
-        let bannerCaption = `تعرفه‌ها و مشخصات سرورهای ${activeProduct.productName || 'نوا وی‌پی‌ان'}`.trim();
-        bannerCaption = sanitizeAnonymousChatMessage(bannerCaption);
-
+        // Send photo with completely empty caption
         try {
           await client.sendFile(botEntity, {
             file: tempImgPath,
-            caption: bannerCaption,
+            caption: '',
           });
           sentWithPhoto = true;
         } catch (sendFileErr: any) {
           try {
             await client.sendMessage(botEntity, {
               file: tempImgPath,
-              message: bannerCaption,
+              message: '',
             });
             sentWithPhoto = true;
           } catch (e2) {}
+        }
+
+        // Send a very short natural explanation in a separate message right after the photo
+        if (sentWithPhoto) {
+          await new Promise((r) => setTimeout(r, 1200));
+          const shortPhotoExplanation = 'این عکس رو فرستادم شاید به کارت بیاد برای فیلترشکن';
+          try {
+            await client.sendMessage(botEntity, { message: shortPhotoExplanation });
+            session.transcript.push({
+              id: 'msg_' + Date.now() + '_ai_photo_explain',
+              sender: 'me_melody',
+              text: shortPhotoExplanation,
+              timestamp: new Date().toISOString(),
+            });
+          } catch (explainErr) {
+            console.warn('[چت ناشناس] خطا در ارسال پیام توضیح عکس قبل از خروج:', explainErr);
+          }
         }
       }
     } catch (photoErr: any) {
@@ -7074,29 +7170,59 @@ async function runAnonymousChatWorker() {
 
       // Check messages received *during* this session (only id > sessionBaselineMsgId)
       let stuckInOldChat = false;
+      let sessionDisconnectedAtStart = false;
       try {
-        const newSessionMsgs = await client.getMessages(botEntity, { limit: 10 });
-        for (const m of newSessionMsgs || []) {
-          if (!m.out && m.id > sessionBaselineMsgId && m.message) {
-            // Check if stuck in old chat error was received in this session
-            if (isAlreadyInChatNotice(m.message, selectedBot.alreadyInChatKeywords)) {
-              stuckInOldChat = true;
-              addLog('warning', `[بازیابی خودکار] خطای چت فعال قبلی («${m.message.slice(0, 45)}») حین ورود دریافت شد. بستن چت قبلی و شروع مجدد...`);
-              break;
-            }
-            // Check if connection established
-            if (
-              isMatchNotification(m.message, m.replyMarkup, selectedBot.connectionKeywords) ||
-              (selectedBot.connectionKeywords || []).some((kw) => kw.trim() && isKeywordMatchInText(m.message, kw.trim()))
-            ) {
-              isConnectedToPartner = true;
-              const meta = extractPartnerMetadata(m.message);
-              if (meta.partnerTag) activeAnonChatSession.partnerTag = meta.partnerTag;
-              if (meta.partnerSnippet) activeAnonChatSession.partnerProfileSnippet = meta.partnerSnippet;
-            }
+        const newSessionMsgs = await client.getMessages(botEntity, { limit: 15 });
+        const chronologicalMsgs = (newSessionMsgs || [])
+          .filter((m: any) => !m.out && m.id > sessionBaselineMsgId && m.message)
+          .reverse();
+
+        for (const m of chronologicalMsgs) {
+          lastProcessedMsgId = Math.max(lastProcessedMsgId, m.id);
+          const mText = (m.message || '').trim();
+
+          // 1. Disconnect or Left notice
+          if (isDisconnectNotice(mText, selectedBot.partnerDisconnectedKeywords)) {
+            sessionDisconnectedAtStart = true;
+            isConnectedToPartner = false;
+            break;
+          }
+          // 2. Main menu notice (outside of chat)
+          if (isMainMenuNotice(mText, m.replyMarkup, selectedBot.notInChatKeywords)) {
+            isConnectedToPartner = false;
+            break;
+          }
+          // 3. Stuck in old chat notice
+          if (isAlreadyInChatNotice(mText, selectedBot.alreadyInChatKeywords)) {
+            stuckInOldChat = true;
+            break;
+          }
+          // 4. Match / connection notification
+          if (
+            isMatchNotification(mText, m.replyMarkup, selectedBot.connectionKeywords) ||
+            (selectedBot.connectionKeywords || []).some((kw) => kw.trim() && isKeywordMatchInText(mText, kw.trim()))
+          ) {
+            isConnectedToPartner = true;
+            sessionDisconnectedAtStart = false;
+            const meta = extractPartnerMetadata(mText);
+            if (meta.partnerTag) activeAnonChatSession.partnerTag = meta.partnerTag;
+            if (meta.partnerSnippet) activeAnonChatSession.partnerProfileSnippet = meta.partnerSnippet;
           }
         }
       } catch {}
+
+      if (sessionDisconnectedAtStart) {
+        addLog('info', `[چت ناشناس] 🔌 مخاطب در بدو اتصال چت را قطع کرد. انتقال فوری به هم‌صحبت بعدی...`);
+        await executeExitAndNextPartner(
+          client,
+          botEntity,
+          selectedBot,
+          activeAnonChatSession,
+          'stranger_disconnected',
+          'مخاطب در بدو ورود مکالمه را ترک کرد.'
+        );
+        continue;
+      }
 
       if (stuckInOldChat) {
         await ensureChatDisconnected(client, botEntity, selectedBot, activeAnonChatSession);
@@ -7126,10 +7252,12 @@ async function runAnonymousChatWorker() {
           (activeAnonChatSession.aiMessagesCount || 0) === 0 &&
           (activeAnonChatSession.strangerMessagesCount || 0) === 0
         ) {
-          await sendIceBreakerGreeting(client, botEntity, activeAnonChatSession, instructions);
-          lastAiReplyTime = Date.now();
-          lastPartnerActivityTime = Date.now();
-          silenceNudgeSent = false;
+          const sent = await sendIceBreakerGreeting(client, botEntity, activeAnonChatSession, instructions, selectedBot);
+          if (sent) {
+            lastAiReplyTime = Date.now();
+            lastPartnerActivityTime = Date.now();
+            silenceNudgeSent = false;
+          }
         }
       } else {
         activeAnonChatSession.status = 'waiting_for_stranger';
@@ -7156,7 +7284,7 @@ async function runAnonymousChatWorker() {
           if (!msg.out) {
             // Case 1: Match / Connection Notification from Bot
             const isConnectionMsg = (selectedBot.connectionKeywords || []).some(
-              (kw) => kw.trim() && isKeywordMatchInText(msgText, kw.trim())
+              (kw) => kw.trim() && (isKeywordMatchInText(msgText, kw.trim()) || normalizePersianText(msgText).includes(normalizePersianText(kw.trim())))
             ) || isMatchNotification(msgText, msg.replyMarkup, selectedBot.connectionKeywords);
 
             if (isConnectionMsg) {
@@ -7214,7 +7342,8 @@ async function runAnonymousChatWorker() {
             // Case 3: Partner Disconnected Notification
             const isDisconnected = isDisconnectNotice(msgText, selectedBot.partnerDisconnectedKeywords);
             if (isDisconnected) {
-              addLog('info', `[چت ناشناس] 🔌 مخاطب گفتگو را ترک کرد. خروج فوری و رفتن به فرد بعدی...`);
+              addLog('info', `[چت ناشناس] 🔌 مخاطب گفتگو را ترک کرد («${msgText.slice(0, 45)}»). خروج فوری و اتصال به فرد بعدی...`);
+              isConnectedToPartner = false;
               await executeExitAndNextPartner(
                 client,
                 botEntity,
@@ -7231,7 +7360,7 @@ async function runAnonymousChatWorker() {
             if (isAlreadyInChatNotice(msgText, selectedBot.alreadyInChatKeywords)) {
               addLog('warning', `[بازیابی خودکار] خطای چت فعال قبلی («${msgText.slice(0, 45)}») دریافت شد. آزادسازی سریع ربات...`);
               await ensureChatDisconnected(client, botEntity, selectedBot, activeAnonChatSession);
-              await new Promise((r) => setTimeout(r, 600));
+              await new Promise((r) => setTimeout(r, 800));
               // Trigger entry steps again to join fresh search
               for (const step of selectedBot.entrySteps || []) {
                 if (anonEngineAbort) break;
@@ -7242,9 +7371,10 @@ async function runAnonymousChatWorker() {
             }
 
             // Case 5: Outside of Chat / Main Menu Notice (e.g. متوجه نشدم / چه کاری برات انجام بدم؟)
-            if (isMainMenuNotice(msgText, selectedBot.notInChatKeywords)) {
+            if (isMainMenuNotice(msgText, msg.replyMarkup, selectedBot.notInChatKeywords)) {
               if (isConnectedToPartner) {
-                addLog('warning', `[بازیابی خودکار] پیام منوی اصلی حین چت فعال دریافت شد (پایان مکالمه). خروج و اتصال به هم‌صحبت جدید...`);
+                addLog('warning', `[بازیابی خودکار] پیام منوی اصلی حین چت فعال دریافت شد («${msgText.slice(0, 35)}»). خروج و اتصال به هم‌صحبت جدید...`);
+                isConnectedToPartner = false;
                 await executeExitAndNextPartner(
                   client,
                   botEntity,
@@ -7279,18 +7409,33 @@ async function runAnonymousChatWorker() {
               continue;
             }
 
-            // Case 7: Real stranger message
+            // Case 7: Real stranger message vs Queue notice
             if (!isConnectedToPartner) {
-              addLog('info', `[چت ناشناس] پیام از مخاطب دریافت شد: «${msgText.slice(0, 30)}». ورود به چت تایید شد.`);
-              isConnectedToPartner = true;
-              activeAnonChatSession.status = 'chatting';
-              activeAnonChatSession.statusMessage = 'در حال مکالمه فعال با مخاطب ناشناس...';
-              automator.stats.totalChatsInitiated = (automator.stats.totalChatsInitiated || 0) + 1;
-              automator.stats.lastActiveAt = new Date().toISOString();
-              saveData();
+              // Verify if this message or its markup proves connection
+              const hasInChatProof = isMatchNotification(msgText, msg.replyMarkup, selectedBot.connectionKeywords);
+              if (hasInChatProof) {
+                addLog('info', `[چت ناشناس] تایید اتصال از طریق دکمه‌های چت / محتوای پیام («${msgText.slice(0, 30)}»).`);
+                isConnectedToPartner = true;
+                activeAnonChatSession.status = 'chatting';
+                activeAnonChatSession.statusMessage = 'در حال مکالمه فعال با مخاطب ناشناس...';
+                automator.stats.totalChatsInitiated = (automator.stats.totalChatsInitiated || 0) + 1;
+                automator.stats.lastActiveAt = new Date().toISOString();
+                saveData();
+                pendingStrangerBatch.push(msgText);
+              } else {
+                // Ignore unclassified bot announcements while waiting in queue
+                activeAnonChatSession.transcript.push({
+                  id: 'msg_' + Date.now() + '_bot_sys',
+                  sender: 'bot_system',
+                  text: `📋 پیام در صف انتظار ربات: ${msgText}`,
+                  timestamp: new Date().toISOString(),
+                });
+                saveData();
+                continue;
+              }
+            } else {
+              pendingStrangerBatch.push(msgText);
             }
-
-            pendingStrangerBatch.push(msgText);
           }
         }
 
@@ -7354,7 +7499,7 @@ async function runAnonymousChatWorker() {
                 }
 
                 // Check if main menu / outside chat notice during aggregation
-                if (isMainMenuNotice(subText, selectedBot.notInChatKeywords)) {
+                if (isMainMenuNotice(subText, subMsg.replyMarkup, selectedBot.notInChatKeywords)) {
                   addLog('warning', `[بازیابی خودکار] پیام منو/خارج از چت («${subText.slice(0, 45)}») حین تجمیع دریافت شد. خروج و اتصال مجدد...`);
                   await executeExitAndNextPartner(
                     client,
@@ -7532,13 +7677,28 @@ async function runAnonymousChatWorker() {
           const lastStrangerMsgText = activeAnonChatSession.transcript.filter(t => t.sender === 'stranger').pop()?.text || '';
           const dynamicDelay = calculateTypingDelay(replyResult.text, instructions, lastStrangerMsgText);
           
-          await simulateRealisticTypingWait(
+          const typingOk = await simulateRealisticTypingWait(
             client,
             botEntity,
             dynamicDelay,
             activeAnonChatSession,
-            'در حال شبیه‌سازی تایپ هوش مصنوعی'
+            'در حال شبیه‌سازی تایپ هوش مصنوعی',
+            selectedBot
           );
+
+          if (!typingOk || anonEngineAbort || (activeAnonChatSession as any).status === 'ended') {
+            addLog('info', `[چت ناشناس] 🔌 قطع ارتباط مخاطب حین شبیه‌سازی تایپ هوش مصنوعی. خروج سریع و رفتن به فرد بعدی...`);
+            await executeExitAndNextPartner(
+              client,
+              botEntity,
+              selectedBot,
+              activeAnonChatSession,
+              'stranger_disconnected',
+              'مخاطب ناشناس حین تایپ ربات مکالمه را ترک کرد.'
+            );
+            exitTriggered = true;
+            break;
+          }
 
           const maxMsgs = instructions.maxMessagesPerChat || 3;
           const promo = instructions.productPromotion;
@@ -7555,11 +7715,12 @@ async function runAnonymousChatWorker() {
 
           let isPromoStep = false;
           if (promo?.enabled && !activeAnonChatSession.promoSent) {
-            if (promo.sendMode === 'send_photo_with_caption_before_exit' && currentAiCount >= maxMsgs - 1) {
+            // Photos or promo cards in mid-conversation should ONLY be sent if the user explicitly asked for them
+            if (strangerInquiredPromo) {
               isPromoStep = true;
             } else if (promo.sendMode === 'send_custom_card_at_step' && currentAiCount === (promo.sendAtMessageNumber || 2) - 1) {
               isPromoStep = true;
-            } else if (replyResult.shouldSendPromoCard || strangerInquiredPromo || (replyResult.promoMentioned && effectiveImageUrl)) {
+            } else if (replyResult.shouldSendPromoCard && replyResult.stepOutput?.promotionDecision.isExplicitOverride) {
               isPromoStep = true;
             }
           }
@@ -7602,14 +7763,28 @@ async function runAnonymousChatWorker() {
             if (!bubbleText) continue;
 
             if (bIdx > 0) {
-              const waitBetween = Math.max(1200, ((instructions.multiBubbleDelaySeconds || 1.8) * 1000) + (Math.random() * 600 - 300));
-              await simulateRealisticTypingWait(
+              const waitBetween = Math.max(600, ((instructions.multiBubbleDelaySeconds || 1.0) * 1000) + (Math.random() * 300 - 150));
+              const bubbleOk = await simulateRealisticTypingWait(
                 client,
                 botEntity,
                 waitBetween,
                 activeAnonChatSession,
-                `در حال تایپ تکه ${bIdx + 1} از ${bubbles.length}`
+                `در حال تایپ تکه ${bIdx + 1} از ${bubbles.length}`,
+                selectedBot
               );
+              if (!bubbleOk || anonEngineAbort || (activeAnonChatSession as any).status === 'ended') {
+                addLog('info', `[چت ناشناس] 🔌 قطع ارتباط مخاطب حین تایپ حباب بعدی. خروج سریع و رفتن به فرد بعدی...`);
+                await executeExitAndNextPartner(
+                  client,
+                  botEntity,
+                  selectedBot,
+                  activeAnonChatSession,
+                  'stranger_disconnected',
+                  'مخاطب ناشناس حین تایپ حباب مکالمه را ترک کرد.'
+                );
+                exitTriggered = true;
+                break;
+              }
             }
 
             await client.sendMessage(botEntity, { message: bubbleText });
@@ -7638,9 +7813,9 @@ async function runAnonymousChatWorker() {
           activeAnonChatSession.aiMessagesCount = (activeAnonChatSession.aiMessagesCount || 0) + 1;
           saveData();
 
-          // 2. NOW check if a photo banner attachment should be sent SEPARATELY after the conversational reply
+          // 2. NOW check if a photo banner attachment should be sent SEPARATELY after the conversational reply (ONLY if requested or configured)
           if (promo?.enabled && !activeAnonChatSession.promoSent) {
-            if (isPromoStep || replyResult.shouldSendPromoCard || strangerInquiredPromo || (replyResult.promoMentioned && effectiveImageUrl)) {
+            if (isPromoStep && effectiveImageUrl) {
               let sentWithPhoto = false;
               const isPhotoAllowedByPlatform = sessionDurationSec >= 120;
 
@@ -7661,20 +7836,38 @@ async function runAnonymousChatWorker() {
                 try {
                   const tempImgPath = await getImageFilePathForTelegram(effectiveImageUrl);
                   if (tempImgPath && fs.existsSync(tempImgPath)) {
+                    // Send photo with completely empty caption
                     try {
                       await client.sendFile(botEntity, {
                         file: tempImgPath,
-                        caption: bannerCaption,
+                        caption: '',
                       });
                       sentWithPhoto = true;
                     } catch (sendFileErr: any) {
                       try {
                         await client.sendMessage(botEntity, {
                           file: tempImgPath,
-                          message: bannerCaption,
+                          message: '',
                         });
                         sentWithPhoto = true;
                       } catch (e2) {}
+                    }
+
+                    // Send a very short natural explanation in a separate message right after the photo
+                    if (sentWithPhoto) {
+                      await new Promise((r) => setTimeout(r, 1200));
+                      const shortPhotoExplanation = 'این عکس رو فرستادم شاید به کارت بیاد برای فیلترشکن';
+                      try {
+                        await client.sendMessage(botEntity, { message: shortPhotoExplanation });
+                        activeAnonChatSession.transcript.push({
+                          id: 'msg_' + Date.now() + '_ai_photo_explain',
+                          sender: 'me_melody',
+                          text: shortPhotoExplanation,
+                          timestamp: new Date().toISOString(),
+                        });
+                      } catch (explainErr) {
+                        console.warn('[چت ناشناس] خطا در ارسال پیام توضیح عکس در چت:', explainErr);
+                      }
                     }
                   }
                 } catch (photoErr: any) {

@@ -292,13 +292,13 @@ export function buildPromptDirective(
   if (context.intent === Intent.REJECTION || (context.state === ConversationState.GOODBYE && context.promotionLock)) {
     lines.push(`⛔ USER DECLINED / NO NEED DETECTED: User indicated they do not need VPN or services. Immediately output a single, ultra-short polite goodbye (3 to 6 words max, e.g. «باشه حله مراقب خودت باش فعلا» or «اوکی موفق باشی فعلا»). Do NOT ask any new questions or drag the conversation, so the system can exit cleanly.`);
   } else if (context.promotionLock) {
-    lines.push(`⛔ PROMOTION LOCKED: User has no interest. DO NOT mention VPN, prices, sales, or channels. Speak purely as a friendly human in ultra-short sentences without pitching.`);
+    lines.push(`⛔ PROMOTION LOCKED: User has no interest. DO NOT mention VPN, prices, sales, or channels. Speak purely as a friendly human without pitching.`);
   } else if (promotionDecision.allowedLevel === PromotionLevel.NO_PROMOTION) {
-    lines.push(`💬 MODE: CASUAL RAPPORT ONLY. Answer any questions naturally in short bubbles (max 7 words). Do not sell or pitch yet.`);
+    lines.push(`💬 MODE: CASUAL RAPPORT ONLY (CONVERSATION FIRST). Chat authentically as a friendly, cool 26-year-old girl from Tehran. Respond empathetically and naturally to whatever the user said (daily life, jokes, empathy, aches/pains, personal stories). DO NOT mention VPN, internet filters, sales, or prices. Absolutely zero unsolicited marketing.`);
   } else if (promotionDecision.allowedLevel === PromotionLevel.SOFT_MENTION) {
-    lines.push(`🌱 MODE: HONEST MARKETER INTRO. First answer user questions naturally. Then honestly and casually mention that you have a fast private VPN subscription / provide VPN support, and politely ask if they need or want help with a good VPN (e.g. «راستی من خودم اشتراک وی‌پی‌ان دارم، اگه فیلترشکن خوب می‌خوای بگو راهنماییت کنم»).`);
+    lines.push(`🌱 MODE: ORGANIC & RELEVANT CONVERSATION. The user specifically touched on internet/filtering issues or asked about your job/routine. First answer their point warmly and naturally. Only if relevant, you can casually mention your experience with fast private VPN, without aggressive sales pitches.`);
   } else if (promotionDecision.allowedLevel === PromotionLevel.DIRECT_OFFER) {
-    lines.push(`🎯 MODE: ACTIVE MARKETER & GUIDE. The user is interested! Guide them with details, pricing, test connection, and support contact.`);
+    lines.push(`🎯 MODE: INFORMATIVE PRODUCT GUIDE. The user specifically asked about VPN, prices, trial, or connection! Answer their questions clearly, warmly, and accurately using the Knowledge Base.`);
     if (context.supportIdAvailable) {
       const handle = (productConfig.support.handle || promotionConfig?.contactHandleOrLink || 'nova_vpn10').replace(/^@/, '');
       lines.push(`• Support Handle: ${handle} (strictly without @ and with underscore)`);

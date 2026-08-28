@@ -210,14 +210,13 @@ export function evaluatePromotionPolicy(
   const turnsSinceLastCTA = context.turnCount - context.lastCTATurn;
   const isCtaInCooldown = context.lastCTATurn > 0 && turnsSinceLastCTA < MIN_CTA_TURN_GAP;
 
-  // 9. Natural Time & Lead Score Evaluation (Unsolicited Promotion)
-  const minDelaySec = promotionConfig.minPhotoDelaySeconds ?? MIN_NATURAL_PHOTO_DELAY_SECONDS;
-  const hasMetTimeRequirement = context.elapsedSeconds >= minDelaySec;
-  const hasMetTurnRequirement = context.turnCount >= 2;
+  // 9. Lead Score & Context-Driven Evaluation (Conversation-First Philosophy)
+  // For normal casual chit-chat (sports, daily life, jokes, personal stories),
+  // NEVER force an unsolicited marketing pitch or photo banner!
+  // Promotion is ONLY permitted when there is relevant context or explicit user inquiry.
 
-  // If before 2 minutes and early in chat -> Strictly NO PROMOTION
-  if (!hasMetTimeRequirement && !hasMetTurnRequirement) {
-    reasonCodes.push('EARLY_CONVERSATION_DISCOVERY', 'RAPPORT_BUILDING');
+  if (isCtaInCooldown) {
+    reasonCodes.push('CTA_COOLDOWN_ACTIVE');
     return {
       allowedLevel: PromotionLevel.NO_PROMOTION,
       canSendDirectOffer: false,
@@ -225,33 +224,15 @@ export function evaluatePromotionPolicy(
       canSendBannerPhoto: false,
       isPromotionLocked: false,
       isExplicitOverride: false,
-      isSuppressed: false,
-      reasonCodes,
-      reason: `Conversation in early discovery (< ${minDelaySec}s and < 2 turns). Building natural rapport.`,
-    };
-  }
-
-  // If CTA cooldown is active, restrict to soft mention or no promotion
-  if (isCtaInCooldown) {
-    reasonCodes.push('CTA_COOLDOWN_ACTIVE');
-    return {
-      allowedLevel: context.leadScore >= 20 ? PromotionLevel.SOFT_MENTION : PromotionLevel.NO_PROMOTION,
-      canSendDirectOffer: false,
-      canSendSoftMention: context.leadScore >= 20,
-      canSendBannerPhoto: false,
-      isPromotionLocked: false,
-      isExplicitOverride: false,
       isSuppressed: true,
       reasonCodes,
-      reason: `CTA cooldown active (${turnsSinceLastCTA}/${MIN_CTA_TURN_GAP} turns since last CTA).`,
+      reason: `CTA cooldown active (${turnsSinceLastCTA}/${MIN_CTA_TURN_GAP} turns since last CTA). Maintaining natural chat.`,
     };
   }
 
-  // Natural Funnel Progression:
-  // After initial greeting/rapport (turnCount >= 2 or botMessageCount >= 2), if product hasn't been mentioned yet,
-  // allow honest, soft introduction of VPN subscription
-  if ((context.turnCount >= 2 || (context.botMessageCount || 0) >= 2) && !context.productMentioned && !context.promotionLock) {
-    reasonCodes.push('HONEST_MARKETER_INTRO_PHASE');
+  // Only allow soft mention if user has actually engaged on internet/tech/service topics (leadScore >= 40)
+  if (context.leadScore >= 40 && (context.state as any) === ConversationState.NEED_DETECTED) {
+    reasonCodes.push('ORGANIC_NEED_CONTEXT');
     return {
       allowedLevel: PromotionLevel.SOFT_MENTION,
       canSendDirectOffer: false,
@@ -261,42 +242,12 @@ export function evaluatePromotionPolicy(
       isExplicitOverride: false,
       isSuppressed: false,
       reasonCodes,
-      reason: 'Initial rapport established. Permitting honest, casual introduction of VPN subscription.',
+      reason: `User has an established context of internet/filtering needs (leadScore: ${context.leadScore}). Soft organic mention permitted.`,
     };
   }
 
-  // Lead Score gating for unsolicited offers:
-  if (context.leadScore >= 50 && hasMetTimeRequirement) {
-    reasonCodes.push('HIGH_LEAD_SCORE_TIME_MET');
-    return {
-      allowedLevel: PromotionLevel.DIRECT_OFFER,
-      canSendDirectOffer: true,
-      canSendSoftMention: true,
-      canSendBannerPhoto: Boolean(promotionConfig.imageUrl),
-      isPromotionLocked: false,
-      isExplicitOverride: false,
-      isSuppressed: false,
-      reasonCodes,
-      reason: `Lead score is high (${context.leadScore}) and time threshold met (${context.elapsedSeconds}s).`,
-    };
-  }
-
-  if (context.leadScore >= 20 || context.turnCount >= 2) {
-    reasonCodes.push('WARM_LEAD_SCORE');
-    return {
-      allowedLevel: PromotionLevel.SOFT_MENTION,
-      canSendDirectOffer: false,
-      canSendSoftMention: true,
-      canSendBannerPhoto: false,
-      isPromotionLocked: false,
-      isExplicitOverride: false,
-      isSuppressed: false,
-      reasonCodes,
-      reason: `Lead score is warm (${context.leadScore}). Soft introduction permitted.`,
-    };
-  }
-
-  reasonCodes.push('COLD_LEAD_SCORE');
+  // Default: Pure human conversation and authentic rapport (NO UNPROMPTED PROMOTION)
+  reasonCodes.push('CASUAL_HUMAN_CONVERSATION');
   return {
     allowedLevel: PromotionLevel.NO_PROMOTION,
     canSendDirectOffer: false,
@@ -306,6 +257,6 @@ export function evaluatePromotionPolicy(
     isExplicitOverride: false,
     isSuppressed: false,
     reasonCodes,
-    reason: `Lead score (${context.leadScore}) is cold. Maintaining casual rapport.`,
+    reason: `Maintaining authentic, human, friendly conversation without unsolicited sales pitches.`,
   };
 }
