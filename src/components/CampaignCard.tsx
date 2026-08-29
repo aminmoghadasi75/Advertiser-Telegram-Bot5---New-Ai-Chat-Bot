@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Package, Upload, Image as ImageIcon, Sparkles, Hash, DollarSign, MessageSquare, Tag, Eye, Plus, Check, Edit2, Trash2, Send, ListOrdered, AlertCircle } from 'lucide-react';
 import { ProductCampaign } from '../types';
 import { TelegramPostPreview } from './TelegramPostPreview';
@@ -18,6 +18,9 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
 }) => {
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'edit' | 'list' | 'preview'>('edit');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const loadedCampaignIdRef = useRef<string | null>(null);
+  const hasInitializedRef = useRef(false);
 
   const activeCampaign = campaigns.find(c => c.id === selectedCampaignId) || campaigns[0] || null;
 
@@ -35,29 +38,39 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Sync form when active selected campaign changes
+  // Sync form ONLY when active selected campaign ID changes or on initial load
+  // Do NOT re-sync on every background polling update to avoid erasing user typing or quick-inserted tags!
   useEffect(() => {
-    if (activeCampaign) {
-      setCurrentId(activeCampaign.id || '');
-      setTitle(activeCampaign.title || '');
-      setPrice(activeCampaign.price || '');
-      setDescription(activeCampaign.description || '');
-      setImageUrl(activeCampaign.imageUrl || '');
-      setContactHandle(activeCampaign.contactHandle || '');
-      setHashtagInput(Array.isArray(activeCampaign.hashtags) ? activeCampaign.hashtags.join(' ') : '');
-    } else {
-      setCurrentId('');
-      setTitle('');
-      setPrice('');
-      setDescription('');
-      setImageUrl('');
-      setContactHandle('');
-      setHashtagInput('');
+    const isFirstRun = !hasInitializedRef.current;
+    const isSelectionChanged = loadedCampaignIdRef.current !== selectedCampaignId;
+
+    if (isFirstRun || isSelectionChanged) {
+      if (activeCampaign && (isFirstRun || selectedCampaignId !== null)) {
+        setCurrentId(activeCampaign.id || '');
+        setTitle(activeCampaign.title || '');
+        setPrice(activeCampaign.price || '');
+        setDescription(activeCampaign.description || '');
+        setImageUrl(activeCampaign.imageUrl || '');
+        setContactHandle(activeCampaign.contactHandle || '');
+        setHashtagInput(Array.isArray(activeCampaign.hashtags) ? activeCampaign.hashtags.join(' ') : '');
+        loadedCampaignIdRef.current = activeCampaign.id;
+        hasInitializedRef.current = true;
+      } else if (selectedCampaignId === null && !isFirstRun) {
+        setCurrentId('');
+        setTitle('');
+        setPrice('');
+        setDescription('');
+        setImageUrl('');
+        setContactHandle('');
+        setHashtagInput('');
+        loadedCampaignIdRef.current = null;
+      }
     }
-  }, [selectedCampaignId, campaigns]);
+  }, [selectedCampaignId, campaigns.length]);
 
   const handleStartNew = () => {
     setSelectedCampaignId(null);
+    loadedCampaignIdRef.current = null;
     setCurrentId('');
     setTitle('');
     setPrice('');
@@ -71,6 +84,7 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
 
   const handleSelectCampaignForEdit = (camp: ProductCampaign) => {
     setSelectedCampaignId(camp.id);
+    loadedCampaignIdRef.current = camp.id;
     setCurrentId(camp.id);
     setTitle(camp.title);
     setPrice(camp.price);
@@ -80,6 +94,33 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
     setHashtagInput(Array.isArray(camp.hashtags) ? camp.hashtags.join(' ') : '');
     setActiveTab('edit');
     setErrorMessage(null);
+  };
+
+  // Cursor-Aware / Insertion Helper for Quick Spintax & Variables
+  const handleInsertTag = (tag: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setDescription((prev) => (prev ? prev + ' ' + tag : tag));
+      return;
+    }
+
+    const start = textarea.selectionStart ?? description.length;
+    const end = textarea.selectionEnd ?? description.length;
+    const before = description.substring(0, start);
+    const after = description.substring(end);
+
+    const needsLeadingSpace = before.length > 0 && !before.endsWith(' ') && !before.endsWith('\n');
+    const needsTrailingSpace = after.length > 0 && !after.startsWith(' ') && !after.startsWith('\n');
+
+    const insertText = `${needsLeadingSpace ? ' ' : ''}${tag}${needsTrailingSpace ? ' ' : ''}`;
+    const newText = before + insertText + after;
+    setDescription(newText);
+
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = start + insertText.length;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 10);
   };
 
   // Client-Side Image Compression using HTML Canvas to prevent huge payloads
@@ -297,18 +338,54 @@ export const CampaignCard: React.FC<CampaignCardProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
-                  توضیحات کامل محصول:
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
+                    توضیحات کامل محصول (پشتیبانی از Spintax و متغیرها):
+                  </label>
+                  <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                    Spintax {`{A|B}`}
+                  </span>
+                </div>
                 <textarea
+                  ref={textareaRef}
                   rows={5}
-                  placeholder="توضیحات کامل، ویژگی‌ها، نحوه خرید و تحویل..."
+                  placeholder="توضیحات کامل، ویژگی‌ها، نحوه خرید و تحویل... (مثال: {سلام|درود} دوستان {اموجی} سفارش {نام_گروه})"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-sky-500 leading-relaxed"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-sky-500 leading-relaxed font-sans"
                 />
+                
+                {/* Spintax Quick Variable Inserters */}
+                <div className="mt-1.5 p-2 bg-slate-950/80 rounded-lg border border-slate-800/80 space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] text-slate-400">
+                    <span className="font-semibold flex items-center gap-1 text-slate-300">
+                      ⚡ درج سریع متغیرهای ضد اسپم در متن:
+                    </span>
+                    <span className="text-slate-500">کلیک برای افزودن به محل مکان‌نما</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {[
+                      { tag: '{greeting}', label: '👋 احوالپرسی تصادفی' },
+                      { tag: '{group_title}', label: '👥 نام گروه' },
+                      { tag: '{random_emoji}', label: '✨ اموجی رندوم' },
+                      { tag: '{time}', label: '⏰ ساعت ارسال' },
+                      { tag: '{cta_text}', label: '📢 اقدام به خرید' },
+                      { tag: '{random_id}', label: '🔢 کد پیگیری' },
+                      { tag: '{تخفیف ویژه|فرصت محدود|قیمت استثنایی}', label: '🔀 اسپینتکس نمونه' },
+                    ].map((item) => (
+                      <button
+                        key={item.tag}
+                        type="button"
+                        onClick={() => handleInsertTag(item.tag)}
+                        className="px-2 py-1 text-[10px] rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-slate-300 hover:text-white border border-slate-700/60 transition-all font-mono"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

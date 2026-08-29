@@ -10,6 +10,7 @@ import { AntiBotSettingsCard } from './components/AntiBotSettingsCard';
 import { MonitoringConsoleCard } from './components/MonitoringConsoleCard';
 import { BroadcastReportCard } from './components/BroadcastReportCard';
 import { AnonymousBotsCard } from './components/AnonymousBotsCard';
+import { LiveTelemetryHUD } from './components/LiveTelemetryHUD';
 import { LogsConsole } from './components/LogsConsole';
 import {
   AppState,
@@ -64,6 +65,7 @@ export default function App() {
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAddAccountModalOpen, setIsAddAccountModalOpen] = useState(false);
+  const [accountForRenewal, setAccountForRenewal] = useState<any>(null);
   const [isSendingNow, setIsSendingNow] = useState(false);
   const [isStoppingBroadcast, setIsStoppingBroadcast] = useState(false);
   const [activeMainTab, setActiveMainTab] = useState<'anonymous_bot' | 'group_broadcast' | 'accounts' | 'logs'>('anonymous_bot');
@@ -160,6 +162,42 @@ export default function App() {
       body: JSON.stringify({ accountId: id, isActive }),
     });
     await fetchState();
+  };
+
+  const handleToggleModule = async (id: string, module: 'group_broadcast' | 'anonymous_bot', enabled: boolean) => {
+    await fetch('/api/accounts/toggle-module', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accountId: id, module, enabled }),
+    });
+    await fetchState();
+  };
+
+  const handleBulkToggleModule = async (module: 'group_broadcast' | 'anonymous_bot', enabled: boolean) => {
+    await fetch('/api/accounts/bulk-toggle-module', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ module, enabled }),
+    });
+    await fetchState();
+  };
+
+  const handleVerifyAllAccounts = async () => {
+    const res = await fetch('/api/accounts/verify-all', { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    await fetchState();
+    return data;
+  };
+
+  const handleVerifySingleAccount = async (id: string) => {
+    const res = await fetch('/api/accounts/verify-single', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accountId: id }),
+    });
+    const data = await res.json().catch(() => ({}));
+    await fetchState();
+    return data;
   };
 
   const handleDeleteAccount = async (id: string) => {
@@ -524,6 +562,10 @@ export default function App() {
 
   const isBroadcastingActive = isSendingNow || Boolean(appState.activeBroadcastProgress?.isRunning);
   const activeGroupsCount = appState.groups.filter((g) => g.isActive).length;
+  const hasConnectedAccount = Boolean(
+    appState.credentials.isConnected ||
+    (appState.accounts && appState.accounts.some(a => a.isActive && a.enableForGroupBroadcast !== false))
+  );
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500 selection:text-white" dir="rtl">
@@ -643,9 +685,9 @@ export default function App() {
                   ) : (
                     <button
                       onClick={handleSendNow}
-                      disabled={!appState.credentials.isConnected || appState.groups.length === 0}
+                      disabled={!hasConnectedAccount || appState.groups.length === 0}
                       className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95 ${
-                        appState.credentials.isConnected && appState.groups.length > 0
+                        hasConnectedAccount && appState.groups.length > 0
                           ? 'bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:to-blue-500 text-white shadow-sky-500/25'
                           : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
                       }`}
@@ -692,125 +734,12 @@ export default function App() {
 
             </div>
 
-            {/* Live Parallel Multi-Account Broadcast Worker Monitor */}
-            {isBroadcastingActive && (
-              <div className="bg-gradient-to-br from-indigo-950/80 via-slate-900 to-sky-950/80 border border-indigo-500/40 rounded-2xl p-5 shadow-2xl space-y-4 animate-in fade-in">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-500/20 pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
-                    <h3 className="font-bold text-base text-white flex items-center gap-2">
-                      مانیتورینگ زنده کانال‌های ارسال همزمان (Live Parallel Workers)
-                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
-                        در حال اجرا
-                      </span>
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-xs text-slate-300 flex items-center gap-3">
-                      <span>
-                        پیشرفت کل:{' '}
-                        <strong className="text-emerald-400 font-mono">
-                          {appState.activeBroadcastProgress?.completedGroups || 0} از {appState.activeBroadcastProgress?.totalGroups || appState.groups.length} گروه
-                        </strong>
-                      </span>
-                      <span>•</span>
-                      <span className="text-emerald-400 font-bold font-mono">
-                        {appState.activeBroadcastProgress?.successCount || 0} موفق
-                      </span>
-                      {Boolean(appState.activeBroadcastProgress?.failedCount) && (
-                        <>
-                          <span>•</span>
-                          <span className="text-rose-400 font-bold font-mono">
-                            {appState.activeBroadcastProgress?.failedCount} خطا/توزیع مجدد
-                          </span>
-                        </>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={handleStopBroadcast}
-                      disabled={isStoppingBroadcast}
-                      className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-600/30 transition-all flex items-center gap-1.5 active:scale-95 animate-pulse"
-                    >
-                      <span>{isStoppingBroadcast ? 'در حال توقف...' : 'توقف فوری'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
-                  <div
-                    className="h-full bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400 transition-all duration-300 rounded-full"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        Math.round(
-                          ((appState.activeBroadcastProgress?.completedGroups || 0) /
-                            Math.max(1, appState.activeBroadcastProgress?.totalGroups || appState.groups.length)) *
-                            100
-                        )
-                      )}%`,
-                    }}
-                  />
-                </div>
-
-                {/* Individual Worker Cards */}
-                {appState.activeBroadcastProgress?.workers && appState.activeBroadcastProgress.workers.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-1">
-                    {appState.activeBroadcastProgress.workers.map((worker, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-slate-950/90 border border-slate-800 rounded-xl p-3 space-y-2 relative overflow-hidden"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="font-bold text-xs text-white truncate flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
-                            <span>{worker.accountName || `اکانت ${idx + 1}`}</span>
-                          </div>
-                          <span
-                            className={`text-[9px] px-1.5 py-0.5 rounded font-bold border ${
-                              worker.status === 'sending'
-                                ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30 animate-pulse'
-                                : worker.status === 'antibot_verifying'
-                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                                : worker.status === 'flood_waited'
-                                ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                                : worker.status === 'cooldown'
-                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                                : 'bg-slate-800 text-slate-400 border-slate-700'
-                            }`}
-                          >
-                            {worker.status === 'sending'
-                              ? 'در حال ارسال'
-                              : worker.status === 'antibot_verifying'
-                              ? 'ارزیابی آنتی‌بات'
-                              : worker.status === 'flood_waited'
-                              ? 'محدودیت FloodWait'
-                              : worker.status === 'cooldown'
-                              ? 'استراحت هوشمند'
-                              : worker.status === 'finished'
-                              ? 'تکمیل شده'
-                              : 'آماده‌سازی'}
-                          </span>
-                        </div>
-
-                        <div className="text-[10px] text-slate-400 font-mono dir-ltr">{worker.accountPhone}</div>
-
-                        <div className="text-[11px] text-slate-300 bg-slate-900/80 p-1.5 rounded border border-slate-800/80 truncate">
-                          {worker.lastAction || 'در حال پردازش صف...'}
-                        </div>
-
-                        <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
-                          <span className="text-emerald-400 font-bold font-mono">{worker.sentSuccessCount} ارسال موفق</span>
-                          {worker.failedCount > 0 && (
-                            <span className="text-rose-400 font-mono">{worker.failedCount} خطا</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+            {/* Live Mission Control Room & Telemetry HUD */}
+            {isBroadcastingActive && appState.activeBroadcastProgress && (
+              <LiveTelemetryHUD
+                progress={appState.activeBroadcastProgress}
+                onStop={handleStopBroadcast}
+              />
             )}
 
             {/* Main 2-Column Dashboard Grid Layout */}
@@ -877,11 +806,19 @@ export default function App() {
               activeAccountId={appState.activeAccountId}
               onSelectActiveAccount={handleSelectActiveAccount}
               onToggleAccountActive={handleToggleAccountActive}
+              onToggleModule={handleToggleModule}
+              onBulkToggleModule={handleBulkToggleModule}
+              onVerifyAllAccounts={handleVerifyAllAccounts}
+              onVerifySingleAccount={handleVerifySingleAccount}
               onDeleteAccount={handleDeleteAccount}
               onReauthAccount={(acc) => {
-                setIsAuthModalOpen(true);
+                setAccountForRenewal(acc);
+                setIsAddAccountModalOpen(true);
               }}
-              onOpenAddAccountModal={() => setIsAddAccountModalOpen(true)}
+              onOpenAddAccountModal={() => {
+                setAccountForRenewal(null);
+                setIsAddAccountModalOpen(true);
+              }}
             />
           </div>
         )}
@@ -934,12 +871,16 @@ export default function App() {
         onLogout={handleLogout}
       />
 
-      {/* Add New Telegram Account Modal */}
+      {/* Add New Telegram Account / Renew Session Modal */}
       <AddAccountModal
         isOpen={isAddAccountModalOpen}
-        onClose={() => setIsAddAccountModalOpen(false)}
+        onClose={() => {
+          setIsAddAccountModalOpen(false);
+          setAccountForRenewal(null);
+        }}
         defaultApiId={appState.credentials.apiId}
         defaultApiHash={appState.credentials.apiHash}
+        targetAccount={accountForRenewal}
         onAccountAdded={fetchState}
       />
 

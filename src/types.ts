@@ -32,11 +32,16 @@ export interface TelegramAccount {
     username?: string;
     phone?: string;
   };
-  isActive: boolean; // Participates in round-robin auto-rotation
+  isActive: boolean; // Participates in system operations
+  enableForGroupBroadcast?: boolean; // One-click flag for Group Promotion Broadcasts
+  enableForAnonymousBot?: boolean; // One-click flag for Anonymous Chat Bot Automator
+  isVerifiedLive?: boolean; // 100% verified active MTProto session
+  lastVerifiedAt?: string; // ISO date of last live MTProto health check
+  requiresReauth?: boolean; // True if session expired / revoked and needs renewal
   dailySentCount: number;
   lastUsedAt?: string;
   floodWaitUntil?: number; // Epoch timestamp in ms
-  status: 'active' | 'flood_wait' | 'disabled' | 'error';
+  status: 'active' | 'connected' | 'session_expired' | 'flood_wait' | 'disabled' | 'error';
   statusMessage?: string;
 }
 
@@ -52,6 +57,9 @@ export interface TargetGroup {
   lastPostedByAccountId?: string;
   lastPostedByAccountPhone?: string;
   errorMessage?: string;
+  persistenceStatus?: 'verified' | 'auto_deleted' | 'pending_check' | 'not_checked';
+  lastVerifiedAt?: string;
+  strictFilterDetected?: boolean;
 }
 
 export interface ProductCampaign {
@@ -73,6 +81,12 @@ export interface AntiBotSettings {
   contactsToInviteCount: number; // تعداد مخاطبین جهت اد کردن (مثلاً ۳ تا ۵)
   sendGreetingFirst?: boolean; // ارسال پیام تست اولیه ("سلام بچه ها") جهت تست ربات نگهبان
   greetingMessage?: string; // متن پیام تست اولیه (پیش‌فرض: "سلام بچه ها")
+  simulateTyping?: boolean; // شبیه‌سازی اکشن تایپینگ واقعی تلگرام قبل از ارسال (SetTyping)
+  typingDurationSeconds?: number; // مدت زمان تایپینگ قبل از ارسال پیام (مثلاً ۱ تا ۴ ثانیه)
+  enableSpintax?: boolean; // بهینه‌سازی و تنوع‌بخشی خودکار پیام با Spintax و متغیرها
+  cacheMediaInput?: boolean; // کش کردن فایل رسانه در تلگرام جهت ارسال فوق‌سریع و کاهش ۹۹٪ ترافیک
+  verifyMessagePersistence?: boolean; // پایش ماندگاری پیام و تشخیص حذف خودکار توسط ربات‌های ادمین
+  persistenceCheckDelaySeconds?: number; // زمان شکیبایی جهت پایش ماندگاری پیام (مثلاً ۱۵ تا ۲۰ ثانیه)
 }
 
 export interface SchedulerConfig {
@@ -111,10 +125,13 @@ export interface ActiveBroadcastWorkerProgress {
   accountName?: string;
   currentGroupId?: string;
   currentGroupTitle?: string;
-  status: 'idle' | 'preparing' | 'antibot_verifying' | 'sending' | 'cooldown' | 'flood_waited' | 'finished';
+  status: 'idle' | 'preparing' | 'antibot_verifying' | 'typing' | 'sending' | 'cooldown' | 'flood_waited' | 'finished';
   sentSuccessCount: number;
   failedCount: number;
   lastAction?: string;
+  currentActionStartedAt?: number;
+  cooldownEndsAt?: number;
+  lastSampleMessage?: string;
 }
 
 export interface ActiveBroadcastProgress {
@@ -126,6 +143,15 @@ export interface ActiveBroadcastProgress {
   failedCount: number;
   dispatchMode: 'parallel_multichannel' | 'sequential_rotation';
   workers: ActiveBroadcastWorkerProgress[];
+  estimatedTimeRemainingSeconds?: number;
+  speedGroupsPerMinute?: number;
+  mediaBandwidthSavedMb?: number;
+  lastGeneratedSampleMessage?: {
+    groupTitle: string;
+    accountName: string;
+    text: string;
+    timestamp: string;
+  };
 }
 
 export interface LogEntry {
@@ -165,6 +191,21 @@ export interface BroadcastGroupDetail {
   accountName?: string;
   message?: string;
   postedAt?: string;
+  persistenceStatus?: 'verified' | 'auto_deleted' | 'pending_check' | 'not_checked';
+  spintaxApplied?: boolean;
+  mediaFromCache?: boolean;
+  typingSimulated?: boolean;
+  sampleSnippet?: string;
+}
+
+export interface BroadcastAnalyticsSummary {
+  bandwidthSavedMb: number;
+  avgDurationPerGroupSeconds: number;
+  spintaxDiversityScorePercent: number;
+  verifiedPersistenceCount: number;
+  autoDeletedCount: number;
+  toxicGroupsList?: string[];
+  recommendations: string[];
 }
 
 export interface BroadcastReport {
@@ -182,6 +223,7 @@ export interface BroadcastReport {
   dispatchMode?: 'parallel_multichannel' | 'sequential_rotation';
   accountBreakdown?: BroadcastAccountStat[];
   details: BroadcastGroupDetail[];
+  analytics?: BroadcastAnalyticsSummary;
 }
 
 export type BotButtonLocation = 'reply_keyboard' | 'inline_button' | 'text_command' | 'popup_ok' | 'any_location';

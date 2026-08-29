@@ -1,13 +1,34 @@
-import React from 'react';
-import { Eye, CheckCheck, Tag, ExternalLink, Share2, CornerUpRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { Eye, CheckCheck, Tag, Shuffle, Sparkles } from 'lucide-react';
 import { ProductCampaign } from '../types';
+import { processMessageWithSpintaxAndVars } from '../utils/spintax';
 
 interface TelegramPostPreviewProps {
   campaign: ProductCampaign;
 }
 
 export const TelegramPostPreview: React.FC<TelegramPostPreviewProps> = ({ campaign }) => {
+  const [shuffleIndex, setShuffleIndex] = useState(0);
   const timeString = new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+
+  // Resolve dynamic Spintax and variables for live preview
+  const resolvedTitle = processMessageWithSpintaxAndVars(campaign.title || 'عنوان محصول شما', {
+    groupTitle: 'گروه بازار بزرگ تلگرام (تست)',
+    contactHandle: campaign.contactHandle,
+    price: campaign.price,
+  });
+
+  const resolvedDesc = processMessageWithSpintaxAndVars(
+    campaign.description || 'توضیحات و خصوصیات محصول شما در این قسمت نمایش داده می‌شود.',
+    {
+      groupTitle: 'گروه بازار بزرگ تلگرام (تست)',
+      contactHandle: campaign.contactHandle,
+      price: campaign.price,
+      campaignTitle: campaign.title,
+    }
+  );
+
+  const isSpintaxActive = resolvedTitle.spintaxApplied || resolvedDesc.spintaxApplied;
 
   return (
     <div className="bg-[#17212b] border border-[#232e3c] rounded-2xl p-4 text-[#f5f5f5] shadow-2xl relative overflow-hidden font-sans">
@@ -18,7 +39,22 @@ export const TelegramPostPreview: React.FC<TelegramPostPreviewProps> = ({ campai
           <div className="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></div>
           <span className="font-semibold text-[#8e98a2]">پیش‌نمایش زنده پست در تلگرام</span>
         </div>
-        <span className="bg-[#242f3d] px-2 py-0.5 rounded-full text-[10px] text-[#6c7883]">گروه هدف</span>
+        <div className="flex items-center gap-2">
+          {isSpintaxActive && (
+            <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full text-[10px] font-mono flex items-center gap-1">
+              <Sparkles className="w-2.5 h-2.5" /> Spintax فعال
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => setShuffleIndex((prev) => prev + 1)}
+            title="تولید تصادفی نگارش جدید از Spintax"
+            className="bg-[#242f3d] hover:bg-[#2e3b4d] text-sky-400 hover:text-sky-300 px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-colors border border-[#344456]"
+          >
+            <Shuffle className="w-3 h-3" />
+            <span>نگارش بعدی</span>
+          </button>
+        </div>
       </div>
 
       {/* Chat Background Bubble */}
@@ -44,12 +80,12 @@ export const TelegramPostPreview: React.FC<TelegramPostPreviewProps> = ({ campai
         )}
 
         {/* Post Content */}
-        <div className="p-3.5 space-y-2.5 text-xs text-[#e1e9f0] leading-relaxed">
+        <div className="p-3.5 space-y-2.5 text-xs text-[#e1e9f0] leading-relaxed" key={shuffleIndex}>
           
           {/* Title */}
           <div className="font-bold text-sm text-white flex items-center gap-1.5">
             <span>📌</span>
-            <span>{campaign.title || 'عنوان محصول شما'}</span>
+            <span>{resolvedTitle.text}</span>
           </div>
 
           {/* Price */}
@@ -60,7 +96,7 @@ export const TelegramPostPreview: React.FC<TelegramPostPreviewProps> = ({ campai
 
           {/* Description */}
           <div className="whitespace-pre-wrap text-[#c2d1e0] text-xs pt-1 border-t border-[#2b3a4a]/60">
-            {campaign.description || 'توضیحات و خصوصیات محصول شما در این قسمت نمایش داده می‌شود.'}
+            {resolvedDesc.text}
           </div>
 
           {/* Contact Link */}

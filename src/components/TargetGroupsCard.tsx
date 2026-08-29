@@ -17,6 +17,7 @@ import {
   Globe,
   Radio,
   Sparkles,
+  Eye,
 } from 'lucide-react';
 import { TargetGroup } from '../types';
 
@@ -61,7 +62,30 @@ export const TargetGroupsCard: React.FC<TargetGroupsCardProps> = ({
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [loading, setLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isVerifyingPersistence, setIsVerifyingPersistence] = useState(false);
   const [testingTarget, setTestingTarget] = useState<string | null>(null);
+
+  const handleVerifyAllPersistence = async () => {
+    setIsVerifyingPersistence(true);
+    try {
+      const resp = await fetch('/api/groups/verify-persistence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checkAll: true }),
+      });
+      const data = await resp.json();
+      if (data.message) {
+        alert(data.message);
+      }
+      if (onSyncGroups) {
+        await onSyncGroups();
+      }
+    } catch (err: any) {
+      alert('خطا در پایش ماندگاری پیام‌ها: ' + (err.message || err));
+    } finally {
+      setIsVerifyingPersistence(false);
+    }
+  };
 
   const postedGroups = groups.filter(
     (g) => g.lastPostedAt && (!g.errorMessage || g.errorMessage.trim() === '')
@@ -317,9 +341,9 @@ export const TargetGroupsCard: React.FC<TargetGroupsCardProps> = ({
 
       </div>
 
-      {/* Select All / Deselect Toolbar */}
-      <div className="flex items-center justify-between bg-slate-950/80 px-3 py-2 rounded-xl border border-slate-800/80 mb-3 text-xs">
-        <div className="flex items-center gap-2">
+      {/* Select All / Deselect / Persistence Check Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-950/80 px-3 py-2 rounded-xl border border-slate-800/80 mb-3 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => onToggleAllGroups(true)}
@@ -338,6 +362,18 @@ export const TargetGroupsCard: React.FC<TargetGroupsCardProps> = ({
           >
             <XCircle className="w-3.5 h-3.5" />
             <span>غیرفعال‌سازی همه</span>
+          </button>
+
+          {/* On-Demand Persistence Verification Button */}
+          <button
+            type="button"
+            onClick={handleVerifyAllPersistence}
+            disabled={isVerifyingPersistence}
+            className="px-2.5 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1 text-xs font-bold transition-colors disabled:opacity-50"
+            title="بررسی آنلاین ماندگاری پیام‌ها در تمام گروه‌های ارسال‌شده"
+          >
+            <Eye className={`w-3.5 h-3.5 text-purple-400 ${isVerifyingPersistence ? 'animate-spin' : ''}`} />
+            <span>{isVerifyingPersistence ? 'در حال پایش ماندگاری...' : 'پایش آنلاین ماندگاری پیام‌ها'}</span>
           </button>
         </div>
 
@@ -409,6 +445,23 @@ export const TargetGroupsCard: React.FC<TargetGroupsCardProps> = ({
                       {group.lastPostedAt && (
                         <span className="text-slate-500">
                           • {new Date(group.lastPostedAt).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+
+                      {/* Persistence Status Badge */}
+                      {group.persistenceStatus === 'verified' && (
+                        <span className="text-[10px] bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 px-1.5 py-0.2 rounded font-medium flex items-center gap-1">
+                          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" /> ماندگار در گروه
+                        </span>
+                      )}
+                      {group.persistenceStatus === 'auto_deleted' && (
+                        <span className="text-[10px] bg-rose-500/10 text-rose-300 border border-rose-500/20 px-1.5 py-0.2 rounded font-medium flex items-center gap-1">
+                          <ShieldAlert className="w-2.5 h-2.5 text-rose-400" /> حذف توسط ربات نگهبان
+                        </span>
+                      )}
+                      {group.persistenceStatus === 'pending_check' && (
+                        <span className="text-[10px] bg-amber-500/10 text-amber-300 border border-amber-500/20 px-1.5 py-0.2 rounded font-medium flex items-center gap-1">
+                          <Eye className="w-2.5 h-2.5 text-amber-400 animate-spin" /> در حال پایش ماندگاری...
                         </span>
                       )}
                     </div>

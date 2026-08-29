@@ -6,6 +6,7 @@ interface AddAccountModalProps {
   onClose: () => void;
   defaultApiId?: string;
   defaultApiHash?: string;
+  targetAccount?: { id: string; phoneNumber: string; apiId?: string; apiHash?: string } | null;
   onAccountAdded: () => void;
 }
 
@@ -14,6 +15,7 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
   onClose,
   defaultApiId = '2040',
   defaultApiHash = 'b18441a1ff607e10a989891a5462e627',
+  targetAccount,
   onAccountAdded,
 }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -28,11 +30,19 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  const isRenewalMode = Boolean(targetAccount);
+
   useEffect(() => {
     if (isOpen) {
-      setPhoneNumber('');
-      setApiId(defaultApiId || '2040');
-      setApiHash(defaultApiHash || 'b18441a1ff607e10a989891a5462e627');
+      if (targetAccount) {
+        setPhoneNumber(targetAccount.phoneNumber || '');
+        setApiId(targetAccount.apiId || defaultApiId || '2040');
+        setApiHash(targetAccount.apiHash || defaultApiHash || 'b18441a1ff607e10a989891a5462e627');
+      } else {
+        setPhoneNumber('');
+        setApiId(defaultApiId || '2040');
+        setApiHash(defaultApiHash || 'b18441a1ff607e10a989891a5462e627');
+      }
       setSessionId('');
       setPhoneCode('');
       setTwoFaPassword('');
@@ -40,14 +50,14 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
       setErrorMessage('');
       setSuccessMessage('');
     }
-  }, [isOpen, defaultApiId, defaultApiHash]);
+  }, [isOpen, targetAccount, defaultApiId, defaultApiHash]);
 
   if (!isOpen) return null;
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phoneNumber.trim()) {
-      setErrorMessage('لطفاً شماره تلفن اکانت تلگرام جدید را وارد نمایید.');
+      setErrorMessage('لطفاً شماره تلفن اکانت تلگرام را وارد نمایید.');
       return;
     }
     if (!apiId.trim() || !apiHash.trim()) {
@@ -60,14 +70,15 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
     setSuccessMessage('');
 
     try {
-      const res = await fetch('/api/accounts/add-start', {
+      const endpoint = isRenewalMode ? '/api/accounts/renew-start' : '/api/accounts/add-start';
+      const bodyPayload = isRenewalMode
+        ? { accountId: targetAccount?.id, phoneNumber: phoneNumber.trim(), apiId: apiId.trim(), apiHash: apiHash.trim() }
+        : { phoneNumber: phoneNumber.trim(), apiId: apiId.trim(), apiHash: apiHash.trim() };
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phoneNumber: phoneNumber.trim(),
-          apiId: apiId.trim() || defaultApiId,
-          apiHash: apiHash.trim() || defaultApiHash,
-        }),
+        body: JSON.stringify(bodyPayload),
       });
 
       const data = await res.json();
@@ -104,6 +115,7 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
           sessionId,
           phoneCode: phoneCode.trim(),
           password: twoFaPassword.trim() || undefined,
+          targetAccountId: targetAccount?.id,
         }),
       });
 
@@ -115,7 +127,7 @@ export const AddAccountModal: React.FC<AddAccountModalProps> = ({
         throw new Error(data.error || 'کد ورود نادرست است یا منقضی شده است.');
       }
 
-      setSuccessMessage('اکانت جدید با موفقیت اضافه و ذخیره شد.');
+      setSuccessMessage(isRenewalMode ? 'نشست اکانت با موفقیت تمدید و فعال گردید.' : 'اکانت جدید با موفقیت اضافه و تایید شد.');
       setTimeout(() => {
         onAccountAdded();
         onClose();
