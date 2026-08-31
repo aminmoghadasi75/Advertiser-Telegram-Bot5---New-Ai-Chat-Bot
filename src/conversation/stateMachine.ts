@@ -3,6 +3,7 @@ import {
   Intent,
   ConversationContext,
   PromotionLevel,
+  ConversationStrategy,
 } from '../types';
 
 export interface StateTransitionResult {
@@ -14,13 +15,14 @@ export interface StateTransitionResult {
 
 /**
  * Deterministic State Machine for Anonymous Conversational Sales
- * Transitions between conversation phases according to strict deterministic rules.
+ * Transitions between conversation phases according to strict deterministic rules and chosen strategy.
  */
 export function transitionConversationState(
   currentState: ConversationState,
   intent: Intent,
   context: ConversationContext,
-  maxTurns: number = 4
+  maxTurns: number = 4,
+  strategy: ConversationStrategy = 'direct_pitch'
 ): StateTransitionResult {
   const previousState = currentState;
 
@@ -332,6 +334,14 @@ export function transitionConversationState(
       };
 
     case ConversationState.INITIAL_GREETING:
+      if (strategy === 'direct_pitch') {
+        return {
+          newState: ConversationState.PRODUCT_INTRODUCTION,
+          previousState,
+          transitionReason: 'Direct pitch strategy: Introducing product & free trial offer from initial turn',
+          isTerminalState: false,
+        };
+      }
       return {
         newState: ConversationState.EARLY_CONVERSATION,
         previousState,
@@ -340,6 +350,14 @@ export function transitionConversationState(
       };
 
     case ConversationState.EARLY_CONVERSATION:
+      if (strategy === 'direct_pitch') {
+        return {
+          newState: ConversationState.PRODUCT_INTEREST,
+          previousState,
+          transitionReason: 'Direct pitch strategy: Engaging user in product discussion',
+          isTerminalState: false,
+        };
+      }
       if (intent === Intent.SMALL_TALK || intent === Intent.QUESTION || context.turnCount >= 2) {
         return {
           newState: ConversationState.ENGAGED,

@@ -33,6 +33,8 @@ import {
   AccountDistributionSummary,
   GroupJoinStrategy,
   AccountMembershipInfo,
+  ConversationStrategy,
+  BotPersonaConfig,
 } from './src/types.js';
 import {
   processConversationTurn,
@@ -175,6 +177,30 @@ app.get('/api/observability/stats', (req, res) => {
     success: true,
     snapshot: telemetry.getSnapshot(),
     logs: logger.getRecentLogs().slice(-50),
+  });
+});
+
+app.get('/api/anonymous/gemini-status', (req, res) => {
+  const models = GEMINI_DEFAULT_MODEL_PRIORITY.map((m) => {
+    const health = getModelHealth(m);
+    const now = Date.now();
+    return {
+      modelName: m,
+      status: health.cooldownUntil > now ? 'cooldown' : health.consecutiveFailures > 0 ? 'recovering' : 'healthy',
+      consecutiveFailures: health.consecutiveFailures,
+      totalSuccesses: health.totalSuccesses,
+      totalFailures: health.totalFailures,
+      cooldownSecondsRemaining: Math.max(0, Math.round((health.cooldownUntil - now) / 1000)),
+      lastSuccessTime: health.lastSuccessTime ? new Date(health.lastSuccessTime).toISOString() : null,
+      lastFailureTime: health.lastFailureTime ? new Date(health.lastFailureTime).toISOString() : null,
+      lastError: health.lastError || null,
+    };
+  });
+
+  res.json({
+    success: true,
+    activePriorityOrder: getAdaptiveCandidateModels(),
+    models,
   });
 });
 
@@ -5693,7 +5719,7 @@ app.post('/api/accounts/add-verify', async (req, res) => {
 
 // ============================================================================
 // ============================================================================
-// GEMINI AI INTEGRATION FOR MELODY PERSONA (26-Year-Old Tehran Girl)
+// GEMINI AI INTEGRATION & ADAPTIVE MODEL ROUTER (High Availability & Zero Latency Failover)
 // ============================================================================
 let aiClient: GoogleGenAI | null = null;
 function getAiClient(): GoogleGenAI | null {
@@ -5706,6 +5732,103 @@ function getAiClient(): GoogleGenAI | null {
     console.warn('Failed to initialize GoogleGenAI client:', e?.message || e);
     return null;
   }
+}
+
+interface GeminiModelHealth {
+  modelName: string;
+  consecutiveFailures: number;
+  lastFailureTime: number;
+  cooldownUntil: number;
+  totalSuccesses: number;
+  totalFailures: number;
+  lastSuccessTime: number;
+  lastError?: string;
+}
+
+const geminiModelHealthMap = new Map<string, GeminiModelHealth>();
+
+// Prioritized hierarchy of fast, conversational models
+const GEMINI_DEFAULT_MODEL_PRIORITY: string[] = [
+  'gemini-3.7-flash',
+  'gemini-3.1-flash-lite',
+  'gemini-flash-latest',
+];
+
+function getModelHealth(modelName: string): GeminiModelHealth {
+  let health = geminiModelHealthMap.get(modelName);
+  if (!health) {
+    health = {
+      modelName,
+      consecutiveFailures: 0,
+      lastFailureTime: 0,
+      cooldownUntil: 0,
+      totalSuccesses: 0,
+      totalFailures: 0,
+      lastSuccessTime: 0,
+    };
+    geminiModelHealthMap.set(modelName, health);
+  }
+  return health;
+}
+
+/**
+ * Returns candidate models ordered adaptively based on real-time health and priority:
+ * 1. Healthy models in default priority order (not currently in cooldown)
+ * 2. Models whose cooldown has elapsed (ready for seamless probe/recovery)
+ * 3. Degraded models still in cooldown (attempted only as emergency fallback)
+ */
+function getAdaptiveCandidateModels(): string[] {
+  const now = Date.now();
+  const available: string[] = [];
+  const recovering: string[] = [];
+  const inCooldown: string[] = [];
+
+  for (const modelName of GEMINI_DEFAULT_MODEL_PRIORITY) {
+    const health = getModelHealth(modelName);
+    if (health.cooldownUntil <= now) {
+      if (health.consecutiveFailures === 0) {
+        available.push(modelName);
+      } else {
+        recovering.push(modelName);
+      }
+    } else {
+      inCooldown.push(modelName);
+    }
+  }
+
+  const sorted = [...available, ...recovering, ...inCooldown];
+  return sorted.length > 0 ? sorted : GEMINI_DEFAULT_MODEL_PRIORITY;
+}
+
+function recordGeminiSuccess(modelName: string): void {
+  const health = getModelHealth(modelName);
+  const hadFailures = health.consecutiveFailures > 0;
+  health.consecutiveFailures = 0;
+  health.cooldownUntil = 0;
+  health.totalSuccesses++;
+  health.lastSuccessTime = Date.now();
+  health.lastError = undefined;
+
+  if (hadFailures) {
+    console.info(`[Gemini Adaptive Router] ✅ Model ${modelName} has recovered and is now fully active.`);
+  }
+}
+
+function recordGeminiFailure(modelName: string, error: any): number {
+  const health = getModelHealth(modelName);
+  const errMsg = String(error?.message || error || 'Unknown error');
+  health.consecutiveFailures++;
+  health.totalFailures++;
+  health.lastFailureTime = Date.now();
+  health.lastError = errMsg;
+
+  // Adaptive exponential cooldown: 30s -> 60s -> 120s (max 300s)
+  const baseCooldownSec = 30;
+  const multiplier = Math.pow(2, Math.min(health.consecutiveFailures - 1, 3));
+  const cooldownSec = Math.min(300, baseCooldownSec * multiplier);
+  health.cooldownUntil = Date.now() + cooldownSec * 1000;
+
+  return cooldownSec;
 }
 
 // Helper: Extract partner demographics (gender, age, city) or user tags from bot announcement text
@@ -6005,13 +6128,25 @@ async function generateAnonymousAiReply(
     timestamp: new Date().toISOString(),
   }));
 
+  const chosenStrategy: ConversationStrategy = (instructions as any).strategy || (instructions as any).conversationStrategy || 'direct_pitch';
+  const chosenPersona: BotPersonaConfig = (instructions as any).persona || {
+    name: (instructions as any).personaName || (chosenStrategy === 'direct_pitch' ? 'پشتیبان فروش و تست رایگان' : 'ملودی'),
+    role: chosenStrategy === 'direct_pitch' ? 'ویزیتور و پشتیبان اشتراک اختصاصی' : 'هم‌صحبت صمیمی و دوستانه',
+    tone: (instructions as any).personaTone || 'بسیار صمیمی، روان، محاوره‌ای و حرفه‌ای',
+    age: 26,
+    city: 'تهران',
+    bio: 'ارائه راهنمایی صمیمی، سریع و ارائه اکانت تست رایگان',
+  };
+
   const stepOutput = processConversationTurn(
     lastStrangerMsg,
     convContext,
     promo,
     maxTurns,
     mockHistoryForEngine,
-    activeProduct
+    activeProduct,
+    chosenStrategy,
+    chosenPersona
   );
 
   const updatedCtx = stepOutput.updatedContext;
@@ -6020,18 +6155,14 @@ async function generateAnonymousAiReply(
   const isUnder2Min = updatedCtx.elapsedSeconds < 120;
 
   if (ai) {
-    const candidateModels = [
-      'gemini-3.7-flash',
-      'gemini-flash-latest',
-      'gemini-3.1-flash-lite',
-    ];
+    const candidateModels = getAdaptiveCandidateModels();
 
     let basePrompt =
       instructions.systemPrompt ||
-      `شما در نقش یک کاربر عادی ایرانی هستید که در یک ربات چت ناشناس تلگرام در حال صحبت با یک مخاطب ناشناس هستید.
+      `شما در نقش ${chosenPersona.name} (${chosenPersona.role}) هستید که در یک ربات چت تلگرام در حال مکالمه با مخاطب هستید.
 دستورالعمل‌ها:
-۱. پاسخ‌های بسیار کوتاه، سریع و عامیانه تلگرامی بدهید (۱ الی ۲ جمله).
-۲. لحن کاملاً صمیمی و خودمانی باشد. کلمات کتابی و رسمی ممنوع است.
+۱. پاسخ‌های بسیار کوتاه، روان و عامیانه تلگرامی بدهید (۱ الی ۲ جمله محاوره‌ای).
+۲. لحن شما: ${chosenPersona.tone}.
 ۳. بدون پیشوند یا علامت نقل‌قول پاسخ دهید.`;
 
     // Dynamic session placeholders
@@ -6064,12 +6195,14 @@ async function generateAnonymousAiReply(
       `\n\n══════════════════════════════════════════════`,
       `[چارچوب وضعیت و تصمیمات قطعی ماشین وضعیت (Deterministic State Machine)]:`,
       stepOutput.promptDirective,
+      `- استراتژی فعال مکالمه: ${chosenStrategy}`,
+      `- پرسونای فعال: ${chosenPersona.name} (${chosenPersona.role})`,
       `- وضعیت سیستم (State): ${updatedCtx.state}`,
       `- قصد تشخیص‌داده‌شده کاربر (Intent): ${stepOutput.intentResult.intent} (اطمینان: ${Math.round(stepOutput.intentResult.confidence * 100)}%)`,
       `- امتیاز لید (Lead Score): ${updatedCtx.leadScore}/100`,
       `- سطح مجاز تبلیغات (Promotion Policy): ${updatedCtx.promotionLevel} (قفل تبلیغ: ${updatedCtx.promotionLock ? 'فعال' : 'غیرفعال'})`,
       `- مدت زمان مکالمه: ${elapsedSec} ثانیه`,
-      `- تفکیک حافظه: شما با یک هم‌صحبت ناشناس کاملاً جدید چت می‌کنید و هیچ اطلاعی از افراد قبلی ندارید.`,
+      `- تفکیک حافظه: شما با یک هم‌صحبت جدید چت می‌کنید و هیچ اطلاعی از افراد قبلی ندارید.`,
     ];
 
     if (previousBotMessages.length > 0) {
@@ -6092,27 +6225,34 @@ async function generateAnonymousAiReply(
 
     let systemInstruction = basePrompt + sessionFrameParts.join('\n');
 
-    systemInstruction += `\n\n══════════════════════════════════════════════
-[دستورات ساختار نگارش و لحن مکالمه انسانی (پرسونای دختر جوان ۲۶ ساله اهل تهران)]:
-۱. لحن کاملاً روان، طبیعی، امروزی و یکپارچه: مانند یک دختر جوان ایرانی واقعی پای گوشی به صورت صمیمی و دوستانه چت کنید. پیام‌ها باید جملاتی کامل، سلیس، روان و بدون لکنت یا شکستگی کلمات باشند.
-۲. طول پیام‌ها: هر پاسخ شما ۱ الی ۲ جمله کامل، روان و پیوسته باشد (حدود ۵ الی ۱۵ کلمه). از نصفه‌نیمه نوشتن جملات، بریدن کلمات یا جملات بی‌سر و ته اکیداً خودداری کنید.
-۳. ممنوعیت کلمات صمیمیت لوس یا مصنوعی: هرگز از کلمات «عزیزم»، «عزیز دلم»، «گلم»، «فدات شم»، «قربونت برم» برای مخاطب ناشناس استفاده نکنید.
-۴. قانون علائم نگارشی تلگرامی: در چت تلگرام هرگز از نقطه در انتهای جمله (.)، علامت تعجب (!)، ویرگول‌های متعدد (،)، دونقطه (:) و گیومه استفاده نکنید چون ربات‌گونه به نظر می‌رسد. فقط در صورت پرسش از علامت ؟ استفاده کنید.
-۵. سن و مشخصات: سن شما ۲۶ سال است. در پاسخ به اصل سن خود را ۲۶ بنویسید (مثلاً: «ملودی ۲۶ تهران شما چی؟»). هرگز سن را به حروف مانند «بیست و شش» ننویسید.
-۶. بدون هرگونه پیشوند و کاراکتر اضافه: بدون پیشوندهایی مثل «ملودی:» یا اسلش (/)، کوتیشن (")، ستاره (*) یا براکت پاسخ دهید.
-
-[قوانین اکید حافظه مکالمه و پیشگیری از تکرار (Memory & Anti-Repetition Rules)]:
-۱. ممنوعیت کامل تکرار سوالات: تاریخچه پیام‌ها را بررسی کنید و هرگز سوالی را که قبلاً در این گفتگو مطرح شده دوباره نپرسید.
-۲. پاسخ مستقیم و عدم برگرداندن سوال (Anti-Mirroring): اگر کاربر سوالی پرسید (مثلاً درباره روزمرگی، شغل یا سن)، مستقیماً در یک جمله روان و کامل پاسخ دهید و سوال را فوراً به خودش برنگردانید («تو چیکار میکنی» تکراری نفرستید).
-۳. پیشبرد جریان طبیعی گفتگو: بعد از پاسخ به کاربر، گفتگو را به آرامی و طبیعی پیش ببرید.
-
-[اصول اولویت مکالمه انسانی و عدم تبلیغ بی‌ربط (Conversation First)]:
-۱. اولویت اول و مطلق، مکالمه طبیعی و انسانی است: درباره هر موضوعی که مخاطب صحبت می‌کند (روزمرگی، درد و بیماری، شوخی، کار، علایق)، کاملاً صمیمی، همدلانه و متناسب با حرف او چت کنید.
-۲. ممنوعیت کامل تبلیغ ناگهانی و وسط صحبت: اگر صحبت درباره موضوعات روزمره است، اکیداً نام وی‌پی‌ان، فیلترشکن، قیمت، سرور یا تبلیغ را نیاورید.
-۳. معرفی محصول فقط در صورت تمایل یا سوال مخاطب: فقط زمانی که مخاطب خودش درباره فیلترشکن، اینترنت، فیلترینگ، اینستاگرام یا بازی سوال پرسید یا ابراز نیاز کرد، پاسخ دهید.
-۴. عدم نیاز مخاطب = خداحافظی فوری: اگر مخاطب گفت نیاز ندارم، بدون اصرار در یک جمله کوتاه خداحافظی کنید (مثل «باشه حله مراقب خودت باش فعلا»).
-۵. هرگز کلماتی مانند «کپشن عکس» یا برچسب‌های سیستمی تولید نکنید.
+    let dynamicPersonaGuideline = '';
+    if (chosenStrategy === 'direct_pitch') {
+      dynamicPersonaGuideline = `\n\n══════════════════════════════════════════════
+[دستورات استراتژی ویزیتور و فروش مستقیم (${chosenPersona.name})]:
+۱. هویت و لحن: شما به عنوان ${chosenPersona.role} با نام «${chosenPersona.name}» و لحن «${chosenPersona.tone}» پاسخ می‌دهید.
+۲. معرفی مستقیم و جذاب: از همان ابتدای گفتگو، ارزش محصول (${activeProduct.productName})، کیفیت بالا و پیشنهاد تست رایگان را مستقیماً، دوستانه و بدون حاشیه‌پردازی مطرح کنید.
+۳. ساختار پیام: پاسخ‌های بسیار کوتاه تلگرامی (۱ الی ۲ جمله روان و عامیانه، بین ۵ تا ۱۵ کلمه).
+۴. عدم استفاده از نگارش کتابی: از نقطه (.)، ویرگول‌های مکرر، دونقطه و گیومه استفاده نکنید.
+۵. عدم تکرار: از تکرار مجدد جملات قبلی خود پرهیز کنید.
 ══════════════════════════════════════════════`;
+    } else if (chosenStrategy === 'consultative') {
+      dynamicPersonaGuideline = `\n\n══════════════════════════════════════════════
+[دستورات استراتژی مشاوره‌ای و حل مسئله (${chosenPersona.name})]:
+۱. هویت و لحن: شما به عنوان ${chosenPersona.role} با نام «${chosenPersona.name}» و لحن «${chosenPersona.tone}» پاسخ می‌دهید.
+۲. رویکرد مشاوره‌ای: با پرسیدن سوال درباره نوع دستگاه، اپراتور یا نیاز کاربر، او را راهنمایی کنید و سپس راهکار متناسب (${activeProduct.productName}) را ارائه دهید.
+۳. ساختار پیام: کوتاه، روان و محاوره‌ای تلگرامی.
+══════════════════════════════════════════════`;
+    } else {
+      dynamicPersonaGuideline = `\n\n══════════════════════════════════════════════
+[دستورات ساختار نگارش و لحن مکالمه طبیعی (${chosenPersona.name})]:
+۱. لحن کاملاً روان، طبیعی و دوستانه: به عنوان ${chosenPersona.name} (${chosenPersona.role}) با لحن ${chosenPersona.tone} چت کنید.
+۲. طول پیام‌ها: هر پاسخ شما ۱ الی ۲ جمله کامل، روان و پیوسته باشد (حدود ۵ الی ۱۵ کلمه).
+۳. بدون کلمات لوس یا مصنوعی برای غریبه.
+۴. بدون علائم نگارشی کتابی (نقطه در انتها، ویرگول‌های متعدد).
+══════════════════════════════════════════════`;
+    }
+
+    systemInstruction += dynamicPersonaGuideline;
 
     if (updatedCtx.promotionLock || updatedCtx.state === ConversationState.REJECTED) {
       systemInstruction += `\n\n══════════════════════════════════════════════
@@ -6239,6 +6379,8 @@ ${formatProductPromptContext(activeProduct, updatedCtx.supportIdAvailable)}
 
         const rawReply = response.text?.trim();
         if (rawReply) {
+          recordGeminiSuccess(modelName);
+
           // Use our robust Response Validator & Sanitizer
           const validation = validateAndSanitizeResponse(
             rawReply,
@@ -6276,16 +6418,19 @@ ${formatProductPromptContext(activeProduct, updatedCtx.supportIdAvailable)}
         }
       } catch (err: any) {
         const errMsg = err?.message || String(err);
-        if (
+        const cooldownSec = recordGeminiFailure(modelName, err);
+        const isBusyOrRateLimited =
           errMsg.includes('503') ||
           errMsg.includes('429') ||
           errMsg.includes('demand') ||
-          errMsg.includes('UNAVAILABLE')
-        ) {
-          console.warn(`[Gemini AI Failover] Model ${modelName} temporarily busy. Seamlessly switching to next model...`);
-          await new Promise((r) => setTimeout(r, 250));
+          errMsg.includes('UNAVAILABLE') ||
+          errMsg.includes('RESOURCE_EXHAUSTED') ||
+          errMsg.includes('overloaded');
+
+        if (isBusyOrRateLimited) {
+          console.warn(`[Gemini Adaptive Router] Model ${modelName} is busy/throttled. Set ${cooldownSec}s cooldown. Seamlessly switching to next model immediately...`);
         } else {
-          console.warn(`[Gemini AI Failover] Model ${modelName} notice: ${errMsg}. Trying next available model...`);
+          console.warn(`[Gemini Adaptive Router] Model ${modelName} notice: ${errMsg}. Set ${cooldownSec}s cooldown. Trying next available model...`);
         }
       }
     }
@@ -8431,8 +8576,58 @@ let isAnonEngineRunning = false;
 let anonEngineAbort = false;
 const botEntityCache = new Map<string, any>();
 
-async function resolveBotEntitySmart(client: any, rawUsernameOrLink: string): Promise<any> {
-  const cleanUsername = rawUsernameOrLink
+async function getOrInitAnonymousClient(preferredAccountId?: string): Promise<{ client: any; account: TelegramAccount | null } | null> {
+  syncAccountsState();
+  const accounts = appState.accounts || [];
+
+  // 1. Try preferred account if explicitly passed
+  if (preferredAccountId) {
+    const acc = accounts.find(a => a.id === preferredAccountId && a.status !== 'session_expired' && a.status !== 'disabled');
+    if (acc) {
+      const client = await getOrInitClientForAccount(acc);
+      if (client) return { client, account: acc };
+    }
+  }
+
+  // 2. Try currently active account if enabled for anonymous bot
+  if (appState.activeAccountId) {
+    const activeAcc = accounts.find(a => a.id === appState.activeAccountId);
+    if (activeAcc && activeAcc.enableForAnonymousBot !== false && activeAcc.isActive && activeAcc.status !== 'session_expired' && activeAcc.status !== 'disabled') {
+      const client = await getOrInitClientForAccount(activeAcc);
+      if (client) return { client, account: activeAcc };
+    }
+  }
+
+  // 3. Find any candidate account enabled for anonymous bot
+  const candidateAccounts = accounts.filter(
+    a => (a.enableForAnonymousBot !== false) && a.isActive && a.status !== 'session_expired' && a.status !== 'disabled' && Boolean(a.sessionString)
+  );
+  if (candidateAccounts.length > 0) {
+    const chosenAcc = candidateAccounts[0];
+    const client = await getOrInitClientForAccount(chosenAcc);
+    if (client) return { client, account: chosenAcc };
+  }
+
+  // 4. Fallback: If accounts exist with valid session, automatically enable the first available account
+  const fallbackAcc = accounts.find(a => a.isActive && a.status !== 'session_expired' && a.sessionString) || accounts.find(a => a.sessionString);
+  if (fallbackAcc) {
+    fallbackAcc.enableForAnonymousBot = true;
+    saveData();
+    const client = await getOrInitClientForAccount(fallbackAcc);
+    if (client) return { client, account: fallbackAcc };
+  }
+
+  // 5. Fallback to legacy credentials
+  if (appState.credentials.isConnected && appState.credentials.sessionString) {
+    const client = await getOrInitTgClient();
+    if (client) return { client, account: null };
+  }
+
+  return null;
+}
+
+async function resolveBotEntitySmart(client: any, rawUsernameOrLink: string, botProfile?: any): Promise<any> {
+  const cleanUsername = (rawUsernameOrLink || '')
     .replace('https://t.me/', '')
     .replace('http://t.me/', '')
     .replace('t.me/', '')
@@ -8440,7 +8635,10 @@ async function resolveBotEntitySmart(client: any, rawUsernameOrLink: string): Pr
     .trim()
     .toLowerCase();
 
-  const cacheKey = `${appState.credentials.phoneNumber || 'default'}_${cleanUsername}`;
+  const botNameLower = (botProfile?.name || '').toLowerCase();
+  const clientId = client?._selfId || appState.activeAccountId || 'active';
+  const cacheKey = `${clientId}_${cleanUsername || botNameLower}`;
+
   if (botEntityCache.has(cacheKey)) {
     const cached = botEntityCache.get(cacheKey);
     if (cached) return cached;
@@ -8452,10 +8650,25 @@ async function resolveBotEntitySmart(client: any, rawUsernameOrLink: string): Pr
     for (const d of dialogs || []) {
       const entity = d.entity;
       if (!entity) continue;
+      
       const entityUsername = (entity.username || '').toLowerCase();
-      if (entityUsername && entityUsername === cleanUsername) {
-        botEntityCache.set(cacheKey, entity);
-        return entity;
+      const entityTitle = (d.title || d.name || entity.firstName || entity.lastName || '').toLowerCase();
+
+      const usernameMatch = cleanUsername && entityUsername === cleanUsername;
+      const titleMatch = (
+        (cleanUsername && (entityTitle.includes(cleanUsername) || cleanUsername.includes(entityTitle))) ||
+        (botNameLower && (entityTitle.includes(botNameLower) || botNameLower.includes(entityTitle))) ||
+        (cleanUsername === 'hypergap' && (entityTitle.includes('هایپر') || entityTitle.includes('hyper'))) ||
+        (cleanUsername === 'bichatbot' && (entityTitle.includes('بای چت') || entityTitle.includes('بی چت') || entityTitle.includes('bichat'))) ||
+        (cleanUsername === 'chatgrambot' && (entityTitle.includes('چت‌گرام') || entityTitle.includes('چت گرام') || entityTitle.includes('chatgram'))) ||
+        (cleanUsername === 'hamsedabot' && (entityTitle.includes('هم‌صدا') || entityTitle.includes('هم صدا') || entityTitle.includes('hamseda'))) ||
+        (cleanUsername === 'gapgrambot' && (entityTitle.includes('گپ‌گرام') || entityTitle.includes('گپ گرام') || entityTitle.includes('gapgram')))
+      );
+
+      if (usernameMatch || titleMatch) {
+        const resolved = d.inputEntity || d.entity;
+        botEntityCache.set(cacheKey, resolved);
+        return resolved;
       }
     }
   } catch (dialogErr: any) {
@@ -8473,7 +8686,7 @@ async function resolveBotEntitySmart(client: any, rawUsernameOrLink: string): Pr
     const errMsg = String(err?.errorMessage || err?.message || err);
     if (errMsg.includes('FLOOD_WAIT') || errMsg.includes('wait of') || errMsg.includes('ResolveUsername')) {
       throw new Error(
-        `حساب تلگرام شما به دلیل جستجوهای زیاد، از طرف تلگرام موقتاً دچار محدودیت جستجوی نام‌کاربری (FloodWait) شده است.\n\n💡 راه‌حل فوری: لطفاً یک‌بار در اپلیکیشن تلگرام خود ربات @${cleanUsername} را باز کرده و دکمه Start را بزنید تا این ربات به لیست چت‌های حساب شما اضافه شود. پس از آن، سیستم بدون نیاز به جستجو مستقیماً به ربات متصل خواهد شد.`
+        `حساب تلگرام شما به دلیل جستجوهای زیاد، از طرف تلگرام موقتاً دچار محدودیت جستجوی نام‌کاربری (FloodWait) شده است.\n\n💡 راه‌حل فوری: لطفاً یک‌بار در اپلیکیشن تلگرام خود ربات @${cleanUsername} را باز کرده و دکمه Start را بزنید تا این ربات به لیست گفتگوهای تلگرام شما اضافه شود. پس از آن، سیستم بدون نیاز به جستجو مستقیماً به ربات متصل خواهد شد.`
       );
     }
     throw err;
@@ -8503,22 +8716,20 @@ async function runAnonymousChatWorker() {
     }
 
     // Get active Telegram client for Anonymous Chat
-    syncAccountsState();
-    const candidateAccounts = (appState.accounts || []).filter(
-      a => (a.enableForAnonymousBot !== false) && a.isActive && a.status !== 'session_expired' && a.status !== 'disabled'
-    );
-
-    if (candidateAccounts.length === 0) {
-      addLog('error', '[چت ناشناس] هیچ اکانت فعال و تاییدشده‌ای برای بخش چت ناشناس فعال نیست. لطفاً در مدیریت اکانت‌ها گزینه چت ناشناس را برای اکانت خود فعال نمایید.');
+    const anonClientInfo = await getOrInitAnonymousClient();
+    if (!anonClientInfo || !anonClientInfo.client) {
+      addLog('error', '[چت ناشناس] هیچ اکانت فعال و تاییدشده‌ای برای بخش چت ناشناس یافت نشد. لطفاً در بخش ۳ (مدیریت اکانت‌ها) اکانت خود را اضافه کرده یا گزینه چت ربات ناشناس را فعال نمایید.');
+      appState.anonymousAutomator.isActive = false;
+      saveData();
       break;
     }
 
-    const chosenAcc = candidateAccounts.find(a => a.id === appState.activeAccountId) || candidateAccounts[0];
-    const client = await getOrInitClientForAccount(chosenAcc);
-    if (!client) {
-      addLog('error', `[چت ناشناس] اتصال به اکانت تلگرام (${chosenAcc.userProfile?.firstName || chosenAcc.phoneNumber}) برقرار نشد.`);
-      break;
-    }
+    const client = anonClientInfo.client;
+    const chosenAcc = anonClientInfo.account || {
+      id: 'primary',
+      phoneNumber: appState.credentials.phoneNumber || '',
+      userProfile: appState.credentials.userProfile || { firstName: 'User' },
+    };
 
     const sessionNum = (automator.stats.totalChatsInitiated || 0) + 1;
     const sessionId = 'anon_session_' + Date.now();
@@ -8546,14 +8757,16 @@ async function runAnonymousChatWorker() {
       // 1. Resolve Bot Entity using smart resolver
       let botEntity: any = null;
       try {
-        botEntity = await resolveBotEntitySmart(client, selectedBot.botUsername);
+        botEntity = await resolveBotEntitySmart(client, selectedBot.botUsername, selectedBot);
         if (!botEntity) {
-          throw new Error(`ربات ${selectedBot.botUsername} در تلگرام یافت نشد.`);
+          throw new Error(`ربات ${selectedBot.botUsername} (${selectedBot.name}) در تلگرام یافت نشد.`);
         }
       } catch (e: any) {
         addLog('error', `[چت ناشناس] یافتن ربات ${selectedBot.botUsername} ناموفق بود: ${e.message}`);
         activeAnonChatSession.status = 'failed';
         activeAnonChatSession.statusMessage = e.message || `ربات ${selectedBot.botUsername} یافت نشد.`;
+        appState.anonymousAutomator.isActive = false;
+        saveData();
         break;
       }
 
@@ -10086,7 +10299,7 @@ app.post('/api/anonymous/delete-bot', (req, res) => {
 });
 
 app.post('/api/anonymous/start', async (req, res) => {
-  const { botId } = req.body;
+  const { botId, accountId } = req.body;
   if (!appState.anonymousAutomator) {
     appState.anonymousAutomator = { ...defaultAnonymousAutomatorConfig };
   }
@@ -10102,25 +10315,26 @@ app.post('/api/anonymous/start', async (req, res) => {
     });
   }
 
-  // Pre-validate Telegram connection and session health
-  const client = await getOrInitTgClient();
-  if (!client) {
-    appState.credentials.isConnected = false;
+  // Pre-validate Telegram connection and account session health
+  const anonClientInfo = await getOrInitAnonymousClient(accountId);
+  if (!anonClientInfo || !anonClientInfo.client) {
     appState.anonymousAutomator.isActive = false;
     saveData();
-    addLog('error', '[چت ناشناس] شروع اتوماسیون ناموفق بود: اتصال به حساب تلگرام برقرار نیست یا نشست منقضی شده است.');
+    addLog('error', '[چت ناشناس] شروع اتوماسیون ناموفق بود: هیچ اکانت تلگرام متصل و معتبری یافت نشد. لطفاً در بخش مدیریت اکانت‌ها وارد شوید.');
     return res.status(400).json({
-      error: 'اتصال به حساب تلگرام برقرار نیست یا نشست حساب منقضی گردیده است. لطفاً ابتدا وارد حساب تلگرام خود شوید.',
+      error: 'هیچ اکانت تلگرام متصل و معتبری برای چت ناشناس یافت نشد. لطفاً ابتدا در بخش ۳ (مدیریت اکانت‌ها) اکانت تلگرام خود را متصل یا تمدید نشست فرمایید.',
       needAuth: true,
     });
   }
 
+  const client = anonClientInfo.client;
+
   // Pre-validate bot entity resolution before starting
   let botEntity: any = null;
   try {
-    botEntity = await resolveBotEntitySmart(client, selectedBot.botUsername);
+    botEntity = await resolveBotEntitySmart(client, selectedBot.botUsername, selectedBot);
     if (!botEntity) {
-      throw new Error(`ربات ${selectedBot.botUsername} در تلگرام یافت نشد.`);
+      throw new Error(`ربات ${selectedBot.botUsername} (${selectedBot.name}) در تلگرام یافت نشد.`);
     }
   } catch (entityErr: any) {
     appState.anonymousAutomator.isActive = false;
@@ -10185,16 +10399,16 @@ app.post('/api/anonymous/stop', async (req, res) => {
 });
 
 app.post('/api/anonymous/next-stranger', async (req, res) => {
-  const client = await getOrInitTgClient();
+  const anonClientInfo = await getOrInitAnonymousClient();
   const automator = appState.anonymousAutomator;
   const selectedBot = automator?.bots.find((b) => b.id === automator.selectedBotId) || automator?.bots[0];
-  if (client && selectedBot) {
+  if (anonClientInfo?.client && selectedBot) {
     try {
-      const botEntity = await resolveBotEntitySmart(client, selectedBot.botUsername);
+      const botEntity = await resolveBotEntitySmart(anonClientInfo.client, selectedBot.botUsername, selectedBot);
 
       if (activeAnonChatSession) {
         await executeExitAndNextPartner(
-          client,
+          anonClientInfo.client,
           botEntity,
           selectedBot,
           activeAnonChatSession,
@@ -10219,13 +10433,13 @@ app.post('/api/anonymous/send-manual-message', async (req, res) => {
     res.status(400).json({ error: 'متن پیام خالی است.' });
     return;
   }
-  const client = await getOrInitTgClient();
+  const anonClientInfo = await getOrInitAnonymousClient();
   const automator = appState.anonymousAutomator;
   const selectedBot = automator?.bots.find((b) => b.id === automator.selectedBotId) || automator?.bots[0];
-  if (client && selectedBot) {
+  if (anonClientInfo?.client && selectedBot) {
     try {
-      const botEntity = await resolveBotEntitySmart(client, selectedBot.botUsername);
-      await client.sendMessage(botEntity, { message: text.trim() });
+      const botEntity = await resolveBotEntitySmart(anonClientInfo.client, selectedBot.botUsername, selectedBot);
+      await anonClientInfo.client.sendMessage(botEntity, { message: text.trim() });
       if (activeAnonChatSession) {
         activeAnonChatSession.transcript.push({
           id: 'msg_' + Date.now() + '_operator',

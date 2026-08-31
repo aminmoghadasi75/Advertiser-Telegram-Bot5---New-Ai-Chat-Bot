@@ -4,6 +4,7 @@ import {
   PromotionLevel,
   ConversationContext,
   AnonymousProductPromotion,
+  ConversationStrategy,
 } from '../types';
 
 export const MIN_CTA_TURN_GAP = 2; // Minimum turns between consecutive direct CTAs
@@ -23,12 +24,13 @@ export interface PromotionDecision {
 
 /**
  * Deterministic Promotion Policy Engine
- * Enforces business rules, safety locks, time gates, promotion locks, and explicit intent overrides.
+ * Enforces business rules, safety locks, time gates, promotion locks, strategies, and explicit intent overrides.
  */
 export function evaluatePromotionPolicy(
   context: ConversationContext,
   currentIntent: Intent,
-  promotionConfig?: AnonymousProductPromotion
+  promotionConfig?: AnonymousProductPromotion,
+  strategy: ConversationStrategy = 'direct_pitch'
 ): PromotionDecision {
   const reasonCodes: string[] = [];
 
@@ -246,7 +248,40 @@ export function evaluatePromotionPolicy(
     };
   }
 
-  // Default: Pure human conversation and authentic rapport (NO UNPROMPTED PROMOTION)
+  // 9. Dynamic Conversation Strategy Evaluation
+  if (strategy === 'direct_pitch' && !context.promotionLock) {
+    const minPhotoDelay = promotionConfig.minPhotoDelaySeconds ?? MIN_NATURAL_PHOTO_DELAY_SECONDS;
+    const isPhotoAllowed = (context.elapsedSeconds || 0) >= minPhotoDelay;
+    reasonCodes.push('STRATEGY_DIRECT_PITCH_ACTIVE');
+    return {
+      allowedLevel: PromotionLevel.DIRECT_OFFER,
+      canSendDirectOffer: true,
+      canSendSoftMention: true,
+      canSendBannerPhoto: Boolean(promotionConfig.imageUrl && isPhotoAllowed),
+      isPromotionLocked: false,
+      isExplicitOverride: true,
+      isSuppressed: false,
+      reasonCodes,
+      reason: `Direct Pitch / Visitor Strategy: Direct value proposition and free trial offer enabled from start (Photo >= 120s: ${isPhotoAllowed ? 'YES' : 'NO'}).`,
+    };
+  }
+
+  if (strategy === 'consultative' && !context.promotionLock) {
+    reasonCodes.push('STRATEGY_CONSULTATIVE_ACTIVE');
+    return {
+      allowedLevel: PromotionLevel.SOFT_MENTION,
+      canSendDirectOffer: isExplicitProductIntent,
+      canSendSoftMention: true,
+      canSendBannerPhoto: false,
+      isPromotionLocked: false,
+      isExplicitOverride: false,
+      isSuppressed: false,
+      reasonCodes,
+      reason: 'Consultative Strategy: Offering advice and introducing solutions contextually.',
+    };
+  }
+
+  // Default / Social Rapport: Pure human conversation and authentic rapport (NO UNPROMPTED PROMOTION)
   reasonCodes.push('CASUAL_HUMAN_CONVERSATION');
   return {
     allowedLevel: PromotionLevel.NO_PROMOTION,

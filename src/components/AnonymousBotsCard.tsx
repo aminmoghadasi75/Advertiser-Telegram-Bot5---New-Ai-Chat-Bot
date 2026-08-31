@@ -24,8 +24,6 @@ import {
   Repeat,
   Layers,
   Settings2,
-  UserCheck,
-  PlusCircle,
   CheckCircle2,
   Phone,
   ChevronDown,
@@ -83,12 +81,13 @@ export const AnonymousBotsCard: React.FC<AnonymousBotsCardProps> = ({
   onClearHistory,
 }) => {
   const [activeTab, setActiveTab] = useState<'bots' | 'instructions' | 'simulator' | 'live_chat' | 'analytics' | 'evaluation'>('evaluation');
-  const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
+  const hasAnyValidAccount = isConnected || accounts.some((a) => a.isActive && a.status !== 'session_expired');
+
   const handleStartClick = async () => {
-    if (!isConnected) {
+    if (!hasAnyValidAccount) {
       onOpenAuthModal?.();
       return;
     }
@@ -199,25 +198,6 @@ export const AnonymousBotsCard: React.FC<AnonymousBotsCardProps> = ({
     },
   };
 
-  const handleAccountChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const accId = e.target.value;
-    if (!accId || !onSelectActiveAccount) return;
-    setIsSwitchingAccount(true);
-    try {
-      await onSelectActiveAccount(accId);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSwitchingAccount(false);
-    }
-  };
-
-  const currentAccountName =
-    credentials?.userProfile?.firstName ||
-    accounts.find((a) => a.id === activeAccountId)?.userProfile?.firstName ||
-    credentials?.phoneNumber ||
-    'اکانت نامشخص';
-
   return (
     <div
       id="anonymous-bots-card"
@@ -265,14 +245,14 @@ export const AnonymousBotsCard: React.FC<AnonymousBotsCardProps> = ({
               onClick={handleStartClick}
               disabled={isActionLoading}
               className={`px-6 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg transition-all cursor-pointer disabled:opacity-60 ${
-                isConnected
+                hasAnyValidAccount
                   ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-950/50 ring-1 ring-emerald-400/40'
                   : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40'
               }`}
             >
               {isActionLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
-              ) : isConnected ? (
+              ) : hasAnyValidAccount ? (
                 <Play className="w-4 h-4 fill-current" />
               ) : (
                 <Phone className="w-4 h-4 text-amber-400" />
@@ -280,66 +260,12 @@ export const AnonymousBotsCard: React.FC<AnonymousBotsCardProps> = ({
               <span>
                 {isActionLoading
                   ? 'در حال راه‌اندازی و اتصال...'
-                  : isConnected
+                  : hasAnyValidAccount
                   ? 'شروع چت با ناشناس‌ها'
                   : 'ورود به تلگرام جهت شروع چت'}
               </span>
             </button>
           )}
-        </div>
-      </div>
-
-      {/* Account Selector Bar (1-Click Account Switcher for Anonymous Chat) */}
-      <div className="mx-5 bg-slate-950/80 p-3.5 rounded-xl border border-violet-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 text-violet-400 flex items-center justify-center">
-            <UserCheck className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="text-[11px] text-slate-400">حساب تلگرام فعال جهت اجرای چت ناشناس:</div>
-            <div className="text-xs font-bold text-white flex items-center gap-2">
-              <span>{currentAccountName}</span>
-              {isConnected ? (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  متصل
-                </span>
-              ) : (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                  قطع اتصال
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          {accounts.length > 1 && (
-            <div className="relative">
-              <select
-                aria-label="انتخاب اکانت فعال تلگرام"
-                value={activeAccountId || accounts[0]?.id || ''}
-                onChange={handleAccountChange}
-                disabled={isSwitchingAccount}
-                className="bg-slate-900 border border-slate-700 hover:border-violet-500 text-slate-200 text-xs font-semibold rounded-xl px-3 py-1.5 focus:outline-none transition-colors cursor-pointer pl-8"
-              >
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.userProfile?.firstName || 'اکانت'} ({acc.phoneNumber})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={onOpenAddAccountModal || onOpenAuthModal}
-            className="px-3 py-1.5 rounded-xl bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/30 text-violet-300 hover:text-white text-xs font-bold transition-colors flex items-center gap-1.5"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>افزودن / مدیریت اکانت‌ها</span>
-          </button>
         </div>
       </div>
 

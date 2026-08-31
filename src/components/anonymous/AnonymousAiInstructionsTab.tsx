@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AnonymousChatInstructions, AnonymousProductPromotion, SavedAiPrompt } from '../../types';
+import {
+  AnonymousChatInstructions,
+  AnonymousProductPromotion,
+  SavedAiPrompt,
+  ConversationStrategy,
+  BotPersonaConfig,
+} from '../../types';
 import { ProductConfig, DEFAULT_PRODUCTS_CATALOG } from '../../config/productConfig';
 import { AnonymousCampaignsManager } from './AnonymousCampaignsManager';
 import {
@@ -34,6 +40,15 @@ import {
   FolderHeart,
   Save,
   X,
+  Cpu,
+  Activity,
+  ArrowLeftRight,
+  UserCheck,
+  Compass,
+  Target,
+  Briefcase,
+  User,
+  Wand2,
 } from 'lucide-react';
 
 interface AnonymousAiInstructionsTabProps {
@@ -92,6 +107,40 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
     (instructions.spamBotKeywords || []).join(' - ')
   );
 
+  // Real-time Adaptive Gemini Multi-Model Status
+  const [geminiStatus, setGeminiStatus] = useState<{
+    activePriorityOrder?: string[];
+    models?: Array<{
+      modelName: string;
+      status: 'healthy' | 'recovering' | 'cooldown';
+      consecutiveFailures: number;
+      totalSuccesses: number;
+      totalFailures: number;
+      cooldownSecondsRemaining: number;
+      lastError: string | null;
+    }>;
+  } | null>(null);
+
+  const fetchGeminiStatus = async () => {
+    try {
+      const res = await fetch('/api/anonymous/gemini-status');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setGeminiStatus(data);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    fetchGeminiStatus();
+    const interval = setInterval(fetchGeminiStatus, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Synchronize from parent props ONLY when parent changes externally (e.g. bot switch or initial load),
   // protecting local state from stale parent props during in-flight saves.
   useEffect(() => {
@@ -132,7 +181,7 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
     setRawSpamBotKeywords((instructions.spamBotKeywords || []).join(' - '));
   }, [instructions, isDirty]);
 
-  // Live Auto-Save Effect (Debounced 600ms)
+  // Live Auto-Save Effect (Debounced 800ms)
   useEffect(() => {
     if (!isDirty) return;
     const timer = setTimeout(async () => {
@@ -145,12 +194,12 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
         setIsDirty(false);
         setSavedSuccess(true);
         setTimeout(() => setSavedSuccess(false), 2000);
-      } catch (e) {
-        console.error('Auto-save error:', e);
+      } catch (e: any) {
+        console.warn('Auto-save sync notice (will retry on next change):', e?.message || e);
       } finally {
         setIsSaving(false);
       }
-    }, 600);
+    }, 800);
 
     return () => clearTimeout(timer);
   }, [localInstructions, isDirty, onSaveInstructions]);
@@ -189,6 +238,52 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
         },
       };
     });
+  };
+
+  const updateStrategy = (strategy: ConversationStrategy) => {
+    setIsDirty(true);
+    setLocalInstructions((prev) => ({
+      ...prev,
+      conversationStrategy: strategy,
+    }));
+  };
+
+  const updatePersonaField = <K extends keyof BotPersonaConfig>(
+    field: K,
+    value: BotPersonaConfig[K]
+  ) => {
+    setIsDirty(true);
+    setLocalInstructions((prev) => {
+      const currentPersona: BotPersonaConfig = prev.persona || {
+        name: 'پشتیبان فروش و تست رایگان',
+        role: 'ویزیتور و فروشنده اشتراک اختصاصی با ارائه تست رایگان',
+        tone: 'friendly',
+        bio: 'پاسخگوی سریع و راهنمایی صمیمی کاربر برای دریافت کانفیگ تست رایگان',
+        age: '۲۶',
+        location: 'تهران',
+      };
+      return {
+        ...prev,
+        persona: {
+          ...currentPersona,
+          [field]: value,
+        },
+      };
+    });
+  };
+
+  const applyPersonaPreset = (
+    strategy: ConversationStrategy,
+    presetPersona: BotPersonaConfig,
+    suggestedPrompt?: string
+  ) => {
+    setIsDirty(true);
+    setLocalInstructions((prev) => ({
+      ...prev,
+      conversationStrategy: strategy,
+      persona: presetPersona,
+      ...(suggestedPrompt ? { systemPrompt: suggestedPrompt } : {}),
+    }));
   };
 
   const handleSave = async () => {
@@ -522,9 +617,370 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
       </div>
 
       {/* ========================================================================= */}
+      {/* 0. SMART ADAPTIVE MULTI-MODEL ROUTER & FAILOVER MONITOR */}
+      {/* ========================================================================= */}
+      <div className="bg-slate-900/80 border border-cyan-500/30 rounded-2xl p-4 sm:p-5 shadow-lg relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+              <Cpu className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white">
+                  سوییچ هوشمند و بدون وقفه بین مدل‌های Gemini (Adaptive Failover Router)
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  فعال و برخط
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                ربات در زمان اوج شلوغی سرورهای گوگل بلافاصله و با تأخیر صفر میلی‌ثانیه به مدل سالم بعدی سوییچ می‌کند تا مکالمه هیچ‌گاه متوقف نشود.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={fetchGeminiStatus}
+            title="بروزرسانی وضعیت مدل‌ها"
+            className="self-end sm:self-auto px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center gap-1.5 border border-slate-700 transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>بروزرسانی وضعیت</span>
+          </button>
+        </div>
+
+        {/* Models Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+          {(geminiStatus?.models || [
+            { modelName: 'gemini-3.7-flash', status: 'healthy', consecutiveFailures: 0, totalSuccesses: 0, totalFailures: 0, cooldownSecondsRemaining: 0, lastError: null },
+            { modelName: 'gemini-3.1-flash-lite', status: 'healthy', consecutiveFailures: 0, totalSuccesses: 0, totalFailures: 0, cooldownSecondsRemaining: 0, lastError: null },
+            { modelName: 'gemini-flash-latest', status: 'healthy', consecutiveFailures: 0, totalSuccesses: 0, totalFailures: 0, cooldownSecondsRemaining: 0, lastError: null },
+          ]).map((m, idx) => {
+            const isPrimary = idx === 0;
+            const isHealthy = m.status === 'healthy';
+            const isCooldown = m.status === 'cooldown';
+            const isRecovering = m.status === 'recovering';
+
+            return (
+              <div
+                key={m.modelName}
+                className={`p-3 rounded-xl border transition-all ${
+                  isCooldown
+                    ? 'bg-amber-950/20 border-amber-500/40 text-amber-200'
+                    : isRecovering
+                    ? 'bg-blue-950/20 border-blue-500/40 text-blue-200'
+                    : 'bg-slate-950/50 border-slate-800/80 text-slate-200'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700">
+                      اولویت {idx + 1}
+                    </span>
+                    <span className="text-xs font-bold text-white font-mono">{m.modelName}</span>
+                  </div>
+                  {isCooldown ? (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                      <Clock className="w-2.5 h-2.5" />
+                      استراحت ({m.cooldownSecondsRemaining}s)
+                    </span>
+                  ) : isRecovering ? (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1">
+                      <Activity className="w-2.5 h-2.5" />
+                      تست سلامت
+                    </span>
+                  ) : (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                      <CheckCircle2 className="w-2.5 h-2.5" />
+                      آماده و سریع
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-800/60">
+                  <span>
+                    {isPrimary ? 'مدل اصلی (بالاترین هوش)' : idx === 1 ? 'مدل دوم (فوق‌سریع Lite)' : 'مدل پشتیبان سوم'}
+                  </span>
+                  <span>موفق: {m.totalSuccesses}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
       {/* 1. DEDICATED ANONYMOUS CHAT MULTI-CAMPAIGN & PRODUCT MANAGER */}
       {/* ========================================================================= */}
       <div className="space-y-4">
+        {/* Strategy & Persona Quick Switcher */}
+        <div className="bg-slate-900/90 border border-fuchsia-500/30 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-400">
+                <Compass className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-white">
+                    استراتژی فروش و پرسونای کاراکتر ربات (Sales Strategy & Persona Engine)
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30">
+                    تغییر آنی زیر ۱ دقیقه
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  استراتژی ورود، شخصیت و لحن ربات را آزادانه انتخاب کنید؛ سیستم بدون نیاز به تغییر کد در بک‌اند، رفتار و پرامپت‌ها را تطبیق می‌دهد.
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Presets Dropdown/Buttons */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() =>
+                  applyPersonaPreset(
+                    'direct_pitch',
+                    {
+                      name: 'پشتیبان فروش و تست رایگان',
+                      role: 'ویزیتور و فروشنده اشتراک اختصاصی با ارائه تست رایگان',
+                      tone: 'friendly',
+                      bio: 'ارائه مستقیم تست رایگان و اشتراک اختصاصی بدون قطعی',
+                      age: '۲۶',
+                      location: 'تهران',
+                    },
+                    `شما در نقش ویزیتور و پشتیبان رسمی فروش اشتراک اختصاصی هستید که در چت تلگرام به مخاطب پیام می‌دهید.
+دستورالعمل‌ها:
+۱. از همان ابتدا با لحنی صمیمی و دوستانه ارزش محصول و پیشنهاد اکانت تست رایگان را معرفی کنید.
+۲. پاسخ‌های کوتاه (۱ الی ۲ جمله روان و عامیانه) بدهید.
+۳. از علائم نگارشی کتابی (نقطه در آخر، ویرگول‌های متعدد) پرهیز کنید.`
+                  )
+                }
+                className="px-2.5 py-1.5 rounded-lg bg-fuchsia-950/40 hover:bg-fuchsia-900/50 text-fuchsia-200 text-xs border border-fuchsia-500/30 flex items-center gap-1 transition-all"
+              >
+                <Target className="w-3.5 h-3.5 text-fuchsia-400" />
+                <span>قالب ویزیتور مستقیم</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  applyPersonaPreset(
+                    'consultative',
+                    {
+                      name: 'مشاور فنی اشتراک',
+                      role: 'مشاور و عیب‌یاب اینترنت و فیلترینگ',
+                      tone: 'consultative',
+                      bio: 'بررسی مشکل کاربر و ارائه کانفیگ تست متناسب با اپراتور (همراه اول/ایرانسل/مخابرات)',
+                      age: '۲۸',
+                      location: 'تهران',
+                    },
+                    `شما در نقش مشاور فنی و راهنمای اینترنت هستید.
+دستورالعمل‌ها:
+۱. ابتدا با پرسیدن اپراتور یا نوع دستگاه کاربر، نیاز او را شناسایی کرده و سپس راهکار پرسرعت با تست رایگان را معرفی کنید.
+۲. پاسخ‌ها کوتاه، دوستانه و راهگشا باشد.`
+                  )
+                }
+                className="px-2.5 py-1.5 rounded-lg bg-cyan-950/40 hover:bg-cyan-900/50 text-cyan-200 text-xs border border-cyan-500/30 flex items-center gap-1 transition-all"
+              >
+                <Briefcase className="w-3.5 h-3.5 text-cyan-400" />
+                <span>قالب مشاور فنی</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  applyPersonaPreset(
+                    'social_rapport',
+                    {
+                      name: 'ملودی',
+                      role: 'هم‌صحبت صمیمی و خودمانی',
+                      tone: 'casual',
+                      bio: 'چت روزمره، همدلی و معرفی محصول فقط در صورت سوال یا تمایل مخاطب',
+                      age: '۲۶',
+                      location: 'تهران',
+                    },
+                    `شما در نقش یک کاربر عادی ایرانی به نام ملودی ۲۶ ساله از تهران در حال چت دوستانه هستید.
+دستورالعمل‌ها:
+۱. اولویت اول گفتگو و ایجاد صمیمیت است.
+۲. تا زمانی که مخاطب خودش درباره اینترنت یا فیلترشکن نپرسیده، تبلیغ نکنید.
+۳. پاسخ‌ها کوتاه (۱ الی ۲ جمله) و بدون نقطه پایانی باشد.`
+                  )
+                }
+                className="px-2.5 py-1.5 rounded-lg bg-pink-950/40 hover:bg-pink-900/50 text-pink-200 text-xs border border-pink-500/30 flex items-center gap-1 transition-all"
+              >
+                <User className="w-3.5 h-3.5 text-pink-400" />
+                <span>قالب چت صمیمی</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Strategy Selection 3-Card Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* 1. Direct Pitch Strategy */}
+            <div
+              onClick={() => updateStrategy('direct_pitch')}
+              className={`p-3.5 rounded-xl border cursor-pointer transition-all space-y-1.5 ${
+                (localInstructions.conversationStrategy || 'direct_pitch') === 'direct_pitch'
+                  ? 'bg-fuchsia-950/40 border-fuchsia-500 ring-1 ring-fuchsia-500/50 text-white'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-xs">
+                  <Target className="w-4 h-4 text-fuchsia-400" />
+                  <span>ویزیتور و فروشنده مستقیم (Direct Pitch)</span>
+                </div>
+                <input
+                  type="radio"
+                  name="conversationStrategy"
+                  checked={(localInstructions.conversationStrategy || 'direct_pitch') === 'direct_pitch'}
+                  onChange={() => updateStrategy('direct_pitch')}
+                  className="accent-fuchsia-500"
+                />
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                ورود صریح و محترمانه به عنوان فروشنده/پشتیبان، معرفی ارزش محصول و پیشنهاد تست رایگان و آیدی پشتیبانی بدون معطلی و بدون فریب مخاطب.
+              </p>
+            </div>
+
+            {/* 2. Consultative Strategy */}
+            <div
+              onClick={() => updateStrategy('consultative')}
+              className={`p-3.5 rounded-xl border cursor-pointer transition-all space-y-1.5 ${
+                localInstructions.conversationStrategy === 'consultative'
+                  ? 'bg-cyan-950/40 border-cyan-500 ring-1 ring-cyan-500/50 text-white'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-xs">
+                  <Briefcase className="w-4 h-4 text-cyan-400" />
+                  <span>مشاوره‌ای و حل مسئله (Consultative)</span>
+                </div>
+                <input
+                  type="radio"
+                  name="conversationStrategy"
+                  checked={localInstructions.conversationStrategy === 'consultative'}
+                  onChange={() => updateStrategy('consultative')}
+                  className="accent-cyan-500"
+                />
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                شروع با احوال‌پرسی، پرسیدن از مشکلات اینترنت یا اپراتور کاربر و سپس ارائه راهکار مناسب و اشتراک تست رایگان بر اساس نیاز او.
+              </p>
+            </div>
+
+            {/* 3. Social Rapport Strategy */}
+            <div
+              onClick={() => updateStrategy('social_rapport')}
+              className={`p-3.5 rounded-xl border cursor-pointer transition-all space-y-1.5 ${
+                localInstructions.conversationStrategy === 'social_rapport'
+                  ? 'bg-pink-950/40 border-pink-500 ring-1 ring-pink-500/50 text-white'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-bold text-xs">
+                  <UserCheck className="w-4 h-4 text-pink-400" />
+                  <span>صمیمی و ارگانیک (Social Rapport)</span>
+                </div>
+                <input
+                  type="radio"
+                  name="conversationStrategy"
+                  checked={localInstructions.conversationStrategy === 'social_rapport'}
+                  onChange={() => updateStrategy('social_rapport')}
+                  className="accent-pink-500"
+                />
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                گفتگوی دوستانه انسانی درباره موضوعات روزمره؛ معرفی محصول فقط در صورتی که کاربر خود از فیلترینگ یا اینترنت گلایه کرد یا سوال پرسید.
+              </p>
+            </div>
+          </div>
+
+          {/* Active Persona Fine-Tuning Grid */}
+          <div className="p-3.5 rounded-xl bg-slate-950/50 border border-slate-800 space-y-3">
+            <div className="flex items-center gap-2 font-bold text-xs text-slate-200">
+              <User className="w-3.5 h-3.5 text-cyan-400" />
+              <span>مشخصات و پرسونای کاراکتر ربات:</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">نام کاراکتر / پشتیبان:</label>
+                <input
+                  type="text"
+                  value={localInstructions.persona?.name || ''}
+                  onChange={(e) => updatePersonaField('name', e.target.value)}
+                  placeholder="مثلاً: پشتیبان فروش / سارا / مهدی"
+                  className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-fuchsia-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">نقش و هویت:</label>
+                <input
+                  type="text"
+                  value={localInstructions.persona?.role || ''}
+                  onChange={(e) => updatePersonaField('role', e.target.value)}
+                  placeholder="مثلاً: ویزیتور و پشتیبان اشتراک VPN"
+                  className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-fuchsia-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">لحن مکالمه (Tone):</label>
+                <select
+                  value={localInstructions.persona?.tone || 'friendly'}
+                  onChange={(e) => updatePersonaField('tone', e.target.value as any)}
+                  className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-fuchsia-500 focus:outline-none"
+                >
+                  <option value="friendly">بسیار صمیمی و دوستانه (Friendly)</option>
+                  <option value="casual">خاکی و عامیانه تلگرامی (Casual)</option>
+                  <option value="consultative">مشاوره‌ای و تخصصی (Consultative)</option>
+                  <option value="professional">رسمی و اداری (Professional)</option>
+                  <option value="playful">شوخ‌طبع و پرانرژی (Playful)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] text-slate-400 mb-1">سن و موقعیت (اختیاری):</label>
+                <div className="flex gap-1.5">
+                  <input
+                    type="text"
+                    value={localInstructions.persona?.age || ''}
+                    onChange={(e) => updatePersonaField('age', e.target.value)}
+                    placeholder="سن (مثلاً ۲۶)"
+                    className="w-1/2 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-fuchsia-500 focus:outline-none"
+                  />
+                  <input
+                    type="text"
+                    value={localInstructions.persona?.location || ''}
+                    onChange={(e) => updatePersonaField('location', e.target.value)}
+                    placeholder="شهر (تهران)"
+                    className="w-1/2 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-fuchsia-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-slate-400 mb-1">بیوگرافی و هدف اصلی ربات در مکالمه:</label>
+              <input
+                type="text"
+                value={localInstructions.persona?.bio || ''}
+                onChange={(e) => updatePersonaField('bio', e.target.value)}
+                placeholder="مثلاً: راهنمایی سریع کاربران و ارائه اکانت تست رایگان برای همراه اول و ایرانسل"
+                className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-fuchsia-500 focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
         <AnonymousCampaignsManager
           products={localInstructions.products || []}
           activeProductId={

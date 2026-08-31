@@ -450,7 +450,20 @@ export interface SavedAiPrompt {
   updatedAt?: string;
 }
 
+export type ConversationStrategy = 'direct_pitch' | 'social_rapport' | 'consultative' | 'custom';
+
+export interface BotPersonaConfig {
+  name: string; // e.g. "پشتیبان آنلاین نوا" or "سارا" or "مشاور فروش"
+  role: string; // e.g. "ویزیتور و فروشنده اشتراک فیلترشکن بدون قطعی با ارائه تست رایگان" or "دوست آنلاین"
+  tone: 'casual' | 'friendly' | 'professional' | 'consultative' | 'playful'; // لحن
+  bio?: string; // توضیحات و شخصیت
+  age?: string; // اختیاری (مثلاً ۲۶ یا خالی)
+  location?: string; // اختیاری (مثلاً تهران یا سراسر کشور)
+}
+
 export interface AnonymousChatInstructions {
+  conversationStrategy?: ConversationStrategy; // استراتژی کلان گفتگو (ویزیتوری مستقیم، چت دوستانه، مشاوره، سفارشی)
+  persona?: BotPersonaConfig; // هویت و پرسوناى داینامیک ربات
   systemPrompt: string; // دستورالعمل متنی کامل هوش مصنوعی برای نحوه صحبت با کاربر ناشناس
   savedPrompts?: SavedAiPrompt[]; // لیست دستورالعمل‌های اختصاصی ذخیره شده توسط خود کاربر
   maxMessagesPerChat: number; // تعداد پیامی که بات باید با کاربر صحبت کند قبل از خروج (مثلاً ۳ یا ۵)

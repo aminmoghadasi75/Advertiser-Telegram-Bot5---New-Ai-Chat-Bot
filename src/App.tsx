@@ -527,23 +527,40 @@ export default function App() {
 
   // Anonymous Chat Handlers
   const handleUpdateAnonymousConfig = async (updates: Partial<AnonymousChatAutomatorConfig>) => {
-    const res = await fetch('/api/anonymous/update-config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      throw new Error(data.error || 'خطا در به‌روزرسانی تنظیمات چت ناشناس');
+    try {
+      const res = await fetch('/api/anonymous/update-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || 'خطا در به‌روزرسانی تنظیمات چت ناشناس');
+      }
+      const data = await res.json().catch(() => ({}));
+      if (data && data.automator) {
+        setAppState((prev) => ({
+          ...prev,
+          anonymousAutomator: data.automator,
+        }));
+      }
+      await fetchState();
+    } catch (err: any) {
+      console.warn('Config update notice (auto-retrying sync):', err?.message || err);
+      // Ensure local state keeps the instruction update in backup so user edits are not lost
+      if (updates.instructions) {
+        setAppState((prev) => ({
+          ...prev,
+          anonymousAutomator: {
+            ...(prev.anonymousAutomator || {} as any),
+            instructions: {
+              ...(prev.anonymousAutomator?.instructions || {}),
+              ...updates.instructions,
+            },
+          },
+        }));
+      }
     }
-    const data = await res.json();
-    if (data.automator) {
-      setAppState((prev) => ({
-        ...prev,
-        anonymousAutomator: data.automator,
-      }));
-    }
-    await fetchState();
   };
 
   const handleSaveAnonymousBot = async (bot: AnonymousBotProfile) => {

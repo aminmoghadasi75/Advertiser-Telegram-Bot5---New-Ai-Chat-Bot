@@ -6,6 +6,8 @@ import {
   ConversationContext,
   AnonymousProductPromotion,
   AnonymousChatMessage,
+  ConversationStrategy,
+  BotPersonaConfig,
 } from '../types';
 import { detectIntent, IntentDetectionResult } from './intentEngine';
 import { calculateLeadScoreUpdate, ScoreUpdateResult } from './leadScoring';
@@ -77,7 +79,9 @@ export function processConversationTurn(
   promotionConfig?: AnonymousProductPromotion,
   maxTurns: number = 4,
   messageHistory: AnonymousChatMessage[] = [],
-  productConfig: ProductConfig = DEFAULT_PRODUCT_CONFIG
+  productConfig: ProductConfig = DEFAULT_PRODUCT_CONFIG,
+  strategy: ConversationStrategy = 'direct_pitch',
+  persona?: BotPersonaConfig
 ): ConversationStepOutput {
   const currentTurn = currentContext.turnCount + 1;
   const historyForIntent = messageHistory.map((m) => ({
@@ -142,7 +146,8 @@ export function processConversationTurn(
   const promotionDecision = evaluatePromotionPolicy(
     tempContextForPolicy,
     currentIntent,
-    promotionConfig
+    promotionConfig,
+    strategy
   );
 
   // Step 6: Analyze Objection if applicable
@@ -159,7 +164,8 @@ export function processConversationTurn(
       ...tempContextForPolicy,
       promotionLevel: promotionDecision.allowedLevel,
     },
-    maxTurns
+    maxTurns,
+    strategy
   );
 
   // Step 8: Build Final Updated Context
@@ -236,7 +242,9 @@ export function processConversationTurn(
     stateTransition,
     objectionAnalysis,
     promotionConfig,
-    productConfig
+    productConfig,
+    strategy,
+    persona
   );
 
   return {
@@ -263,11 +271,19 @@ export function buildPromptDirective(
   stateTransition: StateTransitionResult,
   objectionAnalysis?: ObjectionAnalysis,
   promotionConfig?: AnonymousProductPromotion,
-  productConfig: ProductConfig = DEFAULT_PRODUCT_CONFIG
+  productConfig: ProductConfig = DEFAULT_PRODUCT_CONFIG,
+  strategy: ConversationStrategy = 'direct_pitch',
+  persona?: BotPersonaConfig
 ): string {
   const lines: string[] = [];
 
+  const personaLabel = persona?.name || 'Online Representative';
+  const personaRole = persona?.role || (strategy === 'direct_pitch' ? 'Sales Visitor & Free Trial Specialist' : 'Friendly Conversationalist');
+  const targetProductName = productConfig.productName || promotionConfig?.productName || 'سرویس اشتراک اختصاصی';
+
   lines.push(`=== CONVERSATION ENGINE DIRECTIVE (Turn ${context.turnCount}) ===`);
+  lines.push(`• Strategy Mode: ${strategy.toUpperCase()}`);
+  lines.push(`• Persona Identity: ${personaLabel} | Role: ${personaRole}`);
   lines.push(`• Current State: ${context.state} (from ${context.previousState})`);
   lines.push(`• Detected Intent: ${context.intent} (Confidence: ${Math.round(intentResult.confidence * 100)}%)`);
   lines.push(`• Lead Score: ${context.leadScore}/100 (${context.leadScore >= 56 ? 'HOT' : context.leadScore >= 26 ? 'WARM' : 'COLD'})`);
@@ -277,9 +293,9 @@ export function buildPromptDirective(
 
   if (promotionDecision.isExplicitOverride || promotionDecision.allowedLevel === PromotionLevel.DIRECT_OFFER || promotionDecision.allowedLevel === PromotionLevel.SOFT_MENTION) {
     if (!context.supportIdAvailable) {
-      lines.push(`⚡ PRODUCT INQUIRY & < 120s PLATFORM RESTRICTION: The user is interested or asking about the product. The Telegram anonymous bot STRICTLY blocks photos and handles before 2 minutes (120s).`);
-      lines.push(`• DIRECTIVE: Answer the user's questions clearly and accurately using the Product Specs & FAQ (plans, prices, speed, protocols, test account availability).`);
-      lines.push(`• WARM-UP & CONVERSATION EXTENSION: Keep the conversation active naturally until the 2-minute mark (e.g. ask what device they use: Android/iOS/Windows, what network/operator they have: Irancell/MCI/Wifi, or what they use it for: Insta/YouTube/Trading).`);
+      lines.push(`⚡ PRODUCT PRESENTATION & < 120s PLATFORM RESTRICTION: The conversation is under 2 minutes (120s). Telegram anonymous bot automatically filters out photos and @ handles.`);
+      lines.push(`• DIRECTIVE: Highlight the core value proposition for ${targetProductName} clearly and warmly based on Product Specs & FAQ (plans, prices, speed, protocols, free test account).`);
+      lines.push(`• ENGAGEMENT & RETENTION: Keep the conversation active naturally until 120s passes (e.g. ask what device they use: Android/iOS/Windows, or their mobile network/carrier: Irancell/MCI/Wifi, or offer to prepare a free test config).`);
       lines.push(`• SUPPORT ID & PHOTO: STRICTLY DO NOT output any handle or photo yet because Telegram will drop it!`);
     } else {
       const handle = (productConfig.support.handle || promotionConfig?.contactHandleOrLink || 'nova_vpn10').replace(/^@/, '');
@@ -290,15 +306,16 @@ export function buildPromptDirective(
   }
 
   if (context.intent === Intent.REJECTION || (context.state === ConversationState.GOODBYE && context.promotionLock)) {
-    lines.push(`⛔ USER DECLINED / NO NEED DETECTED: User indicated they do not need VPN or services. Immediately output a single, ultra-short polite goodbye (3 to 6 words max, e.g. «باشه حله مراقب خودت باش فعلا» or «اوکی موفق باشی فعلا»). Do NOT ask any new questions or drag the conversation, so the system can exit cleanly.`);
+    lines.push(`⛔ USER DECLINED / NO NEED DETECTED: User indicated they do not need services. Immediately output a single, ultra-short polite goodbye (3 to 6 words max, e.g. «باشه حله مراقب خودت باش فعلا» or «اوکی موفق باشی فعلا»). Do NOT ask any new questions or drag the conversation, so the system can exit cleanly.`);
   } else if (context.promotionLock) {
-    lines.push(`⛔ PROMOTION LOCKED: User has no interest. DO NOT mention VPN, prices, sales, or channels. Speak purely as a friendly human without pitching.`);
+    lines.push(`⛔ PROMOTION LOCKED: User has no interest. DO NOT pitch or push offers. Speak politely and briefly without commercial pressure.`);
   } else if (promotionDecision.allowedLevel === PromotionLevel.NO_PROMOTION) {
-    lines.push(`💬 MODE: CASUAL RAPPORT ONLY (CONVERSATION FIRST). Chat authentically as a friendly, cool 26-year-old girl from Tehran. Respond empathetically and naturally to whatever the user said (daily life, jokes, empathy, aches/pains, personal stories). DO NOT mention VPN, internet filters, sales, or prices. Absolutely zero unsolicited marketing.`);
+    const toneDesc = persona?.tone ? `Tone: ${persona.tone}` : 'Tone: warm, natural and friendly';
+    lines.push(`💬 MODE: CASUAL RAPPORT ONLY. Speak authentically as ${personaLabel} (${personaRole}). ${toneDesc}. ${persona?.bio || ''}. DO NOT push unsolicited marketing.`);
   } else if (promotionDecision.allowedLevel === PromotionLevel.SOFT_MENTION) {
-    lines.push(`🌱 MODE: ORGANIC & RELEVANT CONVERSATION. The user specifically touched on internet/filtering issues or asked about your job/routine. First answer their point warmly and naturally. Only if relevant, you can casually mention your experience with fast private VPN, without aggressive sales pitches.`);
+    lines.push(`🌱 MODE: ORGANIC & RELEVANT CONVERSATION. Touch upon ${targetProductName} warmly, answering contextually and building value without aggressive pressure.`);
   } else if (promotionDecision.allowedLevel === PromotionLevel.DIRECT_OFFER) {
-    lines.push(`🎯 MODE: INFORMATIVE PRODUCT GUIDE. The user specifically asked about VPN, prices, trial, or connection! Answer their questions clearly, warmly, and accurately using the Knowledge Base.`);
+    lines.push(`🎯 MODE: DIRECT VALUE & PRODUCT GUIDE. Act as ${personaRole}. Answer clearly and warmly using the Knowledge Base. Invite them to test or try.`);
     if (context.supportIdAvailable) {
       const handle = (productConfig.support.handle || promotionConfig?.contactHandleOrLink || 'nova_vpn10').replace(/^@/, '');
       lines.push(`• Support Handle: ${handle} (strictly without @ and with underscore)`);
@@ -321,12 +338,12 @@ export function buildPromptDirective(
 
   // 18+ Messages Winding Down Directive
   if ((context.botMessageCount || 0) >= 18) {
-    lines.push(`⏳ WINDING DOWN (18+ Messages): You have reached 18+ messages. Naturally let the user know you will have to leave soon (e.g. «راستی منم کم‌کم باید برم») and smoothly guide the conversation towards a natural goodbye. If the user is not buying/inquiring about VPN, do NOT force any ad or support handle on exit!`);
+    lines.push(`⏳ WINDING DOWN (18+ Messages): You have reached 18+ messages. Naturally let the user know you will have to leave soon (e.g. «راستی منم کم‌کم باید برم») and smoothly guide the conversation towards a natural goodbye.`);
   }
 
   // Exit behavior based on user context
   if (context.state === ConversationState.GOODBYE || context.intent === Intent.GOODBYE) {
-    lines.push(`👋 FAREWELL: The user is leaving. Give a short, natural, warm goodbye. Do NOT force an advertisement or support handle on exit unless they explicitly asked.`);
+    lines.push(`👋 FAREWELL: The user is leaving. Give a short, natural, warm goodbye.`);
   }
 
   lines.push(`========================================================`);
