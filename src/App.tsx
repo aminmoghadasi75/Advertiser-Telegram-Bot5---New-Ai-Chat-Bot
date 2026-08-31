@@ -394,11 +394,98 @@ export default function App() {
       if (!res.ok) {
         alert(`خطای همگام‌سازی گروه‌ها: ${data.error || 'پاسخی از تلگرام دریافت نشد'}`);
       } else {
-        alert(`همگام‌سازی کامل گروه‌ها انجام شد!\nتعداد گروه‌های جدید: ${data.addedCount || 0}\nتعداد گروه‌های به‌روزرسانی شده: ${data.updatedCount || 0}`);
+        alert(`همگام‌سازی واقعی با تلگرام با موفقیت انجام شد!\nگروه‌های عضو شده: ${data.joinedGroupsCount || data.updatedCount || 0}\nگروه‌های نیازمند عضویت: ${data.unjoinedGroupsCount || 0}\nگروه‌های جدید کشف شده: ${data.addedCount || 0}`);
       }
       await fetchState();
     } catch (err: any) {
       alert(`خطا در ارتباط با سرور: ${err.message}`);
+    }
+  };
+
+  // Dedicated Real-time Multi-Account Membership Sync
+  const handleSyncRealtimeMemberships = async (accountIds?: string[]) => {
+    try {
+      const res = await fetch('/api/groups/sync-realtime-memberships', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountIds }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`خطای استعلام عضویت: ${data.error || 'پاسخی دریافت نشد'}`);
+      } else {
+        alert(`استعلام وضعیت واقعی عضویت در ${data.accountsCheckedCount || 1} اکانت تلگرام تکمیل گردید.\nتعداد کل گروه‌ها: ${data.totalGroups}\nگروه‌های عضو شده: ${data.joinedGroupsCount}\nگروه‌های نیازمند عضویت: ${data.unjoinedGroupsCount}`);
+      }
+      await fetchState();
+    } catch (err: any) {
+      alert(`خطا در ارتباط با سرور: ${err.message}`);
+    }
+  };
+
+  // Start Autonomous Smart Group Join Engine
+  const handleStartSmartJoin = async (options?: any) => {
+    try {
+      const res = await fetch('/api/groups/smart-join-start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(options || {}),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`خطا در شروع عضویت هوشمند: ${data.error || 'عملیات آغاز نشد'}`);
+      }
+      await fetchState();
+    } catch (err: any) {
+      alert(`خطا در ارتباط با سرور: ${err.message}`);
+    }
+  };
+
+  // Stop Smart Group Join Engine
+  const handleStopSmartJoin = async () => {
+    try {
+      await fetch('/api/groups/smart-join-stop', { method: 'POST' });
+      await fetchState();
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
+
+  // Join Single Group
+  const handleJoinSingleGroup = async (groupId: string, accountId?: string) => {
+    try {
+      const res = await fetch('/api/groups/join-single', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groupId, accountId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`خطا در عضویت در گروه: ${data.error || 'ناموفق'}`);
+      } else {
+        alert(`✅ ${data.message}`);
+      }
+      await fetchState();
+    } catch (err: any) {
+      alert(`خطا در ارتباط با سرور: ${err.message}`);
+    }
+  };
+
+  // Update Join Strategy
+  const handleUpdateJoinStrategy = async (strategy: any) => {
+    try {
+      const res = await fetch('/api/groups/update-join-strategy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(strategy),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'خطا در ذخیره استراتژی');
+      }
+      await fetchState();
+    } catch (err: any) {
+      console.error(err);
+      alert(`خطا در ذخیره تنظیمات: ${err.message}`);
     }
   };
 
@@ -767,9 +854,12 @@ export default function App() {
               {/* Right Column (5 cols): Target Groups & Scheduler */}
               <div className="lg:col-span-5 space-y-6">
                 
-                {/* Target Groups Manager */}
+                {/* Target Groups Manager & Decoupled Smart Join Engine */}
                 <TargetGroupsCard
                   groups={appState.groups}
+                  accounts={appState.accounts || []}
+                  activeGroupJoinProgress={appState.activeGroupJoinProgress}
+                  groupJoinStrategy={appState.groupJoinStrategy}
                   onAddGroup={handleAddGroup}
                   onAddBulkGroups={handleAddBulkGroups}
                   onToggleGroup={handleToggleGroup}
@@ -779,6 +869,11 @@ export default function App() {
                   onDeleteBulkGroupsByIds={handleDeleteBulkGroupsByIds}
                   onTestSendTarget={handleTestSendTarget}
                   onSyncGroups={handleSyncGroups}
+                  onSyncRealtimeMemberships={handleSyncRealtimeMemberships}
+                  onStartSmartJoin={handleStartSmartJoin}
+                  onStopSmartJoin={handleStopSmartJoin}
+                  onJoinSingleGroup={handleJoinSingleGroup}
+                  onUpdateJoinStrategy={handleUpdateJoinStrategy}
                 />
 
                 {/* Scheduler & Anti-Spam Safeguards */}

@@ -28,6 +28,11 @@ import {
   PromotionLevel,
   ObjectionCategory,
   ConversationContext,
+  ActiveGroupJoinProgress,
+  ActiveGroupJoinWorkerProgress,
+  AccountDistributionSummary,
+  GroupJoinStrategy,
+  AccountMembershipInfo,
 } from './src/types.js';
 import {
   processConversationTurn,
@@ -2809,79 +2814,596 @@ function updateGroupMonitoringReport(report: Partial<GroupMonitoringReport> & { 
   saveData();
 }
 
-// Telegram Dialogs Group Sync Engine
-async function syncTelegramGroups(client: any): Promise<{ addedCount: number; updatedCount: number; totalGroups: number }> {
-  if (!client) throw new Error('حساب تلگرام متصل نیست.');
+// Multi-Account Real-Time Telegram Dialogs & Group Membership Sync Engine
+async function syncTelegramRealtimeMemberships(targetAccountIds?: string[]): Promise<{
+  totalGroups: number;
+  joinedGroupsCount: number;
+  unjoinedGroupsCount: number;
+  accountsCheckedCount: number;
+  addedGroupsCount: number;
+  accountsSummary: Array<{ accountId: string; accountPhone: string; accountName?: string; dialogsCount: number; joinedGroupsCount: number }>;
+}> {
+  syncAccountsState();
   await loadGramJS();
 
-  let dialogs: any[] = [];
-  try {
-    if (typeof client.getDialogs === 'function') {
-      dialogs = await client.getDialogs({ limit: 300 });
-    }
-  } catch (e: any) {
-    console.error('getDialogs error:', e);
+  let allAccounts = (appState.accounts || []).filter(
+    a => a.isActive && a.status !== 'session_expired' && a.status !== 'disabled' && (a.enableForGroupBroadcast !== false)
+  );
+
+  // If no multi-accounts exist or only single primary account
+  if (allAccounts.length === 0 && appState.credentials.isConnected && appState.credentials.sessionString) {
+    allAccounts = [{
+      id: 'primary_account',
+      phoneNumber: appState.credentials.phoneNumber || 'حساب اصلی',
+      sessionString: appState.credentials.sessionString,
+      apiId: appState.credentials.apiId || DEFAULT_API_ID,
+      apiHash: appState.credentials.apiHash || DEFAULT_API_HASH,
+      isActive: true,
+      status: 'connected',
+      userProfile: appState.credentials.userProfile,
+      dailySentCount: appState.scheduler.dailySentCount || 0,
+    }];
   }
 
-  let addedCount = 0;
-  let updatedCount = 0;
+  const accountsToSync = targetAccountIds && targetAccountIds.length > 0
+    ? allAccounts.filter(a => targetAccountIds.includes(a.id))
+    : allAccounts;
 
-  for (const dialog of dialogs) {
-    if (!dialog) continue;
-    const entity = dialog.entity;
-    if (!entity) continue;
+  if (accountsToSync.length === 0) {
+    throw new Error('هیچ اکانت تلگرام فعال و متصلی برای همگام‌سازی یافت نشد.');
+  }
 
-    // Filter ONLY for Groups and Supergroups
-    // Exclude: Users (private 1-on-1 chats), Bots, Broadcast Channels
-    const isChannelBroadcast = (entity.className === 'Channel' || entity._ === 'channel') && !entity.megagroup;
-    const isUser = entity.className === 'User' || entity._ === 'user';
-    const isGroup = dialog.isGroup || entity.megagroup || entity.className === 'Chat' || entity._ === 'chat';
+  addLog('info', `[همگام‌سازی واقعی با تلگرام] آغاز استعلام دقیق لیست گفت‌وگوها و وضعیت عضویت در ${accountsToSync.length} اکانت تلگرام...`);
 
-    if (isUser || isChannelBroadcast || !isGroup) {
-      continue; // Skip non-groups
+  const accountsSummary: Array<{ accountId: string; accountPhone: string; accountName?: string; dialogsCount: number; joinedGroupsCount: number }> = [];
+  let totalDiscoveredGroupsAdded = 0;
+
+  // Account -> Set of Group Match Identifiers
+  const accountMembershipSets = new Map<string, {
+    usernames: Set<string>;
+    rawIds: Set<string>;
+    titles: Set<string>;
+  }>();
+
+  for (const account of accountsToSync) {
+    let client: any = null;
+    try {
+      if (account.id === 'primary_account') {
+        client = await getOrInitTgClient();
+      } else {
+        client = await getOrInitClientForAccount(account);
+      }
+    } catch (e: any) {
+      console.error(`Sync connect error for account ${account.phoneNumber}:`, e);
+      continue;
     }
 
-    const title = dialog.title || entity.title || 'گروه بدون نام';
-    let usernameOrLink = '';
+    if (!client || client._destroyed) continue;
 
-    if (entity.username) {
-      usernameOrLink = '@' + entity.username;
-    } else if (entity.id) {
-      const idStr = entity.id.toString();
-      usernameOrLink = idStr.startsWith('-') ? idStr : (entity.megagroup ? `-100${idStr}` : `-${idStr}`);
+    const usernameSet = new Set<string>();
+    const rawIdSet = new Set<string>();
+    const titleSet = new Set<string>();
+
+    let dialogs: any[] = [];
+    try {
+      if (typeof client.getDialogs === 'function') {
+        dialogs = await client.getDialogs({ limit: 400 });
+      }
+    } catch (e: any) {
+      console.error(`getDialogs error for account ${account.phoneNumber}:`, e);
     }
 
-    if (!usernameOrLink) continue;
+    for (const dialog of dialogs) {
+      if (!dialog) continue;
+      const entity = dialog.entity;
+      if (!entity) continue;
 
-    // Match with existing group in appState.groups
-    const existing = appState.groups.find(
-      g => g.usernameOrLink.toLowerCase() === usernameOrLink.toLowerCase() ||
-           (g.title && g.title.trim().toLowerCase() === title.trim().toLowerCase())
-    );
+      const isChannelBroadcast = (entity.className === 'Channel' || entity._ === 'channel') && !entity.megagroup;
+      const isUser = entity.className === 'User' || entity._ === 'user';
+      const isGroup = dialog.isGroup || entity.megagroup || entity.className === 'Chat' || entity._ === 'chat';
 
-    if (existing) {
-      existing.title = title;
-      if (entity.participantsCount) existing.memberCount = entity.participantsCount;
-      existing.status = 'joined';
-      updatedCount++;
-    } else {
-      const newGroup: TargetGroup = {
-        id: 'group_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-        title: title,
-        usernameOrLink: usernameOrLink,
-        isActive: true,
-        memberCount: entity.participantsCount || undefined,
-        status: 'joined',
-        category: 'همگام‌سازی تلگرام',
+      if (isUser || isChannelBroadcast || !isGroup) continue;
+
+      const title = (dialog.title || entity.title || '').trim();
+      if (title) titleSet.add(title.toLowerCase());
+
+      if (entity.username) {
+        usernameSet.add(entity.username.toLowerCase());
+      }
+      if (entity.id) {
+        const idStr = entity.id.toString();
+        rawIdSet.add(idStr);
+        rawIdSet.add(`-100${idStr}`);
+        rawIdSet.add(`-${idStr}`);
+      }
+
+      // Auto-discover new group into appState.groups if not present
+      let usernameOrLink = '';
+      if (entity.username) {
+        usernameOrLink = '@' + entity.username;
+      } else if (entity.id) {
+        const idStr = entity.id.toString();
+        usernameOrLink = idStr.startsWith('-') ? idStr : (entity.megagroup ? `-100${idStr}` : `-${idStr}`);
+      }
+
+      if (usernameOrLink) {
+        const existing = appState.groups.find(
+          g => g.usernameOrLink.toLowerCase() === usernameOrLink.toLowerCase() ||
+               (g.title && g.title.trim().toLowerCase() === title.toLowerCase())
+        );
+
+        if (!existing) {
+          const newGrp: TargetGroup = {
+            id: 'grp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+            title: title || 'گروه تلگرام',
+            usernameOrLink: usernameOrLink,
+            isActive: true,
+            memberCount: entity.participantsCount || undefined,
+            status: 'joined',
+            membershipStatus: 'joined',
+            joinedAccountIds: [account.id],
+            joinedAccountPhones: [account.phoneNumber],
+            category: 'همگام‌سازی تلگرام',
+          };
+          appState.groups.push(newGrp);
+          totalDiscoveredGroupsAdded++;
+        }
+      }
+    }
+
+    accountMembershipSets.set(account.id, {
+      usernames: usernameSet,
+      rawIds: rawIdSet,
+      titles: titleSet,
+    });
+  }
+
+  // Cross-reference every group in appState.groups
+  const nowIso = new Date().toISOString();
+  let totalJoinedGroupsCount = 0;
+  let totalUnjoinedGroupsCount = 0;
+
+  for (const group of appState.groups) {
+    if (!group.accountMemberships) {
+      group.accountMemberships = {};
+    }
+    const joinedIds: string[] = [];
+    const joinedPhones: string[] = [];
+
+    // Parse group identifiers
+    let cleanTarget = (group.usernameOrLink || '').trim().toLowerCase();
+    if (cleanTarget.includes('t.me/')) {
+      cleanTarget = cleanTarget.split('t.me/')[1].split('/')[0].split('?')[0];
+    }
+    const cleanUsername = cleanTarget.replace(/^@/, '').toLowerCase();
+    const cleanTitle = (group.title || '').trim().toLowerCase();
+
+    for (const account of accountsToSync) {
+      const setObj = accountMembershipSets.get(account.id);
+      let isMember = false;
+
+      if (setObj) {
+        if (cleanUsername && setObj.usernames.has(cleanUsername)) {
+          isMember = true;
+        } else if (cleanTarget && (setObj.rawIds.has(cleanTarget) || setObj.rawIds.has(cleanTarget.replace(/^-100/, '')))) {
+          isMember = true;
+        } else if (cleanTitle && setObj.titles.has(cleanTitle)) {
+          isMember = true;
+        }
+      }
+
+      const existingMem = group.accountMemberships[account.id];
+      group.accountMemberships[account.id] = {
+        accountId: account.id,
+        accountPhone: account.phoneNumber,
+        accountName: account.userProfile?.firstName,
+        isMember,
+        status: isMember ? 'joined' : 'not_joined',
+        checkedAt: nowIso,
+        joinedAt: isMember ? (existingMem?.joinedAt || nowIso) : undefined,
       };
-      appState.groups.push(newGroup);
-      addedCount++;
+
+      if (isMember) {
+        joinedIds.push(account.id);
+        joinedPhones.push(account.phoneNumber);
+      }
     }
+
+    group.joinedAccountIds = Array.from(new Set(joinedIds));
+    group.joinedAccountPhones = Array.from(new Set(joinedPhones));
+    const hasAnyJoined = group.joinedAccountIds.length > 0;
+    group.membershipStatus = hasAnyJoined ? 'joined' : 'not_joined';
+    group.status = hasAnyJoined ? 'joined' : 'not_joined';
+
+    if (hasAnyJoined) {
+      totalJoinedGroupsCount++;
+    } else {
+      totalUnjoinedGroupsCount++;
+    }
+  }
+
+  for (const account of accountsToSync) {
+    const accJoinedCount = appState.groups.filter(g => g.joinedAccountIds?.includes(account.id)).length;
+    const memSet = accountMembershipSets.get(account.id);
+    accountsSummary.push({
+      accountId: account.id,
+      accountPhone: account.phoneNumber,
+      accountName: account.userProfile?.firstName,
+      dialogsCount: memSet ? (memSet.usernames.size + memSet.rawIds.size) : 0,
+      joinedGroupsCount: accJoinedCount,
+    });
   }
 
   saveData();
-  addLog('success', `همگام‌سازی کامل گروه‌ها با حساب تلگرام انجام گردید. (${addedCount} گروه جدید افزوده شد، ${updatedCount} گروه به‌روزرسانی شد).`);
-  return { addedCount, updatedCount, totalGroups: appState.groups.length };
+
+  addLog(
+    'success',
+    `[همگام‌سازی واقعی ۱۰۰٪] بررسی عضویت در ${accountsToSync.length} اکانت تلگرام به پایان رسید. نتیجه: ${totalJoinedGroupsCount} گروه عضو شده ✅، ${totalUnjoinedGroupsCount} گروه نیازمند عضویت ⏳ (${totalDiscoveredGroupsAdded} گروه جدید از تلگرام استخراج شد).`
+  );
+
+  return {
+    totalGroups: appState.groups.length,
+    joinedGroupsCount: totalJoinedGroupsCount,
+    unjoinedGroupsCount: totalUnjoinedGroupsCount,
+    accountsCheckedCount: accountsToSync.length,
+    addedGroupsCount: totalDiscoveredGroupsAdded,
+    accountsSummary,
+  };
+}
+
+// Backward-compatible wrapper for single client sync
+async function syncTelegramGroups(client: any): Promise<{ addedCount: number; updatedCount: number; totalGroups: number }> {
+  const result = await syncTelegramRealtimeMemberships();
+  return { addedCount: result.addedGroupsCount, updatedCount: result.joinedGroupsCount, totalGroups: result.totalGroups };
+}
+
+// Intelligent Account Distribution Algorithm for Group Joining
+function distributeGroupsForJoin(
+  groupsToJoin: TargetGroup[],
+  accounts: any[],
+  strategy: 'balanced_distribution' | 'redundant_all_accounts' | 'single_account'
+): { [accountId: string]: TargetGroup[] } {
+  const distribution: { [accountId: string]: TargetGroup[] } = {};
+  for (const acc of accounts) {
+    distribution[acc.id] = [];
+  }
+
+  if (accounts.length === 0 || groupsToJoin.length === 0) {
+    return distribution;
+  }
+
+  if (strategy === 'redundant_all_accounts') {
+    // Every unjoined account joins every group
+    for (const group of groupsToJoin) {
+      for (const acc of accounts) {
+        const isAlreadyJoined = group.joinedAccountIds?.includes(acc.id);
+        if (!isAlreadyJoined) {
+          distribution[acc.id].push(group);
+        }
+      }
+    }
+    return distribution;
+  }
+
+  // Balanced Load Distribution: Equitably allocate groups across available accounts
+  for (const group of groupsToJoin) {
+    // Find eligible accounts that are not already members of this group
+    const eligibleAccounts = accounts.filter(a => !group.joinedAccountIds?.includes(a.id));
+    const targetAccs = eligibleAccounts.length > 0 ? eligibleAccounts : accounts;
+
+    // Pick the account with the lowest assigned queue count
+    targetAccs.sort((a, b) => (distribution[a.id]?.length || 0) - (distribution[b.id]?.length || 0));
+    const chosenAcc = targetAccs[0];
+
+    distribution[chosenAcc.id].push(group);
+    group.assignedAccountId = chosenAcc.id;
+    group.assignedAccountPhone = chosenAcc.phoneNumber;
+  }
+
+  return distribution;
+}
+
+// Autonomous Smart Group Join Engine State & Controller
+let isGroupJoinRunning = false;
+let isGroupJoinCancellationRequested = false;
+
+async function startSmartGroupJoinEngine(options?: {
+  mode?: 'balanced_distribution' | 'redundant_all_accounts' | 'single_account';
+  delaySeconds?: number;
+  targetGroupIds?: string[];
+  accountIds?: string[];
+  autoResolveAntibot?: boolean;
+}): Promise<{ success: boolean; message: string; activeProgress?: ActiveGroupJoinProgress }> {
+  if (isGroupJoinRunning) {
+    return { success: false, message: 'عملیات عضویت هوشمند گروه‌ها هم‌اکنون در حال اجرا است.' };
+  }
+
+  isGroupJoinRunning = true;
+  isGroupJoinCancellationRequested = false;
+
+  const mode = options?.mode || appState.groupJoinStrategy?.mode || 'balanced_distribution';
+  const delaySec = Math.max(3, options?.delaySeconds || appState.groupJoinStrategy?.delayBetweenJoinsSeconds || 10);
+  const autoAntibot = options?.autoResolveAntibot ?? (appState.groupJoinStrategy?.autoResolveAntibotOnJoin ?? true);
+
+  syncAccountsState();
+  let availableAccounts = (appState.accounts || []).filter(
+    a => a.isActive && a.status !== 'session_expired' && a.status !== 'disabled' && (a.enableForGroupBroadcast !== false) && (!a.floodWaitUntil || a.floodWaitUntil < Date.now())
+  );
+
+  // Fallback to primary account if no multi-account registered
+  if (availableAccounts.length === 0 && appState.credentials.isConnected && appState.credentials.sessionString) {
+    availableAccounts = [{
+      id: 'primary_account',
+      phoneNumber: appState.credentials.phoneNumber || 'حساب اصلی',
+      sessionString: appState.credentials.sessionString,
+      apiId: appState.credentials.apiId || DEFAULT_API_ID,
+      apiHash: appState.credentials.apiHash || DEFAULT_API_HASH,
+      isActive: true,
+      status: 'connected',
+      userProfile: appState.credentials.userProfile,
+      dailySentCount: appState.scheduler.dailySentCount || 0,
+    }];
+  }
+
+  const selectedAccounts = options?.accountIds && options.accountIds.length > 0
+    ? availableAccounts.filter(a => options.accountIds!.includes(a.id))
+    : availableAccounts;
+
+  if (selectedAccounts.length === 0) {
+    isGroupJoinRunning = false;
+    addLog('warning', '[عضویت هوشمند گروه‌ها] هیچ اکانت فعال و بدون محدودیتی برای عضویت یافت نشد.');
+    return { success: false, message: 'هیچ اکانت فعالی برای عضویت در دسترس نیست.' };
+  }
+
+  // Determine groups that need joining
+  let targetGroups = appState.groups.filter(g => g.isActive);
+  if (options?.targetGroupIds && options.targetGroupIds.length > 0) {
+    targetGroups = targetGroups.filter(g => options.targetGroupIds!.includes(g.id));
+  } else {
+    if (mode === 'redundant_all_accounts') {
+      targetGroups = targetGroups.filter(g => (g.joinedAccountIds?.length || 0) < selectedAccounts.length);
+    } else {
+      targetGroups = targetGroups.filter(g => !g.joinedAccountIds || g.joinedAccountIds.length === 0 || g.membershipStatus === 'not_joined' || g.membershipStatus === 'failed');
+    }
+  }
+
+  if (targetGroups.length === 0) {
+    isGroupJoinRunning = false;
+    addLog('info', '[عضویت هوشمند گروه‌ها] تمامی گروه‌های مدنظر هم‌اکنون عضو شده هستند و نیازی به عضویت جدید نیست.');
+    return { success: true, message: 'تمامی گروه‌ها در اکانت‌های مربوطه عضو شده هستند.' };
+  }
+
+  // Build distribution map
+  const distribution = distributeGroupsForJoin(targetGroups, selectedAccounts, mode);
+
+  // Initialize workers progress
+  const workersProgress: ActiveGroupJoinWorkerProgress[] = selectedAccounts.map(acc => ({
+    accountId: acc.id,
+    accountPhone: acc.phoneNumber,
+    accountName: acc.userProfile?.firstName,
+    status: 'idle',
+    successCount: 0,
+    failedCount: 0,
+    lastAction: `در صف آماده‌سازی (${distribution[acc.id]?.length || 0} گروه تخصیص یافته)...`,
+  }));
+
+  const distributionSummary: AccountDistributionSummary[] = selectedAccounts.map(acc => ({
+    accountId: acc.id,
+    accountPhone: acc.phoneNumber,
+    accountName: acc.userProfile?.firstName,
+    assignedCount: distribution[acc.id]?.length || 0,
+    joinedCount: 0,
+    pendingCount: distribution[acc.id]?.length || 0,
+    failedCount: 0,
+  }));
+
+  appState.activeGroupJoinProgress = {
+    isRunning: true,
+    startTime: new Date().toISOString(),
+    totalToJoin: targetGroups.length,
+    completedCount: 0,
+    successCount: 0,
+    failedCount: 0,
+    strategy: mode,
+    workers: workersProgress,
+    distributionSummary,
+  };
+
+  addLog(
+    'info',
+    `[آغاز فرآیند عضویت هوشمند] تفکیک و تخصیص ${targetGroups.length} گروه نیازمند عضویت بین ${selectedAccounts.length} اکانت تلگرام (استراتژی: ${mode === 'balanced_distribution' ? 'تقسیم متوازن و مساوی' : 'عضویت در تمام اکانت‌ها'}) با وقفه امنیتی ${delaySec} ثانیه...`
+  );
+
+  // Launch parallel background worker loop
+  (async () => {
+    try {
+      await Promise.all(selectedAccounts.map(async (acc, workerIdx) => {
+        const workerProg = workersProgress[workerIdx];
+        const assignedGroups = distribution[acc.id] || [];
+        const summary = distributionSummary.find(s => s.accountId === acc.id);
+
+        if (assignedGroups.length === 0) {
+          if (workerProg) {
+            workerProg.status = 'completed';
+            workerProg.lastAction = 'هیچ گروهی برای این اکانت نیاز به عضویت ندارد.';
+          }
+          return;
+        }
+
+        let client: any = null;
+        try {
+          if (workerProg) {
+            workerProg.status = 'preparing';
+            workerProg.lastAction = 'در حال اتصال و برقراری نشست تلگرام...';
+          }
+          if (acc.id === 'primary_account') {
+            client = await getOrInitTgClient();
+          } else {
+            client = await getOrInitClientForAccount(acc);
+          }
+        } catch (err: any) {
+          if (workerProg) {
+            workerProg.status = 'error';
+            workerProg.lastAction = `خطا در اتصال: ${err?.message || 'نامشخص'}`;
+          }
+          return;
+        }
+
+        if (!client || client._destroyed) {
+          if (workerProg) {
+            workerProg.status = 'error';
+            workerProg.lastAction = 'نشست تلگرام در دسترس نیست.';
+          }
+          return;
+        }
+
+        for (let i = 0; i < assignedGroups.length; i++) {
+          if (isGroupJoinCancellationRequested) {
+            if (workerProg) {
+              workerProg.status = 'completed';
+              workerProg.lastAction = 'عملیات توسط کاربر لغو شد.';
+            }
+            break;
+          }
+
+          const group = assignedGroups[i];
+          if (workerProg) {
+            workerProg.currentGroupId = group.id;
+            workerProg.currentGroupTitle = group.title;
+            workerProg.status = 'joining';
+            workerProg.lastAction = `در حال ارسال درخواست عضویت به "${group.title}" (${i + 1}/${assignedGroups.length})...`;
+          }
+          group.membershipStatus = 'joining';
+          group.lastJoinAttemptAt = new Date().toISOString();
+
+          try {
+            const peer = await resolveAndJoinGroup(client, group.usernameOrLink);
+
+            // Handle Anti-Bot verification if enabled
+            if (autoAntibot && peer) {
+              if (workerProg) {
+                workerProg.status = 'antibot';
+                workerProg.lastAction = `در حال ارزیابی آنتی‌بات و قفل‌های گروه "${group.title}"...`;
+              }
+              await handleAntiBotAndGroupVerification(client, peer, group.title);
+            }
+
+            // Membership Succeeded!
+            if (!group.accountMemberships) group.accountMemberships = {};
+            const nowIso = new Date().toISOString();
+            group.accountMemberships[acc.id] = {
+              accountId: acc.id,
+              accountPhone: acc.phoneNumber,
+              accountName: acc.userProfile?.firstName,
+              isMember: true,
+              status: 'joined',
+              checkedAt: nowIso,
+              joinedAt: nowIso,
+            };
+
+            group.joinedAccountIds = Array.from(new Set([...(group.joinedAccountIds || []), acc.id]));
+            group.joinedAccountPhones = Array.from(new Set([...(group.joinedAccountPhones || []), acc.phoneNumber]));
+            group.membershipStatus = 'joined';
+            group.status = 'joined';
+            group.lastJoinError = undefined;
+
+            if (workerProg) workerProg.successCount++;
+            if (summary) {
+              summary.joinedCount++;
+              summary.pendingCount = Math.max(0, summary.pendingCount - 1);
+            }
+            if (appState.activeGroupJoinProgress) {
+              appState.activeGroupJoinProgress.successCount++;
+              appState.activeGroupJoinProgress.completedCount++;
+            }
+
+            addLog(
+              'success',
+              `[عضویت موفق در گروه] اکانت (${acc.userProfile?.firstName || acc.phoneNumber}) با موفقیت به گروه "${group.title}" ملحق شد.`
+            );
+
+            // Safe Delay between joins with random jitter
+            if (i < assignedGroups.length - 1 && !isGroupJoinCancellationRequested) {
+              if (workerProg) workerProg.status = 'cooldown';
+              const jitterMs = (delaySec * 1000) + Math.floor(Math.random() * 3500);
+              if (workerProg) {
+                workerProg.cooldownEndsAt = Date.now() + jitterMs;
+                workerProg.lastAction = `عضویت موفق. شکیبایی امنیتی (${Math.round(jitterMs / 1000)} ثانیه) جهت جلوگیری از FloodWait...`;
+              }
+
+              const startWait = Date.now();
+              while (Date.now() - startWait < jitterMs) {
+                if (isGroupJoinCancellationRequested) break;
+                await new Promise(r => setTimeout(r, Math.min(250, jitterMs - (Date.now() - startWait))));
+              }
+              if (workerProg) workerProg.cooldownEndsAt = undefined;
+            }
+          } catch (joinErr: any) {
+            console.error(`Group join error for account ${acc.phoneNumber} on group ${group.title}:`, joinErr);
+            handleGramJsFloodWait(joinErr);
+            const secs = parseFloodWaitSeconds(joinErr);
+
+            if (secs && secs > 0) {
+              acc.status = 'flood_wait';
+              acc.floodWaitUntil = Date.now() + secs * 1000;
+              if (workerProg) {
+                workerProg.status = 'flood_waited';
+                workerProg.lastAction = `محدودیت FloodWait تلگرام (${Math.ceil(secs / 60)} دقیقه)`;
+              }
+              addLog('warning', `[محدودیت FloodWait] اکانت (${acc.phoneNumber}) در حین عضویت به محدودیت برخورد کرد.`);
+              break;
+            } else {
+              group.membershipStatus = 'failed';
+              group.lastJoinError = translateTgError(joinErr);
+              if (workerProg) workerProg.failedCount++;
+              if (summary) {
+                summary.failedCount++;
+                summary.pendingCount = Math.max(0, summary.pendingCount - 1);
+              }
+              if (appState.activeGroupJoinProgress) {
+                appState.activeGroupJoinProgress.failedCount++;
+                appState.activeGroupJoinProgress.completedCount++;
+              }
+              addLog(
+                'warning',
+                `[خطای عضویت در گروه] اکانت (${acc.phoneNumber}) نتوانست به گروه "${group.title}" ملحق شود: ${group.lastJoinError}`
+              );
+
+              // Quick safety pause before trying next group
+              await new Promise(r => setTimeout(r, 4000));
+            }
+          }
+          saveData();
+        }
+
+        if (workerProg && workerProg.status !== 'flood_waited' && workerProg.status !== 'error') {
+          workerProg.status = 'completed';
+          workerProg.lastAction = `پایان عضویت هوشمند (موفق: ${workerProg.successCount}، خطا: ${workerProg.failedCount})`;
+        }
+      }));
+    } finally {
+      if (appState.activeGroupJoinProgress) {
+        appState.activeGroupJoinProgress.isRunning = false;
+      }
+      isGroupJoinRunning = false;
+      saveData();
+      addLog('success', `[پایان عملیات عضویت هوشمند] فرآیند عضویت و همگام‌سازی گروه‌ها با موفقیت خاتمه یافت.`);
+    }
+  })();
+
+  return { success: true, message: 'عملیات عضویت هوشمند گروه‌ها آغاز گردید.', activeProgress: appState.activeGroupJoinProgress };
+}
+
+function stopSmartGroupJoinEngine(): { success: boolean; message: string } {
+  if (!isGroupJoinRunning) {
+    return { success: false, message: 'هیچ عملیات عضویتی در حال حاضر در حال اجرا نیست.' };
+  }
+  isGroupJoinCancellationRequested = true;
+  if (appState.activeGroupJoinProgress) {
+    appState.activeGroupJoinProgress.isRunning = false;
+  }
+  addLog('warning', '[توقف عضویت] درخواست توقف فرآیند عضویت هوشمند توسط کاربر صادر گردید.');
+  return { success: true, message: 'دستور توقف فرآیند عضویت صادر شد.' };
 }
 
 // Engine: Smart Anti-Bot & Lock Bypass Engine with Live Monitoring
@@ -3340,16 +3862,25 @@ async function executeBroadcast(isManualTrigger = false) {
     };
 
     function claimNextGroupForWorker(workerAccId: string): TargetGroup | null {
-      // 1. Prefer unassigned groups that this account previously joined/posted to
+      // 1. Highest priority: Groups where this account is a confirmed joined member in Telegram
       for (const g of targetGroupsToProcess) {
         if (!claimedGroupIds.has(g.id) && !completedGroupIds.has(g.id)) {
-          if (g.lastPostedByAccountId === workerAccId) {
+          if (g.joinedAccountIds && g.joinedAccountIds.includes(workerAccId)) {
             claimedGroupIds.add(g.id);
             return g;
           }
         }
       }
-      // 2. Otherwise claim next unclaimed group in the queue
+      // 2. High priority: Groups assigned to this account via smart distribution
+      for (const g of targetGroupsToProcess) {
+        if (!claimedGroupIds.has(g.id) && !completedGroupIds.has(g.id)) {
+          if (g.assignedAccountId === workerAccId || g.lastPostedByAccountId === workerAccId) {
+            claimedGroupIds.add(g.id);
+            return g;
+          }
+        }
+      }
+      // 3. Otherwise claim next unclaimed group in the queue
       for (const g of targetGroupsToProcess) {
         if (!claimedGroupIds.has(g.id) && !completedGroupIds.has(g.id)) {
           claimedGroupIds.add(g.id);
@@ -3873,20 +4404,181 @@ async function executeBroadcast(isManualTrigger = false) {
   };
 }
 
-// 15. Telegram Groups Auto-Sync Endpoint
+// 15. Telegram Groups Auto-Sync & Real-Time Membership Sync Endpoints
 app.post('/api/telegram/sync-groups', async (req, res) => {
   try {
-    const client = await getOrInitTgClient();
-    if (!client || !appState.credentials.isConnected) {
-      res.status(400).json({ error: 'حساب تلگرام متصل نیست. لطفاً ابتدا وارد حساب تلگرام شوید.' });
-      return;
-    }
-    const result = await syncTelegramGroups(client);
+    const result = await syncTelegramRealtimeMemberships();
     res.json({ success: true, ...result, groups: appState.groups });
   } catch (err: any) {
     console.error('Group sync error:', err);
     res.status(500).json({ error: translateTgError(err) });
   }
+});
+
+app.post('/api/groups/sync-realtime-memberships', async (req, res) => {
+  try {
+    const { accountIds } = req.body || {};
+    const result = await syncTelegramRealtimeMemberships(accountIds);
+    res.json({ success: true, ...result, groups: appState.groups });
+  } catch (err: any) {
+    console.error('Realtime membership sync error:', err);
+    res.status(500).json({ error: translateTgError(err) });
+  }
+});
+
+// 15b. Smart Group Join Engine Endpoints
+app.post('/api/groups/smart-join-start', async (req, res) => {
+  try {
+    const { mode, delaySeconds, targetGroupIds, accountIds, autoResolveAntibot } = req.body || {};
+    const result = await startSmartGroupJoinEngine({
+      mode,
+      delaySeconds,
+      targetGroupIds,
+      accountIds,
+      autoResolveAntibot,
+    });
+    if (!result.success) {
+      res.status(400).json({ error: result.message });
+      return;
+    }
+    res.json({ success: true, message: result.message, progress: appState.activeGroupJoinProgress });
+  } catch (err: any) {
+    console.error('Smart join start error:', err);
+    res.status(500).json({ error: translateTgError(err) });
+  }
+});
+
+app.post('/api/groups/smart-join-stop', (req, res) => {
+  const result = stopSmartGroupJoinEngine();
+  res.json(result);
+});
+
+app.post('/api/groups/join-single', async (req, res) => {
+  const { groupId, accountId } = req.body || {};
+  if (!groupId) {
+    res.status(400).json({ error: 'شناسه گروه مشخص نشده است.' });
+    return;
+  }
+
+  const group = appState.groups.find(g => g.id === groupId);
+  if (!group) {
+    res.status(404).json({ error: 'گروه مورد نظر یافت نشد.' });
+    return;
+  }
+
+  try {
+    syncAccountsState();
+    let account = (appState.accounts || []).find(a => a.id === accountId);
+    if (!account) {
+      account = (appState.accounts || []).find(a => a.isActive && a.status !== 'session_expired' && (!a.floodWaitUntil || a.floodWaitUntil < Date.now()));
+    }
+
+    let client: any = null;
+    if (account) {
+      client = await getOrInitClientForAccount(account);
+    } else {
+      client = await getOrInitTgClient();
+      account = {
+        id: 'primary_account',
+        phoneNumber: appState.credentials.phoneNumber || 'حساب اصلی',
+      } as any;
+    }
+
+    if (!client) {
+      res.status(400).json({ error: 'حساب تلگرام معتبر جهت عضویت یافت نشد.' });
+      return;
+    }
+
+    group.membershipStatus = 'joining';
+    group.lastJoinAttemptAt = new Date().toISOString();
+
+    const peer = await resolveAndJoinGroup(client, group.usernameOrLink);
+    await handleAntiBotAndGroupVerification(client, peer, group.title);
+
+    if (!group.accountMemberships) group.accountMemberships = {};
+    const nowIso = new Date().toISOString();
+    group.accountMemberships[account.id] = {
+      accountId: account.id,
+      accountPhone: account.phoneNumber,
+      accountName: account.userProfile?.firstName,
+      isMember: true,
+      status: 'joined',
+      checkedAt: nowIso,
+      joinedAt: nowIso,
+    };
+
+    group.joinedAccountIds = Array.from(new Set([...(group.joinedAccountIds || []), account.id]));
+    group.joinedAccountPhones = Array.from(new Set([...(group.joinedAccountPhones || []), account.phoneNumber]));
+    group.membershipStatus = 'joined';
+    group.status = 'joined';
+    group.lastJoinError = undefined;
+    saveData();
+
+    addLog('success', `[عضویت دستی موفق] اکانت (${account.phoneNumber}) با موفقیت به گروه "${group.title}" ملحق شد.`);
+    res.json({ success: true, message: `عضویت در گروه "${group.title}" با موفقیت انجام شد.`, group });
+  } catch (err: any) {
+    group.membershipStatus = 'failed';
+    group.lastJoinError = translateTgError(err);
+    saveData();
+    res.status(500).json({ error: translateTgError(err) });
+  }
+});
+
+app.post('/api/groups/distribution-preview', (req, res) => {
+  const { mode = 'balanced_distribution', targetGroupIds, accountIds } = req.body || {};
+  syncAccountsState();
+
+  let availableAccounts = (appState.accounts || []).filter(
+    a => a.isActive && a.status !== 'session_expired' && a.status !== 'disabled' && (a.enableForGroupBroadcast !== false)
+  );
+
+  if (availableAccounts.length === 0 && appState.credentials.isConnected) {
+    availableAccounts = [{
+      id: 'primary_account',
+      phoneNumber: appState.credentials.phoneNumber || 'حساب اصلی',
+      userProfile: appState.credentials.userProfile,
+    } as any];
+  }
+
+  const selectedAccounts = accountIds && accountIds.length > 0
+    ? availableAccounts.filter(a => accountIds.includes(a.id))
+    : availableAccounts;
+
+  let targetGroups = appState.groups.filter(g => g.isActive);
+  if (targetGroupIds && targetGroupIds.length > 0) {
+    targetGroups = targetGroups.filter(g => targetGroupIds.includes(g.id));
+  } else {
+    targetGroups = targetGroups.filter(g => !g.joinedAccountIds || g.joinedAccountIds.length === 0 || g.membershipStatus === 'not_joined');
+  }
+
+  const distribution = distributeGroupsForJoin(targetGroups, selectedAccounts, mode);
+
+  const preview = selectedAccounts.map(acc => ({
+    accountId: acc.id,
+    accountPhone: acc.phoneNumber,
+    accountName: acc.userProfile?.firstName,
+    assignedGroups: (distribution[acc.id] || []).map(g => ({ id: g.id, title: g.title, usernameOrLink: g.usernameOrLink })),
+    assignedCount: (distribution[acc.id] || []).length,
+  }));
+
+  res.json({
+    totalTargetGroups: targetGroups.length,
+    accountsCount: selectedAccounts.length,
+    strategy: mode,
+    preview,
+  });
+});
+
+app.post('/api/groups/update-join-strategy', (req, res) => {
+  const incoming = req.body;
+  appState.groupJoinStrategy = {
+    mode: incoming.mode || 'balanced_distribution',
+    delayBetweenJoinsSeconds: incoming.delayBetweenJoinsSeconds || 10,
+    maxJoinsPerAccountPerHour: incoming.maxJoinsPerAccountPerHour || 15,
+    autoResolveAntibotOnJoin: incoming.autoResolveAntibotOnJoin !== false,
+  };
+  saveData();
+  res.json({ success: true, strategy: appState.groupJoinStrategy });
 });
 
 // 16. Real-time Monitoring & Process Reports Endpoints

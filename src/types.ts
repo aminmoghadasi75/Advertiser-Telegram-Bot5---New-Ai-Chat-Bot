@@ -45,13 +45,32 @@ export interface TelegramAccount {
   statusMessage?: string;
 }
 
+export interface AccountMembershipInfo {
+  accountId: string;
+  accountPhone: string;
+  accountName?: string;
+  isMember: boolean;
+  status: 'joined' | 'not_joined' | 'pending' | 'restricted' | 'banned';
+  checkedAt: string;
+  joinedAt?: string;
+  error?: string;
+}
+
 export interface TargetGroup {
   id: string;
   title: string;
   usernameOrLink: string; // e.g. @my_group or t.me/group_link or -100123456789
   isActive: boolean;
   memberCount?: number;
-  status: 'joined' | 'pending' | 'failed' | 'not_joined';
+  status: 'joined' | 'pending' | 'failed' | 'not_joined'; // Overall status
+  membershipStatus?: 'joined' | 'not_joined' | 'joining' | 'failed' | 'restricted'; // Join engine specific status
+  joinedAccountIds?: string[]; // IDs of accounts that are 100% verified members in Telegram
+  joinedAccountPhones?: string[]; // Phone numbers of member accounts
+  assignedAccountId?: string; // Account assigned for joining / sending via smart load balancing
+  assignedAccountPhone?: string; // Phone of assigned account
+  accountMemberships?: Record<string, AccountMembershipInfo>; // Detailed per-account ground truth
+  lastJoinAttemptAt?: string;
+  lastJoinError?: string;
   category?: string; // e.g. 'promotional' | 'exchange' | 'general'
   lastPostedAt?: string;
   lastPostedByAccountId?: string;
@@ -60,6 +79,48 @@ export interface TargetGroup {
   persistenceStatus?: 'verified' | 'auto_deleted' | 'pending_check' | 'not_checked';
   lastVerifiedAt?: string;
   strictFilterDetected?: boolean;
+}
+
+export interface GroupJoinStrategy {
+  mode: 'balanced_distribution' | 'redundant_all_accounts' | 'single_account';
+  delayBetweenJoinsSeconds: number; // e.g. 8 to 20 seconds safe delay
+  maxJoinsPerAccountPerHour: number; // e.g. 15-20 per account to avoid flood wait
+  autoResolveAntibotOnJoin: boolean;
+}
+
+export interface ActiveGroupJoinWorkerProgress {
+  accountId: string;
+  accountPhone: string;
+  accountName?: string;
+  currentGroupId?: string;
+  currentGroupTitle?: string;
+  status: 'idle' | 'preparing' | 'joining' | 'antibot' | 'cooldown' | 'flood_waited' | 'completed' | 'error';
+  successCount: number;
+  failedCount: number;
+  lastAction?: string;
+  cooldownEndsAt?: number;
+}
+
+export interface AccountDistributionSummary {
+  accountId: string;
+  accountPhone: string;
+  accountName?: string;
+  assignedCount: number;
+  joinedCount: number;
+  pendingCount: number;
+  failedCount: number;
+}
+
+export interface ActiveGroupJoinProgress {
+  isRunning: boolean;
+  startTime: string;
+  totalToJoin: number;
+  completedCount: number;
+  successCount: number;
+  failedCount: number;
+  strategy: 'balanced_distribution' | 'redundant_all_accounts' | 'single_account';
+  workers: ActiveGroupJoinWorkerProgress[];
+  distributionSummary?: AccountDistributionSummary[];
 }
 
 export interface ProductCampaign {
@@ -631,6 +692,8 @@ export interface AppState {
   lastBroadcastReport?: BroadcastReport;
   broadcastHistory?: BroadcastReport[];
   activeBroadcastProgress?: ActiveBroadcastProgress;
+  activeGroupJoinProgress?: ActiveGroupJoinProgress;
+  groupJoinStrategy?: GroupJoinStrategy;
   anonymousAutomator?: AnonymousChatAutomatorConfig;
   activeAnonymousSession?: AnonymousChatSession;
   anonymousSessionHistory?: AnonymousChatSession[];
