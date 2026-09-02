@@ -161,6 +161,7 @@ export function extractQuestionCategories(text: string): string[] {
 /**
  * Detects if a candidate response repeats a question previously asked by the bot,
  * or if it reflects the user's question directly back (mirroring loop).
+ * Only applies if the candidate is ACTUALLY asking a question (ends with ? or contains question interrogatives).
  */
 export function detectQuestionRepetition(
   candidate: string,
@@ -169,21 +170,28 @@ export function detectQuestionRepetition(
 ): { isRepeatedQuestion: boolean; isMirroringLoop: boolean; category?: string; suggestedCorrection?: string } {
   if (!candidate) return { isRepeatedQuestion: false, isMirroringLoop: false };
 
+  // Only check for question repetition if candidate is actually posing a question
+  const isCandidatePosingQuestion = /[؟?]|(?:شما\s*چی|تو\s*چطور|شما\s*چطور|تو\s*چی|اسمت\s*چیه|چند\s*سالته|کجایی\s*هستی|چیکار\s*میکنی)/i.test(candidate);
+  if (!isCandidatePosingQuestion) {
+    return { isRepeatedQuestion: false, isMirroringLoop: false };
+  }
+
   const candidateCategories = extractQuestionCategories(candidate);
   if (candidateCategories.length === 0) {
     return { isRepeatedQuestion: false, isMirroringLoop: false };
   }
 
-  // 1. Check for Mirroring Loop: User asked "چیکار میکنی کلا؟" and bot replied with "تو چیکار میکنی"
+  // 1. Check for True Mirroring Loop:
+  // e.g. User asked "چیکار میکنی؟" and bot replied ONLY with "تو چیکار میکنی؟" without answering
   if (lastUserMsg) {
     const userCategories = extractQuestionCategories(lastUserMsg);
     for (const cat of candidateCategories) {
-      if (userCategories.includes(cat)) {
-        // Candidate is mirroring back the same question the user just asked!
+      // If user asked a question, and bot's ENTIRE message is just asking the same question back with no substantive answer
+      if (userCategories.includes(cat) && candidate.trim().length < 30 && /(تو\s*چیکار|تو\s*چطور|شما\s*چطور|تو\s*چی)/i.test(candidate)) {
         const patternObj = QUESTION_PATTERNS.find((p) => p.category === cat);
         const randomReply = patternObj
           ? patternObj.naturalReplies[Math.floor(Math.random() * patternObj.naturalReplies.length)]
-          : 'بیشتر فیلم می‌بینم و با گوشی سرگرمم';
+          : 'منم سرگرم کارامم';
 
         return {
           isRepeatedQuestion: true,
@@ -195,18 +203,36 @@ export function detectQuestionRepetition(
     }
   }
 
-  // 2. Check if the bot has already asked this question category in its previous messages
+  // 2. Check if the bot has already asked this exact question category in its previous messages
   for (const cat of candidateCategories) {
+    // Standard polite pleasantries like greeting_status and activity should NOT be blocked as repeated questions
+    if (cat === 'greeting_status' || cat === 'activity') {
+      continue;
+    }
+
     const wasAlreadyAskedByBot = recentBotMessages.some((msg) => {
+      const isMsgQuestion = /[؟?]/.test(msg) || /(?:شما|تو)/i.test(msg);
+      if (!isMsgQuestion) return false;
       const msgCategories = extractQuestionCategories(msg);
       return msgCategories.includes(cat);
     });
 
     if (wasAlreadyAskedByBot) {
+      // Strip the repeated question from candidate or keep the informative part
+      const cleanCandidate = candidate.replace(/[؟?].*$/, '').replace(/(?:شما\s*چی|تو\s*چطور|شما\s*چطور|تو\s*چی|شما\s*اسمت\s*چیه|شما\s*اهل\s*کجایی).*/i, '').trim();
+      if (cleanCandidate.length >= 6) {
+        return {
+          isRepeatedQuestion: false,
+          isMirroringLoop: false,
+          category: cat,
+          suggestedCorrection: cleanCandidate,
+        };
+      }
+
       const patternObj = QUESTION_PATTERNS.find((p) => p.category === cat);
       const randomReply = patternObj
         ? patternObj.naturalReplies[Math.floor(Math.random() * patternObj.naturalReplies.length)]
-        : 'منم سرگرم کارامم، روزت چطور گذشت';
+        : 'منم خوبم مرسی';
 
       return {
         isRepeatedQuestion: true,

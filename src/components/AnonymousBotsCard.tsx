@@ -33,6 +33,7 @@ import {
   TrendingUp,
   Loader2,
   ShieldCheck,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface AnonymousBotsCardProps {
@@ -51,7 +52,7 @@ interface AnonymousBotsCardProps {
   onUpdateConfig: (config: Partial<AnonymousChatAutomatorConfig>) => Promise<void>;
   onSaveBot: (bot: AnonymousBotProfile) => Promise<void>;
   onDeleteBot: (botId: string) => Promise<void>;
-  onStartAutomator: (botId?: string) => Promise<void>;
+  onStartAutomator: (botId?: string, accountId?: string) => Promise<void>;
   onStopAutomator: () => Promise<void>;
   onNextStranger: () => Promise<void>;
   onSendManualMessage: (text: string) => Promise<void>;
@@ -93,7 +94,7 @@ export const AnonymousBotsCard: React.FC<AnonymousBotsCardProps> = ({
     }
     setIsActionLoading(true);
     try {
-      await onStartAutomator(config?.selectedBotId);
+      await onStartAutomator(config?.selectedBotId, activeAccountId);
     } finally {
       setIsActionLoading(false);
     }
@@ -269,6 +270,47 @@ export const AnonymousBotsCard: React.FC<AnonymousBotsCardProps> = ({
         </div>
       </div>
 
+      {/* Failure Alert Banner if last session failed */}
+      {activeSession?.status === 'failed' && !config?.isActive && (
+        <div className="mx-5 p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-200 text-xs flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <div className="font-bold text-rose-300">آخرین تلاش برای چت ناشناس متوقف شد:</div>
+              <div className="mt-1 text-slate-300 text-[11px] leading-relaxed">{activeSession.statusMessage}</div>
+            </div>
+          </div>
+          <button
+            onClick={handleStartClick}
+            disabled={isActionLoading}
+            className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] flex items-center gap-1.5 flex-shrink-0 cursor-pointer shadow transition-all"
+          >
+            <Play className="w-3.5 h-3.5 fill-current" />
+            <span>تلاش مجدد</span>
+          </button>
+        </div>
+      )}
+
+      {/* Live Active Session Status Banner */}
+      {config?.isActive && activeSession && (
+        <div className="mx-5 p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-200 text-xs flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping flex-shrink-0" />
+            <div>
+              <span className="font-bold text-emerald-300">جلسه فعال چت #{activeSession.sessionIndex || 1}: </span>
+              <span className="text-slate-300 text-[11px]">{activeSession.statusMessage || 'در حال اجرا...'}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveTab('live_chat')}
+            className="px-3 py-1 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold flex items-center gap-1 cursor-pointer flex-shrink-0"
+          >
+            <Zap className="w-3 h-3" />
+            <span>مشاهده مانیتور زنده</span>
+          </button>
+        </div>
+      )}
+
       {/* Metrics Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 px-5">
         <div className="bg-slate-950/70 rounded-xl p-3 border border-slate-800 text-center">
@@ -421,6 +463,7 @@ export const AnonymousBotsCard: React.FC<AnonymousBotsCardProps> = ({
           <AnonymousAiInstructionsTab
             key={config?.selectedBotId || 'default_bot'}
             instructions={instructions}
+            onGoToSimulator={() => setActiveTab('simulator')}
             onSaveInstructions={async (newInstructions) => {
               await onUpdateConfig({
                 instructions: newInstructions,
@@ -431,7 +474,20 @@ export const AnonymousBotsCard: React.FC<AnonymousBotsCardProps> = ({
           />
         )}
 
-        {activeTab === 'simulator' && <AnonymousSimulatorTab instructions={instructions} />}
+        {activeTab === 'simulator' && (
+          <AnonymousSimulatorTab
+            instructions={instructions}
+            config={config}
+            isConnected={hasAnyValidAccount}
+            accounts={accounts}
+            onStartAutomator={handleStartClick}
+            onStopAutomator={handleStopClick}
+            onUpdateConfig={onUpdateConfig}
+            onOpenAuthModal={onOpenAuthModal}
+            onSwitchTab={(tab) => setActiveTab(tab as any)}
+            activeSession={activeSession}
+          />
+        )}
 
         {activeTab === 'live_chat' && (
           <AnonymousLiveMonitorTab

@@ -260,18 +260,16 @@ export function validateAndSanitizeResponse(
   });
 
   if (similarityInfo.isDuplicate) {
-    violations.push(`Duplicate/Repetitive response detected (${similarityInfo.reason})`);
-    requiresRegeneration = true;
-    text = similarityInfo.suggestedCorrection || getAlternativeVariedFallback(context.state, context.intent, recentMessages, context.supportIdAvailable, lastUserMsg);
-    return {
-      isValid: false,
-      sanitizedText: text,
-      violations,
-      ruleResults,
-      requiresRegeneration,
-      wasFallbackUsed: true,
-      similarityInfo,
-    };
+    const suggested = (similarityInfo.suggestedCorrection || '').trim();
+    if (suggested && suggested.length >= 5 && !recentMessages.includes(suggested)) {
+      text = suggested;
+    } else if (text && text.length >= 4 && !recentMessages.includes(text)) {
+      // Keep Gemini's response if it is distinct from recent messages
+      // Only append minor variation if needed
+    } else {
+      violations.push(`Duplicate/Repetitive response detected (${similarityInfo.reason})`);
+      text = getAlternativeVariedFallback(context.state, context.intent, recentMessages, context.supportIdAvailable, lastUserMsg);
+    }
   }
 
   // 6. Support ID Access Gating Check (A3 & A2: Duration >= 120s)

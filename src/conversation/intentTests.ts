@@ -336,6 +336,14 @@ export const INTENT_TEST_SUITE: IntentTestCase[] = [
     input: 'یعنی چی؟',
     expectedPrimary: Intent.UNKNOWN,
   },
+  {
+    id: 'GEN_CORRECTION_01',
+    category: 'Clarification & Correction',
+    description: 'User correction regarding greeting should be small talk not greeting loop',
+    input: 'من نپرسیدم چطوری :) فقط سلام کردم',
+    expectedPrimary: Intent.SMALL_TALK,
+    forbiddenIntents: [Intent.GREETING],
+  },
 ];
 
 /**

@@ -585,12 +585,12 @@ export default function App() {
     await fetchState();
   };
 
-  const handleStartAnonymousAutomator = async (botId?: string) => {
+  const handleStartAnonymousAutomator = async (botId?: string, accountId?: string) => {
     try {
       const res = await fetch('/api/anonymous/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ botId }),
+        body: JSON.stringify({ botId, accountId: accountId || appState?.activeAccountId }),
       });
       const data = await res.json();
       if (!res.ok) {

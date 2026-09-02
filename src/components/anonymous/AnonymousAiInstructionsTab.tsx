@@ -54,6 +54,7 @@ import {
 interface AnonymousAiInstructionsTabProps {
   instructions: AnonymousChatInstructions;
   onSaveInstructions: (instructions: AnonymousChatInstructions) => Promise<void>;
+  onGoToSimulator?: () => void;
 }
 
 const PRESET_GREETINGS = [
@@ -78,6 +79,7 @@ const PRESET_FAREWELLS = [
 export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProps> = ({
   instructions,
   onSaveInstructions,
+  onGoToSimulator,
 }) => {
   const [localInstructions, setLocalInstructions] = useState<AnonymousChatInstructions>(instructions);
   const [isDirty, setIsDirty] = useState(false);
@@ -576,7 +578,19 @@ export const AnonymousAiInstructionsTab: React.FC<AnonymousAiInstructionsTabProp
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          {onGoToSimulator && (
+            <button
+              type="button"
+              onClick={onGoToSimulator}
+              className="px-3.5 py-2.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 text-sky-300 border border-sky-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-sky-950/40"
+              title="ورود به شبیه‌ساز چت و تست روی خودتان"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>تست در شبیه‌ساز (بخش ۳) ➔</span>
+            </button>
+          )}
+
           {isDirty && (
             <button
               type="button"

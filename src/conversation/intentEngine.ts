@@ -355,7 +355,7 @@ export function generateCandidates(
   }
 
   // 15. GREETING
-  if (entities.hasGreetingEntity) {
+  if (entities.hasGreetingEntity && !/(نپرسیدم|فقط سلام|نگفتم|کی پرسید)/i.test(normText)) {
     candidates.push({
       intent: Intent.GREETING,
       lexicalEvidence: 0.90,

@@ -48,6 +48,8 @@ import {
   MAX_COMMERCIAL_LEAD_MESSAGES_LIMIT,
   repairIncompleteSentences,
   cleanCodeArtifactsAndPunctuation,
+  getAlternativeVariedFallback,
+  getSafeFallbackText,
 } from './src/conversation/responseValidator.js';
 import {
   extractQuestionCategories,
@@ -5747,11 +5749,16 @@ interface GeminiModelHealth {
 
 const geminiModelHealthMap = new Map<string, GeminiModelHealth>();
 
-// Prioritized hierarchy of fast, conversational models
+// Prioritized hierarchy of fast, reliable conversational models as requested:
+// 1. gemini-3.1-flash-lite (sub-second ~700ms ultra-fast response, no quota block)
+// 2. gemini-3.5-flash (fluent, high-quality reasoning)
+// 3. gemini-3.6-flash (powerful multimodal)
+// 4. gemini-3.7-flash (extended thinking fallback)
 const GEMINI_DEFAULT_MODEL_PRIORITY: string[] = [
-  'gemini-3.7-flash',
   'gemini-3.1-flash-lite',
-  'gemini-flash-latest',
+  'gemini-3.5-flash',
+  'gemini-3.6-flash',
+  'gemini-3.7-flash',
 ];
 
 function getModelHealth(modelName: string): GeminiModelHealth {
@@ -5822,10 +5829,11 @@ function recordGeminiFailure(modelName: string, error: any): number {
   health.lastFailureTime = Date.now();
   health.lastError = errMsg;
 
-  // Adaptive exponential cooldown: 30s -> 60s -> 120s (max 300s)
-  const baseCooldownSec = 30;
+  // Adaptive exponential cooldown: 15s -> 30s -> 60s (max 120s)
+  const isQuota = errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED');
+  const baseCooldownSec = isQuota ? 15 : 30;
   const multiplier = Math.pow(2, Math.min(health.consecutiveFailures - 1, 3));
-  const cooldownSec = Math.min(300, baseCooldownSec * multiplier);
+  const cooldownSec = Math.min(120, baseCooldownSec * multiplier);
   health.cooldownUntil = Date.now() + cooldownSec * 1000;
 
   return cooldownSec;
@@ -6245,10 +6253,12 @@ async function generateAnonymousAiReply(
     } else {
       dynamicPersonaGuideline = `\n\n══════════════════════════════════════════════
 [دستورات ساختار نگارش و لحن مکالمه طبیعی (${chosenPersona.name})]:
-۱. لحن کاملاً روان، طبیعی و دوستانه: به عنوان ${chosenPersona.name} (${chosenPersona.role}) با لحن ${chosenPersona.tone} چت کنید.
-۲. طول پیام‌ها: هر پاسخ شما ۱ الی ۲ جمله کامل، روان و پیوسته باشد (حدود ۵ الی ۱۵ کلمه).
-۳. بدون کلمات لوس یا مصنوعی برای غریبه.
-۴. بدون علائم نگارشی کتابی (نقطه در انتها، ویرگول‌های متعدد).
+۱. هویت و بیوگرافی شخصی: شما ${chosenPersona.name}، ۲۶ ساله ساکن ${chosenPersona.location || 'تهران'} هستید. شغلتان کارهای طراحی و سیستم/پروژه‌ای است.
+۲. پاسخ به سوالات شخصی و شهری: اگر مخاطب درباره اسم، سن، شهر ("تهرانی؟"، "کجایی؟")، شغل، جنسیت یا احوال پرسید، مستقیماً، طبیعی و کوتاه پاسخ دهید ("آره من تهرانم، شما چطور؟" / "ملودی‌ام ۲۶ سالمه").
+۳. واکنش هوشمندانه به شوخی، تندگویی یا کلمات خاص ("احمقی؟"، "اسکل"، "دیوونه"): هرگز پیام تکراری یا کلیشه‌ای نفرستید! خیلی شوخ‌طبع، انسانی و صمیمی پاسخ دهید (مثلاً: «ای بابا! چرا تند میری؟ مگه چی گفتم؟ 😂» یا «نه بابا! مگه چی دیدی ازم که اینو میگی؟»).
+۴. لحن کاملاً روان، طبیعی و دوستانه: به عنوان ${chosenPersona.name} با لحن صمیمی (${chosenPersona.tone}) چت کنید.
+۵. طول پیام‌ها: هر پاسخ شما ۱ الی ۲ جمله کامل، روان و پیوسته باشد (حدود ۵ الی ۱۵ کلمه).
+۶. بدون کلمات لوس یا مصنوعی برای غریبه و بدون علائم نگارشی کتابی (نقطه در انتها، ویرگول‌های متعدد).
 ══════════════════════════════════════════════`;
     }
 
@@ -6360,33 +6370,61 @@ ${formatProductPromptContext(activeProduct, updatedCtx.supportIdAvailable)}
       chatPrompt =
         `[تاریخچه مکالمه فعال با این مخاطب ناشناس]:\n` +
         formattedHistory.join('\n\n') +
-        `\n\n[دستور خروجی]: با توجه به تمامی پیام‌های متوالی بالا، پاسخ جدید خود را در ۱ الی ۲ جمله کامل، روان و خودمانی (بدون کلمات نصفه و بدون کاراکترهای عجیب) بنویسید:\nمن:`;
+        `\n\n[دستور خروجی]: با توجه به تمامی پیام‌های متوالی بالا، پاسخ جدید و کوتاه (۱ الی ۲ جمله) خود را به صورت صمیمی، روان و محاوره‌ای بنویسید (مستقیماً پاسخ دهید و از گذاشتن پیشوندهایی مثل «من:» خودداری کنید).`;
     } else {
-      chatPrompt = `[مخاطب جدید متصل شد]\nکاربر ناشناس: ${lastStrangerMsg || 'سلام چطوری؟'}\nمن:`;
+      chatPrompt = `[مخاطب جدید متصل شد]\nکاربر ناشناس: ${lastStrangerMsg || 'سلام چطوری؟'}\nپاسخ خودمانی و مستقیم شما:`;
     }
 
     for (const modelName of candidateModels) {
       try {
-        const response = await ai.models.generateContent({
+        const modelConfig: any = {
+          systemInstruction,
+          temperature: 0.70,
+          maxOutputTokens: 600,
+        };
+        if (modelName.includes('3.7')) {
+          modelConfig.thinkingConfig = { thinkingBudget: 0 };
+        }
+
+        const generatePromise = ai.models.generateContent({
           model: modelName,
           contents: chatPrompt,
-          config: {
-            systemInstruction,
-            temperature: 0.70,
-            maxOutputTokens: 300,
-          },
+          config: modelConfig,
         });
 
-        const rawReply = response.text?.trim();
-        if (rawReply) {
-          recordGeminiSuccess(modelName);
+        // Set timeout based on model characteristics (fail fast on slow models so 3.5 and 3.1 can respond immediately)
+        const timeoutMs = modelName.includes('3.1') ? 5000 : modelName.includes('3.5') ? 6000 : 7000;
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms on model ${modelName}`)), timeoutMs)
+        );
 
+        const response: any = await Promise.race([generatePromise, timeoutPromise]);
+
+        let rawReply = '';
+        if (response?.text && typeof response.text === 'string' && response.text.trim()) {
+          rawReply = response.text.trim();
+        } else if (response?.candidates?.[0]?.content?.parts) {
+          rawReply = response.candidates[0].content.parts
+            .map((p: any) => p.text || '')
+            .filter(Boolean)
+            .join('')
+            .trim();
+        }
+
+        if (rawReply) {
           // Use our robust Response Validator & Sanitizer
           const validation = validateAndSanitizeResponse(
             rawReply,
             updatedCtx,
             promo
           );
+
+          if (validation.wasFallbackUsed) {
+            console.warn(`[Gemini Adaptive Router] Model ${modelName} output triggered fallback validator (${validation.violations.join(', ')}). Trying next candidate model...`);
+            continue;
+          }
+
+          recordGeminiSuccess(modelName);
 
           let cleanText = validation.sanitizedText;
           if (isUnder2Min) {
@@ -6425,10 +6463,11 @@ ${formatProductPromptContext(activeProduct, updatedCtx.supportIdAvailable)}
           errMsg.includes('demand') ||
           errMsg.includes('UNAVAILABLE') ||
           errMsg.includes('RESOURCE_EXHAUSTED') ||
-          errMsg.includes('overloaded');
+          errMsg.includes('overloaded') ||
+          errMsg.includes('Timeout');
 
         if (isBusyOrRateLimited) {
-          console.warn(`[Gemini Adaptive Router] Model ${modelName} is busy/throttled. Set ${cooldownSec}s cooldown. Seamlessly switching to next model immediately...`);
+          console.warn(`[Gemini Adaptive Router] Model ${modelName} is busy/throttled or timed out. Set ${cooldownSec}s cooldown. Seamlessly switching to next model immediately...`);
         } else {
           console.warn(`[Gemini Adaptive Router] Model ${modelName} notice: ${errMsg}. Set ${cooldownSec}s cooldown. Trying next available model...`);
         }
@@ -6436,24 +6475,97 @@ ${formatProductPromptContext(activeProduct, updatedCtx.supportIdAvailable)}
     }
   }
 
-  // Fallback responses if offline or Gemini fails (clean natural Persian)
-  const lowerMsg = lastStrangerMsg.toLowerCase().trim();
-  let fallbackText = 'مرسی منم خوبم تو چیکارا میکنی';
+  // Fallback responses if offline or Gemini fails (smart context-aware Persian)
+  const normLastMsg = normalizePersianText(lastStrangerMsg).toLowerCase().trim();
+  const personaName = chosenPersona.name || 'ملودی';
+  const personaAge = chosenPersona.age || '۲۶';
+  const personaCity = chosenPersona.location || 'تهران';
+  
+  let fallbackText = '';
 
-  if (/^(سلام|درود|hi|slm|هلو)/i.test(lowerMsg)) {
-    fallbackText = 'سلام چطوری خوبی';
-  } else if (/(اصل|asl|اسمت|چند سالته|کجایی)/i.test(lowerMsg)) {
-    fallbackText = 'ملودی ۲۶ تهران شما چی؟';
-  } else if (/(چیکار|چخبر|مشغولی)/i.test(lowerMsg)) {
-    fallbackText = 'والا پای گوشی تو تلگرام بودم';
-  } else if (/(خوبم|مرسی|فدات|شکر)/i.test(lowerMsg)) {
-    fallbackText = 'خداروشکر خوشبختم از آشناییت';
-  } else if (/(قیمت|چنده|چند|تست|خرید|وی\s*پی\s*ان|فیلترشکن|vpn)/i.test(lowerMsg)) {
-    if (updatedCtx.promotionLevel === PromotionLevel.DIRECT_OFFER) {
-      fallbackText = `کانفیگ اختصاصی پرسرعت داریم پیام بده ${effectiveSupportHandle} برات تست بفرستم`;
+  if (/(احمق|دیوونه|روانی|خر|اسکل|چرت|بی‌شعور|بیشعور|احمقی)/i.test(normLastMsg)) {
+    const insultCandidates = [
+      'ای بابا! چرا بد می‌گی؟ مگه من چی گفتم بهت؟ 😂',
+      'نه بابا! مگه چی دیدی ازم که اینطوری می‌گی؟',
+      'چرا آخه؟ من که تازه اومدم باهات گپ بزنم!',
+    ];
+    fallbackText = insultCandidates.find((c) => !previousBotMessages.some((prev) => prev.includes(c.slice(0, 10)))) || insultCandidates[0];
+  } else if (/(تهران|تهرانی|کجایی|کجا زندگی|اهل کجایی|بچه کجایی|کدوم شهری)/i.test(normLastMsg)) {
+    const cityCandidates = [
+      'آره عزیزم ساکن تهرانم، شما اهل کجایی؟',
+      'تهرانم، شما کجایی هستی؟',
+      'آره من تهران زندگی می‌کنم، شما چطور؟',
+    ];
+    fallbackText = cityCandidates.find((c) => !previousBotMessages.some((prev) => prev.includes(c.slice(0, 10)))) || cityCandidates[0];
+  } else if (/(اسم|اسمت|نامت|کی هستی|معرفی)/i.test(normLastMsg) && /(شغل|کارت|سرکار|شاغل)/i.test(normLastMsg)) {
+    fallbackText = `${personaName} هستم ${personaAge} سالمه از ${personaCity}، کارم تو شرکت و سیستمه؛ شما اسمت چیه؟`;
+  } else if (/(اسم|اسمات|اسمت|نامت|نام شما|کی هستی|معرفی|اصل|asl|چند سالته|سنت|کجایی|اهل کجایی|بچه کجایی)/i.test(normLastMsg)) {
+    fallbackText = `${personaName} هستم ${personaAge} ${personaCity}، شما اسمت چیه و اهل کجایی؟`;
+  } else if (/(دختری|پسری|پسر|دختر|جنسیت|مونث|مذکر|خانم|آقا)/i.test(normLastMsg)) {
+    fallbackText = `دخترم ${personaAge} سالمه از ${personaCity}، شما چی؟`;
+  } else if (/(سرکار|شغل|شغلت|کارت چیه|شاغلی|چه کاره‌ای|چه کاره ای|چه کاری هستی|کجا کار میکنی)/i.test(normLastMsg)) {
+    fallbackText = 'تو کارای اداری و پروژه‌ای سیستمم، شما چی مشغولی یا درس می‌خونی؟';
+  } else if (/(برگشتم خونه|رسیدم خونه|اومدم خونه|خونه رسیدم|تازه رسیدم|تازه اومدم|خسته‌ام|خسته ام|خستگی)/i.test(normLastMsg)) {
+    fallbackText = 'خسته نباشی! روزت چطور گذشت؟ حسابی خسته شدی؟';
+  } else if (/(چیکار|چیکارا|مشغول|چخبر|چه خبر|چه خبرها|چیکار میکنی|چیکارا میکنی)/i.test(normLastMsg)) {
+    const activityCandidates = [
+      'سلامتی، سرگرم کارامم پای گوشی بودم، شما چیکارا می‌کنی چه خبر؟',
+      'پای لپ‌تاپم داشتم یه سری کار انجام می‌دادم، شما چی؟',
+      'بیشتر پای گوشی و فیلم و آهنگم، شما چیکار می‌کنی؟',
+    ];
+    fallbackText = activityCandidates.find((c) => !previousBotMessages.some((prev) => prev.includes(c.slice(0, 15)))) || activityCandidates[0];
+  } else if (/(سلام|درود|hi|slm|هلو|سلامتی|علیک)/i.test(normLastMsg) && !/(نپرسیدم|فقط سلام|کی پرسید)/i.test(normLastMsg)) {
+    const greetingCandidates = [
+      'سلام چطوری خوبی روزت چطور بوده تا الان؟',
+      'سلام مرسی عزیزم، چه خبر چیکارا می‌کنی؟',
+      'سلام به روی ماهت، خوبی روبراهی؟',
+    ];
+    fallbackText = greetingCandidates.find((c) => !previousBotMessages.some((prev) => prev.includes(c.slice(0, 10)))) || greetingCandidates[0];
+  } else if (/(نپرسیدم|فقط سلام|نگفتم چطور)/i.test(normLastMsg)) {
+    fallbackText = 'آره متوجه شدم، چه خبر چیکارا میکنی';
+  } else if (/(خوبم|مرسی|فدات|شکر|سلامتی|قربونت|عالی|بد نیستم)/i.test(normLastMsg) && /(تو چطوری|شما چطور|خودت چطور|احوال)/i.test(normLastMsg)) {
+    fallbackText = 'منم خوبم مرسی عزیزم، روزت چطور بوده تا الان؟';
+  } else if (/(خوبم|مرسی|فدات|شکر|سلامتی|قربونت|عالی|بد نیستم)/i.test(normLastMsg)) {
+    fallbackText = 'خداروشکر همیشه خوب باشی، خوشبختم از آشناییت';
+  } else if (/(هستی|هستم|کجایی|چرا رفتی|الو|کجایی پس|جواب بده)/i.test(normLastMsg)) {
+    fallbackText = 'آره هستم پیامت رو دیدم، چه خبر؟';
+  } else if (/(عکس|عکست|عکس خودت|ببینمت|عکس میدی)/i.test(normLastMsg)) {
+    fallbackText = 'عکس که نمیدم با هم چت کنیم آشنا شیم بهتره';
+  } else if (/(آیدی|ایدی|شماره|شمارت|تلگرامت|پیوی|پی وی)/i.test(normLastMsg)) {
+    if (updatedCtx.supportIdAvailable && (updatedCtx.promotionLevel !== PromotionLevel.NO_PROMOTION || stepOutput.promotionDecision.isExplicitOverride)) {
+      fallbackText = `می‌تونی به آیدی ${effectiveSupportHandle} پیام بدی`;
     } else {
-      fallbackText = 'راستش یه سرور عالی دارم پینگش عالیه';
+      fallbackText = 'فعلاً تو همین ناشناس چت کنیم راحت‌تره';
     }
+  } else if (/(قیمت|چنده|چند|تست|خرید|وی\s*پی\s*ان|فیلترشکن|vpn|اشتراک|کانفیگ|سرور|پروتکل|ایفون|اندروید)/i.test(normLastMsg)) {
+    if (updatedCtx.promotionLevel === PromotionLevel.DIRECT_OFFER || !isUnder2Min) {
+      fallbackText = `کانفیگ اختصاصی و تست رایگان داریم، آیدی پشتیبانی ${effectiveSupportHandle} هست پیام بده برات بفرستم`;
+    } else {
+      fallbackText = 'راستش یه سرور اختصاصی خیلی پرسرعت دارم که واسه اینستا و یوتیوب عالیه تست رایگانم داره';
+    }
+  } else if (/(نه|نمیخوام|تبلیغ|اسپم|بلاک|علاقه ندارم|حوصله ندارم)/i.test(normLastMsg)) {
+    fallbackText = 'باشه حله، هر طور راحتی مراقب خودت باش';
+  } else if (/(خداحافظ|خدافظ|بای|فعلا|باید برم|شبت بخیر|روزت بخیر)/i.test(normLastMsg)) {
+    fallbackText = 'خوشحال شدم از هم‌صحبتی، مراقب خودت باش فعلاً';
+  } else {
+    fallbackText = getAlternativeVariedFallback(
+      updatedCtx.state,
+      updatedCtx.intent,
+      previousBotMessages,
+      updatedCtx.supportIdAvailable,
+      lastStrangerMsg
+    );
+  }
+
+  // Ensure fallback is not identical to immediately preceding bot message
+  if (previousBotMessages.length > 0 && previousBotMessages.some((prev) => prev === fallbackText)) {
+    fallbackText = getAlternativeVariedFallback(
+      updatedCtx.state,
+      updatedCtx.intent,
+      previousBotMessages,
+      updatedCtx.supportIdAvailable,
+      lastStrangerMsg
+    );
   }
 
   const validatedFallback = validateAndSanitizeResponse(
@@ -8584,15 +8696,17 @@ async function getOrInitAnonymousClient(preferredAccountId?: string): Promise<{ 
   if (preferredAccountId) {
     const acc = accounts.find(a => a.id === preferredAccountId && a.status !== 'session_expired' && a.status !== 'disabled');
     if (acc) {
+      acc.enableForAnonymousBot = true;
       const client = await getOrInitClientForAccount(acc);
       if (client) return { client, account: acc };
     }
   }
 
-  // 2. Try currently active account if enabled for anonymous bot
+  // 2. Try currently active account
   if (appState.activeAccountId) {
     const activeAcc = accounts.find(a => a.id === appState.activeAccountId);
-    if (activeAcc && activeAcc.enableForAnonymousBot !== false && activeAcc.isActive && activeAcc.status !== 'session_expired' && activeAcc.status !== 'disabled') {
+    if (activeAcc && activeAcc.isActive && activeAcc.status !== 'session_expired' && activeAcc.status !== 'disabled' && Boolean(activeAcc.sessionString)) {
+      activeAcc.enableForAnonymousBot = true;
       const client = await getOrInitClientForAccount(activeAcc);
       if (client) return { client, account: activeAcc };
     }
@@ -8626,6 +8740,25 @@ async function getOrInitAnonymousClient(preferredAccountId?: string): Promise<{ 
   return null;
 }
 
+function extractEntityUsernames(entity: any): string[] {
+  const list: string[] = [];
+  if (entity?.username) list.push(String(entity.username).toLowerCase().trim());
+  if (Array.isArray(entity?.usernames)) {
+    for (const u of entity.usernames) {
+      if (u?.username) list.push(String(u.username).toLowerCase().trim());
+    }
+  }
+  return list;
+}
+
+function isChannelOrGroup(d: any, entity: any): boolean {
+  if (!d && !entity) return false;
+  if (d?.isChannel || d?.isGroup) return true;
+  const cls = entity?.className || d?.entity?.className;
+  if (cls === 'Channel' || cls === 'Chat') return true;
+  return false;
+}
+
 async function resolveBotEntitySmart(client: any, rawUsernameOrLink: string, botProfile?: any): Promise<any> {
   const cleanUsername = (rawUsernameOrLink || '')
     .replace('https://t.me/', '')
@@ -8641,20 +8774,45 @@ async function resolveBotEntitySmart(client: any, rawUsernameOrLink: string, bot
 
   if (botEntityCache.has(cacheKey)) {
     const cached = botEntityCache.get(cacheKey);
-    if (cached) return cached;
+    // Ensure cached is NOT a Channel or Group and is a bot or user
+    if (cached && !isChannelOrGroup(null, cached) && (cached.bot || cached.className === 'User' || cached.userId)) {
+      return cached;
+    }
+    botEntityCache.delete(cacheKey);
   }
 
   // 1. First attempt: Search in active dialogs (Zero network lookup, bypasses ResolveUsername flood wait entirely!)
   try {
     const dialogs = await client.getDialogs({ limit: 150 });
+    
+    // Pass 1: Exact or variant username match on eligible (non-channel, non-group) dialogs
     for (const d of dialogs || []) {
       const entity = d.entity;
-      if (!entity) continue;
-      
-      const entityUsername = (entity.username || '').toLowerCase();
-      const entityTitle = (d.title || d.name || entity.firstName || entity.lastName || '').toLowerCase();
+      if (!entity || isChannelOrGroup(d, entity)) continue;
 
-      const usernameMatch = cleanUsername && entityUsername === cleanUsername;
+      const botUsernames = extractEntityUsernames(entity);
+      const isExactMatch = cleanUsername && botUsernames.includes(cleanUsername);
+      const isVariantMatch = cleanUsername && (
+        botUsernames.includes(cleanUsername + 'bot') ||
+        (cleanUsername.endsWith('bot') && botUsernames.includes(cleanUsername.slice(0, -3)))
+      );
+
+      if (isExactMatch || isVariantMatch) {
+        const resolved = d.inputEntity || d.entity;
+        botEntityCache.set(cacheKey, resolved);
+        addLog('info', `[چت ناشناس] ربات «${d.title || cleanUsername}» در لیست گفتگوها بر اساس نام کاربری شناسایی شد.`);
+        return resolved;
+      }
+    }
+
+    // Pass 2: Bot dialogs with matching title/name
+    for (const d of dialogs || []) {
+      const entity = d.entity;
+      if (!entity || isChannelOrGroup(d, entity)) continue;
+      // Must be marked as a bot or be a direct user
+      if (!entity.bot && entity.className !== 'User' && !d.isUser) continue;
+
+      const entityTitle = (d.title || d.name || entity.firstName || entity.lastName || '').toLowerCase();
       const titleMatch = (
         (cleanUsername && (entityTitle.includes(cleanUsername) || cleanUsername.includes(entityTitle))) ||
         (botNameLower && (entityTitle.includes(botNameLower) || botNameLower.includes(entityTitle))) ||
@@ -8665,9 +8823,10 @@ async function resolveBotEntitySmart(client: any, rawUsernameOrLink: string, bot
         (cleanUsername === 'gapgrambot' && (entityTitle.includes('گپ‌گرام') || entityTitle.includes('گپ گرام') || entityTitle.includes('gapgram')))
       );
 
-      if (usernameMatch || titleMatch) {
+      if (titleMatch) {
         const resolved = d.inputEntity || d.entity;
         botEntityCache.set(cacheKey, resolved);
+        addLog('info', `[چت ناشناس] ربات «${d.title || cleanUsername}» در لیست گفتگوها بر اساس عنوان شناسایی شد.`);
         return resolved;
       }
     }
@@ -8677,12 +8836,30 @@ async function resolveBotEntitySmart(client: any, rawUsernameOrLink: string, bot
 
   // 2. Second attempt: Direct getEntity lookup
   try {
-    const entity = await client.getEntity(cleanUsername);
-    if (entity) {
+    let entity = await client.getEntity(cleanUsername);
+    if (isChannelOrGroup(null, entity) && !cleanUsername.endsWith('bot')) {
+      try {
+        const alt = await client.getEntity(cleanUsername + 'bot');
+        if (alt && !isChannelOrGroup(null, alt)) {
+          entity = alt;
+        }
+      } catch {}
+    }
+
+    if (entity && !isChannelOrGroup(null, entity)) {
       botEntityCache.set(cacheKey, entity);
       return entity;
     }
   } catch (err: any) {
+    if (!cleanUsername.endsWith('bot')) {
+      try {
+        const entityWithBot = await client.getEntity(cleanUsername + 'bot');
+        if (entityWithBot && !isChannelOrGroup(null, entityWithBot)) {
+          botEntityCache.set(cacheKey, entityWithBot);
+          return entityWithBot;
+        }
+      } catch {}
+    }
     const errMsg = String(err?.errorMessage || err?.message || err);
     if (errMsg.includes('FLOOD_WAIT') || errMsg.includes('wait of') || errMsg.includes('ResolveUsername')) {
       throw new Error(
@@ -8695,7 +8872,7 @@ async function resolveBotEntitySmart(client: any, rawUsernameOrLink: string, bot
   return null;
 }
 
-async function runAnonymousChatWorker() {
+async function runAnonymousChatWorker(targetAccountId?: string) {
   if (isAnonEngineRunning) return;
   isAnonEngineRunning = true;
   anonEngineAbort = false;
@@ -8716,7 +8893,7 @@ async function runAnonymousChatWorker() {
     }
 
     // Get active Telegram client for Anonymous Chat
-    const anonClientInfo = await getOrInitAnonymousClient();
+    const anonClientInfo = await getOrInitAnonymousClient(targetAccountId || appState.activeAccountId);
     if (!anonClientInfo || !anonClientInfo.client) {
       addLog('error', '[چت ناشناس] هیچ اکانت فعال و تاییدشده‌ای برای بخش چت ناشناس یافت نشد. لطفاً در بخش ۳ (مدیریت اکانت‌ها) اکانت خود را اضافه کرده یا گزینه چت ربات ناشناس را فعال نمایید.');
       appState.anonymousAutomator.isActive = false;
@@ -10351,6 +10528,7 @@ app.post('/api/anonymous/start', async (req, res) => {
   // Initialize fresh prompt evaluation run (clearing previous run history from memory)
   const newRun = initNewPromptEvaluationTestRun(botId);
   activeAnonChatSession = null;
+  appState.activeAnonymousSession = null;
   saveData();
 
   addLog(
@@ -10359,7 +10537,7 @@ app.post('/api/anonymous/start', async (req, res) => {
   );
 
   // Launch background worker
-  runAnonymousChatWorker().catch((err) => {
+  runAnonymousChatWorker(accountId || anonClientInfo.account?.id).catch((err) => {
     console.error('Failed to run anonymous chat worker:', err);
   });
 
@@ -10459,7 +10637,7 @@ app.post('/api/anonymous/send-manual-message', async (req, res) => {
   res.status(400).json({ error: 'کلاینت تلگرام در دسترس نیست.' });
 });
 
-app.post('/api/anonymous/test-ai-simulation', async (req, res) => {
+const handleSimulateReply = async (req: any, res: any) => {
   const { history, instructions, sessionContext } = req.body;
   try {
     const activeInstructions: AnonymousChatInstructions =
@@ -10473,6 +10651,7 @@ app.post('/api/anonymous/test-ai-simulation', async (req, res) => {
       sessionContext
     );
     res.json({
+      success: true,
       reply: replyResult.text,
       source: replyResult.source,
       shouldSendPromoCard: replyResult.shouldSendPromoCard,
@@ -10480,9 +10659,12 @@ app.post('/api/anonymous/test-ai-simulation', async (req, res) => {
       stepOutput: replyResult.stepOutput,
     });
   } catch (err: any) {
-    res.status(500).json({ error: err?.message || 'Failed to simulate reply' });
+    res.status(500).json({ success: false, error: err?.message || 'Failed to simulate reply' });
   }
-});
+};
+
+app.post('/api/anonymous/simulate-reply', handleSimulateReply);
+app.post('/api/anonymous/test-ai-simulation', handleSimulateReply);
 
 app.get('/api/anonymous/run-conversation-tests', (req, res) => {
   try {
